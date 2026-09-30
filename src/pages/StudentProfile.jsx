@@ -1,0 +1,351 @@
+import {
+  getStudentProfile,
+  updateStudentProfile,
+  addStudentSkill,
+} from "../services/studentService";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { CiLock, CiUser } from "react-icons/ci";
+import { FaUniversity, FaGraduationCap, FaCalendarAlt } from "react-icons/fa";
+
+import HeroAuthForm from "../components/common/HeroAuthForm";
+import InputFileds from "../components/common/InputFileds";
+import StepIndicator from "../components/common/StepIndicator";
+import SelectField from "../components/common/SelectField";
+import PhoneField, { COUNTRY_CODES } from "../components/common/PhoneField";
+import SkillsSelect from "../components/common/SkillsSelect";
+
+import "../AuthForm.css";
+import logo from "../assets/logo.svg";
+
+import {
+  UNIVERSITIES,
+  ACADEMIC_MAJORS,
+  SPECIFIC_MAJOR,
+  getGraduationYears,
+} from "../constants/academicOptions";
+
+const STEPS = ["البيانات الشخصية", "البيانات الأكاديمية والمهارات"];
+
+function splitPhone(fullPhone) {
+  if (!fullPhone) return { phone_code: "+970", phone: "" };
+
+  const matchedCode = COUNTRY_CODES.find((code) => fullPhone.startsWith(code));
+
+  if (matchedCode) {
+    return {
+      phone_code: matchedCode,
+      phone: fullPhone.slice(matchedCode.length),
+    };
+  }
+
+  return { phone_code: "+970", phone: fullPhone };
+}
+
+function StudentProfile() {
+  const navigate = useNavigate();
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    email: "",
+    name: "",
+    university: "",
+    academic_major: "",
+    specific_major: "",
+    graduation_year: "",
+    phone: "",
+    phone_code: "+970",
+  });
+
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [errorMsg, setErrorMsg] = useState({});
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getStudentProfile();
+        const { phone_code, phone } = splitPhone(data.phone);
+
+        setFormData((prev) => ({
+          ...prev,
+          email: data.email || "",
+          name: data.name || "",
+          university: data.university || "",
+          academic_major: data.academic_major || "",
+          specific_major: data.specific_major || "",
+          graduation_year: data.graduation_year || "",
+          phone_code,
+          phone,
+        }));
+      } catch (error) {
+        console.log("بيانات وهمية", error);
+
+        try {
+          const storedUser = JSON.parse(localStorage.getItem("auth_user"));
+
+          if (storedUser) {
+            setFormData((prev) => ({
+              ...prev,
+              email: storedUser.email || "",
+              name: storedUser.name || "",
+            }));
+          }
+        } catch (innerError) {
+          console.log(innerError);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePhoneCodeChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      phone_code: e.target.value,
+    }));
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+
+    const newErrors = {};
+
+    if (!formData.name) {
+      newErrors.name = "الاسم الكامل مطلوب";
+    }
+
+    setErrorMsg(newErrors);
+
+    if (Object.keys(newErrors).length > 0) return;
+
+    setCurrentStep(2);
+  };
+
+  const handlePrevious = () => {
+    setErrorMsg({});
+    setCurrentStep(1);
+  };
+
+  const handleSubmitStep2 = async (e) => {
+    e.preventDefault();
+
+    const newErrors = {};
+
+    if (!formData.university) newErrors.university = "الجامعة/الكلية مطلوبة";
+    else if (!formData.academic_major)
+      newErrors.academic_major = "التخصص الجامعي مطلوب";
+    else if (!formData.specific_major)
+      newErrors.specific_major = "التخصص المهاري مطلوب";
+    else if (!formData.graduation_year)
+      newErrors.graduation_year = "سنة التخرج مطلوبة";
+    else if (formData.phone && !/^\d{7,9}$/.test(formData.phone)) {
+      newErrors.phone = "رقم الهاتف غير صحيح";
+    } else if (selectedSkills.length === 0) {
+      newErrors.skills = "الرجاء إضافة مهارة واحدة على الأقل";
+    }
+
+    setErrorMsg(newErrors);
+
+    if (Object.keys(newErrors).length > 0) return;
+
+    setSubmitting(true);
+
+    try {
+      await updateStudentProfile({
+        name: formData.name,
+        university: formData.university,
+        academic_major: formData.academic_major,
+        specific_major: formData.specific_major,
+        graduation_year: formData.graduation_year,
+        phone: formData.phone ? `${formData.phone_code}${formData.phone}` : "",
+      });
+
+      await Promise.all(
+        selectedSkills.map((skill) =>
+          addStudentSkill({ skill_id: skill.id, proficiency: "beginner" }),
+        ),
+      );
+
+      navigate("/student/matching");
+    } catch (error) {
+      console.log("فشل حفظ البيانات", error);
+      setErrorMsg({
+        submit: error.message || "حدث خطأ أثناء الحفظ، حاول مرة أخرى",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="background-image"></div>
+
+      <main
+        className={`signin-page ${currentStep === 1 ? "" : "resize-height"}`}
+      >
+        <HeroAuthForm isProfile={true} currentStep={currentStep} />
+
+        <section className="signin-section">
+          <div className="signin-container">
+            <div className="signin-content">
+              <img src={logo} alt="GoTrainee Logo" className="profile-logo" />
+
+              <StepIndicator currentStep={currentStep} steps={STEPS} />
+
+              <h1 className="animate-element delay-100 profile-step-title">
+                إكمال الملف الشخصي للطالب <span>{formData.email}</span>
+              </h1>
+
+              {currentStep === 1 && (
+                <form
+                  id="studentProfileStep1"
+                  className="signin-form"
+                  onSubmit={handleNext}
+                >
+                  <InputFileds
+                    label={"البريد الإلكتروني"}
+                    icon={<CiLock className="input-icon" />}
+                    type={"email"}
+                    placeholder={"student@iugaza.edu.ps"}
+                    name={"email"}
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={true}
+                  />
+
+                  <InputFileds
+                    label={"الاسم الكامل"}
+                    icon={<CiUser className="input-icon" />}
+                    type={"text"}
+                    placeholder={"أحمد محمد النجار"}
+                    name={"name"}
+                    value={formData.name}
+                    onChange={handleChange}
+                    error={errorMsg.name}
+                  />
+
+                  <div className="form-step-actions">
+                    <button
+                      className="signin-button next-button animate-element delay-600"
+                      type="submit"
+                    >
+                      التالي
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {currentStep === 2 && (
+                <form
+                  id="studentProfileStep2"
+                  className="signin-form"
+                  onSubmit={handleSubmitStep2}
+                >
+                  <SelectField
+                    label="الجامعة / الكلية"
+                    icon={<FaUniversity className="input-icon" />}
+                    name="university"
+                    value={formData.university}
+                    onChange={handleChange}
+                    options={UNIVERSITIES}
+                    error={errorMsg.university}
+                    placeholder="اختر جامعتك أو كليتك"
+                  />
+
+                  <div className="major">
+                    {" "}
+                    <SelectField
+                      label="التخصص الجامعي"
+                      icon={<FaGraduationCap className="input-icon" />}
+                      name="academic_major"
+                      value={formData.academic_major}
+                      onChange={handleChange}
+                      options={ACADEMIC_MAJORS}
+                      error={errorMsg.academic_major}
+                      placeholder="اختر تخصصك الجامعي"
+                    />
+                    <SelectField
+                      label="التخصص الفرعي"
+                      icon={<FaGraduationCap className="input-icon" />}
+                      name="specific_major"
+                      value={formData.specific_major}
+                      onChange={handleChange}
+                      options={SPECIFIC_MAJOR}
+                      error={errorMsg.specific_major}
+                      placeholder="اختر التخصص الذي تتقنه"
+                    />
+                  </div>
+
+                  <SelectField
+                    label="سنة التخرج / المتوقعة"
+                    icon={<FaCalendarAlt className="input-icon" />}
+                    name="graduation_year"
+                    value={formData.graduation_year}
+                    onChange={handleChange}
+                    options={getGraduationYears()}
+                    error={errorMsg.graduation_year}
+                    placeholder=" سنة التخرج "
+                  />
+                  <PhoneField
+                    label="رقم الهاتف المحمول"
+                    name="phone"
+                    value={formData.phone}
+                    phoneCode={formData.phone_code}
+                    onChange={handleChange}
+                    onCodeChange={handlePhoneCodeChange}
+                    error={errorMsg.phone}
+                  />
+
+                  <SkillsSelect
+                    label="المهارات"
+                    selectedSkills={selectedSkills}
+                    onChange={setSelectedSkills}
+                    error={errorMsg.skills}
+                  />
+
+                  {errorMsg.submit && (
+                    <span className="error-message">{errorMsg.submit}</span>
+                  )}
+
+                  <div className="form-step-actions">
+                    <button
+                      type="button"
+                      className="signin-button prev-button animate-element delay-600"
+                      onClick={handlePrevious}
+                      disabled={submitting}
+                    >
+                      السابق
+                    </button>
+                    <button
+                      className="signin-button next-button animate-element delay-600"
+                      type="submit"
+                      disabled={submitting}
+                    >
+                      {submitting ? "يتم الحفظ" : "إنهاء"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
+    </>
+  );
+}
+
+export default StudentProfile;
