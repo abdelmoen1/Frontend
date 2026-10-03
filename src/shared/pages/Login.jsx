@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "../services/authService";
+import { useAuth } from "../auth/useAuth";
 import { MdOutlineMail } from "react-icons/md";
 import { CiLock } from "react-icons/ci";
-import HeroAuthForm from "../components/common/HeroAuthForm";
-import InputFileds from "../components/common/InputFileds";
-import "../AuthForm.css";
+import HeroAuthForm from "../components/HeroAuthForm";
+import InputFileds from "../components/InputFileds";
+import "../styles/AuthForm.css";
 
 function Login() {
   const navigate = useNavigate();
+  const { setAuthenticatedUser } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -45,10 +47,17 @@ function Login() {
     setLoading(true);
     try {
       const result = await login(formData);
-      const role = result.user?.role;
-      navigate(
-        role === "student" ? "/student/profile" : "/organization/profile",
-      );
+      setAuthenticatedUser(result.user);
+      const destination = result.user.role === "student"
+        ? result.user.onboarding_completed
+          ? "/loading"
+          : "/student/onboarding"
+        : result.user.role === "organization"
+          ? result.user.onboarding_completed
+            ? "/loading"
+            : "/organization/onboarding"
+          : "/";
+      navigate(destination, { replace: true });
     } catch (error) {
       console.log(error);
     } finally {

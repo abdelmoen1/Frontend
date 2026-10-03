@@ -1,0 +1,1 @@
+export { StudentOnboardingRoute } from "./RouteGuards";

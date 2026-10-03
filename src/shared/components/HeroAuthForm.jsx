@@ -5,6 +5,7 @@ function HeroAuthForm({ isStudent, isLogin, isProfile, currentStep, mirrored = f
     }
     if (isLogin) return "login-image";
     if (isStudent === "student") return "student-image";
+    if(isStudent === 'orga') return "onboardingorga";
     return "orga-image";
   };
 

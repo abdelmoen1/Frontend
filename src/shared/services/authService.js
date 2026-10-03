@@ -70,3 +70,41 @@ export const register = async (formData) => {
     throw error;
   }
 };
+
+export const getCurrentUser = async () => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${BASE_URL}/me`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    }
+    throw new Error(data.message || 'Failed to fetch current user.');
+  }
+
+  localStorage.setItem('auth_user', JSON.stringify(data.user));
+  return data.user;
+};
+
+export const logoutUser = async () => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${BASE_URL}/logout`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to log out on the server.');
+  }
+};

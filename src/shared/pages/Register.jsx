@@ -1,16 +1,18 @@
 import { Link } from "react-router-dom";
-import HeroAuthForm from "../components/common/HeroAuthForm";
-import "../AuthForm.css";
+import HeroAuthForm from "../components/HeroAuthForm";
+import "../styles/AuthForm.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineMail } from "react-icons/md";
 import { CiLock, CiUser } from "react-icons/ci";
 import { FaRegBuilding } from "react-icons/fa";
-import InputFileds from "../components/common/InputFileds";
+import InputFileds from "../components/InputFileds";
 import { register } from "../services/authService";
+import { useAuth } from "../auth/useAuth";
 
 function Register() {
   const navigate = useNavigate();
+  const { setAuthenticatedUser } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -175,10 +177,17 @@ function Register() {
         role: selectedRole === "orga" ? "organization" : "student",
       };
       const result = await register(payload);
-      console.log(result);
-      navigate(
-        selectedRole === "student" ? "/student/profile" : "/organization/profile"
-      );
+      setAuthenticatedUser(result.user);
+      const destination = result.user.role === "student"
+        ? result.user.onboarding_completed
+          ? "/loading"
+          : "/student/onboarding"
+        : result.user.role === "organization"
+          ? result.user.onboarding_completed
+            ? "/loading"
+            : "/organization/onboarding"
+          : "/";
+      navigate(destination, { replace: true });
     } catch (error) {
       console.log(error);
     } finally {

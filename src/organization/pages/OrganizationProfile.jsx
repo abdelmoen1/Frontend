@@ -4,7 +4,8 @@ import {
 } from "../services/organizationService";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useAuth } from "../../shared/auth/useAuth";
+import HeroAuthForm from "../../shared/components/HeroAuthForm";
 import { CiLock } from "react-icons/ci";
 import {
   FaRegBuilding,
@@ -14,13 +15,13 @@ import {
   FaUserTie,
 } from "react-icons/fa";
 
-import InputFileds from "../components/common/InputFileds";
-import TextareaField from "../components/common/TextareaField";
-import StepIndicator from "../components/common/StepIndicator";
-import SelectField from "../components/common/SelectField";
+import InputFileds from "../../shared/components/InputFileds";
+import TextareaField from "../../shared/components/TextareaField";
+import StepIndicator from "../../shared/components/StepIndicator";
+import SelectField from "../../shared/components/SelectField";
 
-import "../AuthForm.css";
-import logo from "../assets/logo.svg";
+import "../../shared/styles/AuthForm.css";
+import logo from "../../shared/assets/logo.svg";
 
 import { ORGANIZATION_TYPES } from "../constants/organizationOptions";
 
@@ -28,6 +29,7 @@ const STEPS = ["البيانات الأساسية", "بيانات الشركة"]
 
 function OrganizationProfile() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -56,7 +58,8 @@ function OrganizationProfile() {
           organization_name: data.organization_name || "",
           organization_type: data.organization_type || "",
           industry: data.industry || "",
-          organization_description: data.description || data.organization_description || "",
+          organization_description:
+            data.description || data.organization_description || "",
           location: data.location || "",
           website: data.website || "",
           contact_person: data.contact_person || "",
@@ -117,7 +120,8 @@ function OrganizationProfile() {
 
     const newErrors = {};
 
-    if (!formData.organization_type) newErrors.organization_type = "نوع الشركة مطلوب";
+    if (!formData.organization_type)
+      newErrors.organization_type = "نوع الشركة مطلوب";
     if (!formData.industry) newErrors.industry = "مجالات الشركة مطلوبة";
     if (!formData.organization_description)
       newErrors.organization_description = "وصف الشركة مطلوب";
@@ -139,10 +143,13 @@ function OrganizationProfile() {
         website: formData.website,
         contact_person: formData.contact_person,
       });
-      navigate("/");
+      await refreshUser();
+      navigate("/loading", { replace: true });
     } catch (error) {
       console.log("فشل حفظ بيانات المؤسسة:", error);
-      setErrorMsg({ submit: error.message || "حدث خطأ أثناء الحفظ، حاول مرة أخرى" });
+      setErrorMsg({
+        submit: error.message || "حدث خطأ أثناء الحفظ، حاول مرة أخرى",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -153,6 +160,7 @@ function OrganizationProfile() {
       <div className="background-image"></div>
 
       <main className="signin-page no-hero">
+        <HeroAuthForm isProfile={false} isStudent={'orga'} currentStep={currentStep} />
         <section className="signin-section">
           <div className="signin-container">
             <div className="signin-content">

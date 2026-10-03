@@ -1,23 +1,25 @@
 import {
-  getStudentProfile,
-  updateStudentProfile,
+  getStudentOnboarding,
+  updateStudentOnboarding,
   addStudentSkill,
+  completeStudentOnboarding,
 } from "../services/studentService";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../shared/auth/useAuth";
 
 import { CiLock, CiUser } from "react-icons/ci";
 import { FaUniversity, FaGraduationCap, FaCalendarAlt } from "react-icons/fa";
 
-import HeroAuthForm from "../components/common/HeroAuthForm";
-import InputFileds from "../components/common/InputFileds";
-import StepIndicator from "../components/common/StepIndicator";
-import SelectField from "../components/common/SelectField";
-import PhoneField, { COUNTRY_CODES } from "../components/common/PhoneField";
-import SkillsSelect from "../components/common/SkillsSelect";
+import HeroAuthForm from "../../shared/components/HeroAuthForm";
+import InputFileds from "../../shared/components/InputFileds";
+import StepIndicator from "../../shared/components/StepIndicator";
+import SelectField from "../../shared/components/SelectField";
+import PhoneField, { COUNTRY_CODES } from "../../shared/components/PhoneField";
+import SkillsSelect from "../components/SkillsSelect";
 
-import "../AuthForm.css";
-import logo from "../assets/logo.svg";
+import "../../shared/styles/AuthForm.css";
+import logo from "../../shared/assets/logo.svg";
 
 import {
   UNIVERSITIES,
@@ -43,8 +45,9 @@ function splitPhone(fullPhone) {
   return { phone_code: "+970", phone: fullPhone };
 }
 
-function StudentProfile() {
+function StudentOnboarding() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +69,7 @@ function StudentProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await getStudentProfile();
+        const data = await getStudentOnboarding();
         const { phone_code, phone } = splitPhone(data.phone);
 
         setFormData((prev) => ({
@@ -144,14 +147,15 @@ function StudentProfile() {
 
     const newErrors = {};
 
-    if (!formData.university) newErrors.university = "الجامعة/الكلية مطلوبة";
-    else if (!formData.academic_major)
+    if (!formData.university) {
+      newErrors.university = "الجامعة/الكلية مطلوبة";
+    } else if (!formData.academic_major) {
       newErrors.academic_major = "التخصص الجامعي مطلوب";
-    else if (!formData.specific_major)
-      newErrors.specific_major = "التخصص المهاري مطلوب";
-    else if (!formData.graduation_year)
+    } else if (!formData.specific_major) {
+      newErrors.specific_major = "التخصص الجامعي مطلوب";
+    } else if (!formData.graduation_year) {
       newErrors.graduation_year = "سنة التخرج مطلوبة";
-    else if (formData.phone && !/^\d{7,9}$/.test(formData.phone)) {
+    } else if (formData.phone && !/^\d{7,9}$/.test(formData.phone)) {
       newErrors.phone = "رقم الهاتف غير صحيح";
     } else if (selectedSkills.length === 0) {
       newErrors.skills = "الرجاء إضافة مهارة واحدة على الأقل";
@@ -159,31 +163,35 @@ function StudentProfile() {
 
     setErrorMsg(newErrors);
 
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     setSubmitting(true);
+    setErrorMsg({});
 
     try {
-      await updateStudentProfile({
-        name: formData.name,
+      await updateStudentOnboarding({
         university: formData.university,
         academic_major: formData.academic_major,
         specific_major: formData.specific_major,
         graduation_year: formData.graduation_year,
-        phone: formData.phone ? `${formData.phone_code}${formData.phone}` : "",
+        phone: formData.phone
+          ? `${formData.phone_code}${formData.phone}`
+          : null,
       });
 
       await Promise.all(
-        selectedSkills.map((skill) =>
-          addStudentSkill({ skill_id: skill.id, proficiency: "beginner" }),
-        ),
+        selectedSkills.map((skill) => addStudentSkill(skill.id)),
       );
-
-      navigate("/student/matching");
+      await completeStudentOnboarding();
+      await refreshUser();
+      navigate("/loading", { replace: true });
     } catch (error) {
-      console.log("فشل حفظ البيانات", error);
+      console.error("Failed to save student profile:", error);
+
       setErrorMsg({
-        submit: error.message || "حدث خطأ أثناء الحفظ، حاول مرة أخرى",
+        submit: error.message || "حدث خطأ أثناء حفظ البيانات، حاول مرة أخرى",
       });
     } finally {
       setSubmitting(false);
@@ -348,4 +356,4 @@ function StudentProfile() {
   );
 }
 
-export default StudentProfile;
+export default StudentOnboarding;

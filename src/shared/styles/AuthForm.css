@@ -34,7 +34,7 @@ input {
 }
 
 .background-image {
-  background-image: url("./assets/login_hero_image.jpg");
+  background-image: url("../assets/login_hero_image.jpg");
   background-repeat: no-repeat;
   background-size: cover;
   filter: blur(8px);
@@ -492,15 +492,19 @@ option {
 }
 
 .student-image {
-  background-image: url("./assets/student_register.png");
+  background-image: url("../../student/assets/student_register.png");
 }
 
 .orga-image {
-  background-image: url("./assets/organization_register.jpg");
+  background-image: url("../../organization/assets/organization_register.jpg");
 }
 
 .login-image {
-  background-image: url("./assets/login_hero_image.jpg");
+  background-image: url("../assets/login_hero_image.jpg");
+}
+
+.onboardingorga{
+  background-image: url("../../organization/assets/onboardingorga.png");
 }
 
 .hero-overlay {
@@ -838,6 +842,7 @@ option {
   justify-content: center;
   gap: 10px;
   margin-bottom: 4px;
+  direction: rtl;
 }
 
 .step-indicator-item {
@@ -893,11 +898,11 @@ option {
    Profile Hero Image
 ================================ */
 .profile-image {
-  background-image: url("./assets/student_profile.png");
+  background-image: url("../../student/assets/student_profile.png");
 }
 
 .profile-image-step2 {
-  background-image: url("./assets/student_profile2.png");
+  background-image: url("../../student/assets/student_profile2.png");
 }
 .profile-step-title {
   font-weight: 700;
@@ -936,7 +941,6 @@ body:has(.profile-logo) {
 
   display: flex;
   flex-direction: row;
-  direction: rtl;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -976,6 +980,7 @@ body:has(.profile-logo) {
   flex-direction: column;
   align-items: stretch;
   gap: 0;
+  direction: rtl;
 }
 /*
    LOGO*/
@@ -1132,6 +1137,7 @@ body:has(.profile-logo) {
 
 .signin-page:has(.profile-logo) .glass-input-wrapper textarea::placeholder {
   color: #a8b1bf;
+  font-size: 14px;
 }
 .signin-page:has(.profile-logo) .select-field-wrapper {
   display: flex;
@@ -1249,8 +1255,8 @@ body:has(.profile-logo) {
 /* الخلفية */
 body:has(.profile-logo) .background-image {
   background-image: linear-gradient(
-    90deg,
-    rgba(146, 195, 255, 0.25) 0%,
+    236deg,
+    rgb(146 195 255 / 26%) 0%,
     rgba(255, 255, 255, 0) 75%
   );
   filter: none;
@@ -1263,7 +1269,11 @@ body:has(.profile-logo) .background-image {
 /* <<<<<<< HEAD */
 body:has(#studentProfileStep2) .background-image,
 body:has(#organizationProfileStep2) .background-image {
-  background-image: linear-gradient(238deg, #92c3ff 9%, #ffffff 47%);
+  background-image: linear-gradient(
+    236deg,
+    rgb(146 195 255 / 26%) 0%,
+    rgba(255, 255, 255, 0) 75%
+  );
   filter: none;
   opacity: 1;
 }
@@ -1462,173 +1472,3 @@ body:has(#organizationProfileStep2) .background-image {
   margin: 0 !important;
   margin-top: -10px !important;
 }
-/* <<<<<<< HEAD */
-/* ======= */
-
-.matching-page {
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
-  min-height: 100dvh;
-  width: 100%;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-
-  padding: 48px 72px;
-  text-align: center;
-  direction: rtl;
-
-  background:
-    radial-gradient(
-      circle 5px at 8% 78%,
-      #f6c453 0%,
-      #f6c453 100%,
-      transparent 100%
-    ),
-    radial-gradient(
-      circle 4px at 28% 74%,
-      #cbd5e1 0%,
-      #cbd5e1 100%,
-      transparent 100%
-    ),
-    radial-gradient(
-      circle 6px at 62% 80%,
-      #152f52 0%,
-      #152f52 100%,
-      transparent 100%
-    ),
-    radial-gradient(
-      circle 4px at 78% 76%,
-      #92c3ff 0%,
-      #92c3ff 100%,
-      transparent 100%
-    ),
-    linear-gradient(180deg, #eaf3ff 0%, #ffffff 55%);
-
-  background-repeat: no-repeat;
-}
-
-.matching-page::before,
-.matching-page::after {
-  content: "";
-  position: absolute;
-  width: 130%;
-  height: 420px;
-  border-radius: 45%;
-  z-index: 0;
-}
-
-.matching-page::before {
-  left: -10%;
-  bottom: -220px;
-  background: #fbeecb;
-}
-
-.matching-page::after {
-  left: -15%;
-  bottom: -260px;
-  background: #dceeff;
-}
-
-.matching-page > * {
-  position: relative;
-  z-index: 1;
-}
-
-.matching-logo {
-  display: block;
-  width: 96px;
-  height: auto;
-  position: absolute;
-  top: 48px;
-  right: 72px;
-  margin: 0;
-}
-
-.matching-title {
-  margin: 170px 0 20px;
-  font-size: clamp(28px, 3.2vw, 44px);
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.3;
-}
-
-.matching-description {
-  margin: 0 0 40px;
-  max-width: 640px;
-  font-size: 16px;
-  line-height: 1.8;
-  color: #64748b;
-}
-
-.matching-progress {
-  position: relative;
-  width: 100%;
-  max-width: 560px;
-  height: 6px;
-  border-radius: 999px;
-  background: #dbe4f0;
-  margin-bottom: 20px;
-  overflow: hidden;
-}
-
-.matching-progress-bar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: 55%;
-  border-radius: 999px;
-  background: #152f52;
-  animation: matchingProgressGrow 3s ease forwards;
-}
-
-@keyframes matchingProgressGrow {
-  from {
-    width: 8%;
-  }
-  to {
-    width: 92%;
-  }
-}
-
-.matching-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 14px;
-  color: #64748b;
-}
-
-.matching-status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #f6a623;
-  flex: 0 0 auto;
-}
-
-/* ================================
-   Responsive
-================================ */
-@media (max-width: 767px) {
-  .matching-page {
-    padding: 32px 24px;
-  }
-
-  .matching-logo {
-    width: 72px;
-    top: 24px;
-    right: 24px;
-  }
-
-  .matching-title {
-    margin-top: 120px;
-  }
-}
-/* >>>>>>> 18ed9ba4e495a281857dd6e041615c491f22f17b */

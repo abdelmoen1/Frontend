@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 
-function PublicLayout() {
+function LandingPage() {
   return (
     <>
       <Navbar />
@@ -12,4 +12,4 @@ function PublicLayout() {
   );
 }
 
-export default PublicLayout;
+export default LandingPage;
