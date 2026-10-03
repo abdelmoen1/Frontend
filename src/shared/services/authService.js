@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.PROD ? "/api" : import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 /**
   دالة تسجيل الدخول وإرسال البيانات للـ API
@@ -6,11 +6,13 @@ const BASE_URL = import.meta.env.PROD ? "/api" : import.meta.env.VITE_API_BASE_U
   @returns {Promise<Object>} 
  */
 export const login = async (credentials) => {
+  console.log(BASE_URL);
+
   try {
     const response = await fetch(`${BASE_URL}/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         email: credentials.email,
@@ -21,11 +23,11 @@ export const login = async (credentials) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to sign in. Please try again.');
+      throw new Error(data.message || "Failed to sign in. Please try again.");
     }
 
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
+    localStorage.setItem("auth_token", data.token);
+    localStorage.setItem("auth_user", JSON.stringify(data.user));
 
     return data;
   } catch (error) {
@@ -41,7 +43,7 @@ export const login = async (credentials) => {
 export const register = async (formData) => {
   try {
     const payload = {
-      name: formData.role === 'student' ? formData.name : formData.orgName,
+      name: formData.role === "student" ? formData.name : formData.orgName,
       email: formData.email,
       password: formData.password,
       password_confirmation: formData.password_confirmation,
@@ -49,9 +51,9 @@ export const register = async (formData) => {
     };
 
     const response = await fetch(`${BASE_URL}/register`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
@@ -59,11 +61,13 @@ export const register = async (formData) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to create account. Please try again.');
+      throw new Error(
+        data.message || "Failed to create account. Please try again.",
+      );
     }
 
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
+    localStorage.setItem("auth_token", data.token);
+    localStorage.setItem("auth_user", JSON.stringify(data.user));
 
     return data;
   } catch (error) {
@@ -72,10 +76,10 @@ export const register = async (formData) => {
 };
 
 export const getCurrentUser = async () => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem("auth_token");
   const response = await fetch(`${BASE_URL}/me`, {
     headers: {
-      Accept: 'application/json',
+      Accept: "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
@@ -84,27 +88,27 @@ export const getCurrentUser = async () => {
 
   if (!response.ok) {
     if (response.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
     }
-    throw new Error(data.message || 'Failed to fetch current user.');
+    throw new Error(data.message || "Failed to fetch current user.");
   }
 
-  localStorage.setItem('auth_user', JSON.stringify(data.user));
+  localStorage.setItem("auth_user", JSON.stringify(data.user));
   return data.user;
 };
 
 export const logoutUser = async () => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem("auth_token");
   const response = await fetch(`${BASE_URL}/logout`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      Accept: 'application/json',
+      Accept: "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to log out on the server.');
+    throw new Error("Failed to log out on the server.");
   }
 };
