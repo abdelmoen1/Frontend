@@ -1,21 +1,19 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import {
-  FaTh,
-  FaSignOutAlt,
-  FaSearch,
-  FaBell,
-} from "react-icons/fa";
+import { FaSignOutAlt, FaSearch, FaBell, FaUserCircle } from "react-icons/fa";
+import { Building2, LayoutDashboard, Plus, UserRound } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import logo from "../assets/logo.svg";
 import "../styles/DashboardMenu.css";
 
 function DashboardMenu() {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isOrganizationProfile = pathname.startsWith("/organization/profile");
   const userName = user?.name?.trim() || "";
   const dashboardPath =
     user?.role === "organization"
@@ -45,6 +43,15 @@ function DashboardMenu() {
         <p className="sidebar-section-label">القائمة الرئيسية</p>
 
         <nav className="sidebar-nav">
+          {user?.role === "organization" && (
+            <NavLink
+              to="/organization/requests/new"
+              className="sidebar-create-project"
+            >
+              <Plus size={16} aria-hidden="true" />
+              <span>مشروع جديد</span>
+            </NavLink>
+          )}
           <NavLink
             to={dashboardPath}
             end
@@ -53,10 +60,49 @@ function DashboardMenu() {
             }
           >
             <span className="sidebar-link-icon">
-              <FaTh />
+              <LayoutDashboard size={18} className="text-gray-700" />
             </span>
             <span>لوحة التحكم</span>
           </NavLink>
+          {user?.role === "student" && (
+            <NavLink
+              to="/student/profile"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <FaUserCircle />
+              </span>
+              <span>الملف الشخصي</span>
+            </NavLink>
+          )}
+          {user?.role === "organization" && (
+            <NavLink
+              to="/organization/requests"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <Building2 size={18} aria-hidden="true" />
+              </span>
+              <span>طلبات المشاريع</span>
+            </NavLink>
+          )}
+          {user?.role === "organization" && (
+            <NavLink
+              to="/organization/profile"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <UserRound size={18} aria-hidden="true" />
+              </span>
+              <span>الملف التعريفي</span>
+            </NavLink>
+          )}
         </nav>
 
         <button
@@ -71,26 +117,34 @@ function DashboardMenu() {
       </aside>
 
       <div className="app-main">
-        <header className="app-topbar">
-          <div className="topbar-search">
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="ابحث عن الدورات، التدريبات، المشرفين..."
-            />
-            <FaSearch className="topbar-search-icon" />
-          </div>
+        {pathname !== "/student/profile" && (
+          <header
+            className={`app-topbar ${isOrganizationProfile ? "app-topbar-profile" : ""}`}
+          >
+            {!isOrganizationProfile && (
+              <div className="topbar-search">
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="ابحث عن الدورات، التدريبات، المشرفين..."
+                />
+                <FaSearch className="topbar-search-icon" />
+              </div>
+            )}
 
-          <button className="topbar-bell" aria-label="الإشعارات">
-            <FaBell />
-          </button>
+            <button className="topbar-bell" aria-label="الإشعارات">
+              <FaBell />
+            </button>
 
-          <div className="topbar-user">
-            <div className="topbar-avatar">{userName.charAt(0)}</div>
-            <span className="topbar-username">{userName}</span>
-          </div>
-        </header>
+            {!isOrganizationProfile && (
+              <div className="topbar-user">
+                <div className="topbar-avatar">{userName.charAt(0)}</div>
+                <span className="topbar-username">{userName}</span>
+              </div>
+            )}
+          </header>
+        )}
 
         <main className="app-content">
           <Outlet />

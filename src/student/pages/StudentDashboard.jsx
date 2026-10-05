@@ -20,7 +20,6 @@ import "../styles/Dashboard.css";
 const PROFILE_FIELDS = [
   "university",
   "academic_major",
-  "specific_major",
   "graduation_year",
   "phone",
 ];
@@ -35,6 +34,61 @@ function calcCompletion(profile, skillsCount) {
 
   return Math.round(
     ((filledFields + (skillsCount > 0 ? 1 : 0)) / totalCriteria) * 100,
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div
+      className="student-dashboard dashboard-skeleton"
+      dir="rtl"
+      aria-busy="true"
+      aria-label="جارٍ تحميل لوحة التحكم"
+    >
+      <section className="dashboard-skeleton-banner">
+        <div className="dashboard-skeleton-copy">
+          <span className="skeleton-block skeleton-heading" />
+          <span className="skeleton-block skeleton-description" />
+          <span className="skeleton-block skeleton-action" />
+        </div>
+        <span className="skeleton-block skeleton-illustration" />
+      </section>
+
+      <section className="dashboard-section">
+        <div className="dashboard-section-header">
+          <span className="skeleton-block skeleton-section-title" />
+        </div>
+        <div className="stats-grid">
+          {Array.from({ length: 3 }, (_, index) => (
+            <article className="dashboard-skeleton-stat" key={index}>
+              <span className="skeleton-block skeleton-stat-label" />
+              <span className="skeleton-block skeleton-stat-value" />
+              <span className="skeleton-block skeleton-stat-caption" />
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <div className="dashboard-section-header">
+          <span className="skeleton-block skeleton-section-title" />
+        </div>
+        <div className="dashboard-skeleton-card">
+          <span className="skeleton-block skeleton-card-icon" />
+          <span className="skeleton-block skeleton-card-line" />
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <div className="dashboard-section-header">
+          <span className="skeleton-block skeleton-section-title" />
+        </div>
+        <div className="dashboard-skeleton-card dashboard-skeleton-card-compact">
+          <span className="skeleton-block skeleton-card-icon" />
+          <span className="skeleton-block skeleton-card-line" />
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -83,23 +137,25 @@ function Dashboard() {
     };
   }, []);
 
+  if (isLoading) return <DashboardSkeleton />;
+
   const completion = calcCompletion(profile, skills.length);
   const stats = [
     {
       label: "المهارات المسجلة",
-      value: isLoading ? "—" : skills.length,
+      value: skills.length,
       detail: "في ملفك الشخصي",
       icon: <FaBookOpen />,
     },
     {
       label: "اكتمال الملف الشخصي",
-      value: isLoading ? "—" : `${completion}%`,
+      value: `${completion}%`,
       detail: "من بياناتك المسجلة",
       icon: <FaRegLightbulb />,
     },
     {
       label: "سنة التخرج",
-      value: isLoading ? "—" : profile?.graduation_year || "—",
+      value: profile?.graduation_year || "—",
       detail: "حسب ملفك الشخصي",
       icon: <FaGraduationCap />,
     },

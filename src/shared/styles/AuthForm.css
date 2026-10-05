@@ -503,7 +503,7 @@ option {
   background-image: url("../assets/login_hero_image.jpg");
 }
 
-.onboardingorga{
+.onboardingorga {
   background-image: url("../../organization/assets/onboardingorga.png");
 }
 
@@ -1399,12 +1399,14 @@ body:has(#organizationProfileStep2) .background-image {
   gap: 12px;
   justify-content: flex-end;
 }
-.signin-page:has(.profile-logo) .form-step-actions:has(.prev-button) {
+.signin-page:has(.profile-logo) .form-step-actions:has(.prev-button),
+.signin-page:has(.profile-logo) .form-step-actions:has(.cancel-button) {
   justify-content: space-between;
 }
 
 .signin-page:has(.profile-logo) .next-button,
-.signin-page:has(.profile-logo) .prev-button {
+.signin-page:has(.profile-logo) .prev-button,
+.signin-page:has(.profile-logo) .cancel-button {
   width: fit-content;
   height: 48px;
   min-width: 210px;
@@ -1417,13 +1419,15 @@ body:has(#organizationProfileStep2) .background-image {
   background: #021853;
 }
 
-.signin-page:has(.profile-logo) .prev-button {
+.signin-page:has(.profile-logo) .prev-button,
+.signin-page:has(.profile-logo) .cancel-button {
   background: #ffffff;
   color: #152f52;
   border: 1.5px solid #152f52;
   box-shadow: none;
 }
-.signin-page:has(.profile-logo) .prev-button:hover {
+.signin-page:has(.profile-logo) .prev-button:hover,
+.signin-page:has(.profile-logo) .cancel-button:hover {
   background-color: #0f27472e;
 }
 .signin-page:has(.profile-logo) .phone-field-row {
@@ -1460,12 +1464,6 @@ body:has(#organizationProfileStep2) .background-image {
   .phone-field-row.has-error
   .glass-input-wrapper {
   border-color: var(--error);
-}
-
-.major {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
 }
 
 .resize-height {

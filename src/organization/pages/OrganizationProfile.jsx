@@ -115,6 +115,10 @@ function OrganizationProfile() {
     setCurrentStep(1);
   };
 
+  const handleCancel = () => {
+    navigate("/", { replace: true });
+  };
+
   const handleSubmitStep2 = async (e) => {
     e.preventDefault();
 
@@ -201,6 +205,13 @@ function OrganizationProfile() {
                   />
 
                   <div className="form-step-actions">
+                    <button
+                      className="signin-button cancel-button animate-element delay-600"
+                      type="button"
+                      onClick={handleCancel}
+                    >
+                      إلغاء
+                    </button>
                     <button
                       className="signin-button next-button animate-element delay-600"
                       type="submit"

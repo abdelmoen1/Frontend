@@ -24,7 +24,6 @@ import logo from "../../shared/assets/logo.svg";
 import {
   UNIVERSITIES,
   ACADEMIC_MAJORS,
-  SPECIFIC_MAJOR,
   getGraduationYears,
 } from "../constants/academicOptions";
 
@@ -57,7 +56,6 @@ function StudentOnboarding() {
     name: "",
     university: "",
     academic_major: "",
-    specific_major: "",
     graduation_year: "",
     phone: "",
     phone_code: "+970",
@@ -78,7 +76,6 @@ function StudentOnboarding() {
           name: data.name || "",
           university: data.university || "",
           academic_major: data.academic_major || "",
-          specific_major: data.specific_major || "",
           graduation_year: data.graduation_year || "",
           phone_code,
           phone,
@@ -142,6 +139,10 @@ function StudentOnboarding() {
     setCurrentStep(1);
   };
 
+  const handleCancel = () => {
+    navigate("/", { replace: true });
+  };
+
   const handleSubmitStep2 = async (e) => {
     e.preventDefault();
 
@@ -151,8 +152,6 @@ function StudentOnboarding() {
       newErrors.university = "الجامعة/الكلية مطلوبة";
     } else if (!formData.academic_major) {
       newErrors.academic_major = "التخصص الجامعي مطلوب";
-    } else if (!formData.specific_major) {
-      newErrors.specific_major = "التخصص الجامعي مطلوب";
     } else if (!formData.graduation_year) {
       newErrors.graduation_year = "سنة التخرج مطلوبة";
     } else if (formData.phone && !/^\d{7,9}$/.test(formData.phone)) {
@@ -174,7 +173,6 @@ function StudentOnboarding() {
       await updateStudentOnboarding({
         university: formData.university,
         academic_major: formData.academic_major,
-        specific_major: formData.specific_major,
         graduation_year: formData.graduation_year,
         phone: formData.phone
           ? `${formData.phone_code}${formData.phone}`
@@ -248,6 +246,13 @@ function StudentOnboarding() {
 
                   <div className="form-step-actions">
                     <button
+                      className="signin-button cancel-button animate-element delay-600"
+                      type="button"
+                      onClick={handleCancel}
+                    >
+                      إلغاء
+                    </button>
+                    <button
                       className="signin-button next-button animate-element delay-600"
                       type="submit"
                     >
@@ -274,29 +279,16 @@ function StudentOnboarding() {
                     placeholder="اختر جامعتك أو كليتك"
                   />
 
-                  <div className="major">
-                    {" "}
-                    <SelectField
-                      label="التخصص الجامعي"
-                      icon={<FaGraduationCap className="input-icon" />}
-                      name="academic_major"
-                      value={formData.academic_major}
-                      onChange={handleChange}
-                      options={ACADEMIC_MAJORS}
-                      error={errorMsg.academic_major}
-                      placeholder="اختر تخصصك الجامعي"
-                    />
-                    <SelectField
-                      label="التخصص الفرعي"
-                      icon={<FaGraduationCap className="input-icon" />}
-                      name="specific_major"
-                      value={formData.specific_major}
-                      onChange={handleChange}
-                      options={SPECIFIC_MAJOR}
-                      error={errorMsg.specific_major}
-                      placeholder="اختر التخصص الذي تتقنه"
-                    />
-                  </div>
+                  <SelectField
+                    label="التخصص الجامعي"
+                    icon={<FaGraduationCap className="input-icon" />}
+                    name="academic_major"
+                    value={formData.academic_major}
+                    onChange={handleChange}
+                    options={ACADEMIC_MAJORS}
+                    error={errorMsg.academic_major}
+                    placeholder="اختر تخصصك الجامعي"
+                  />
 
                   <SelectField
                     label="سنة التخرج / المتوقعة"

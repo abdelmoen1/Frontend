@@ -7,10 +7,13 @@ function TextareaField({
   onChange,
   error,
   disabled = false,
+  fullWidth = false,
 }) {
   return (
     <>
-      <div className="form-group animate-element delay-300">
+      <div
+        className={`form-group animate-element delay-300 ${fullWidth ? "full" : ""}`}
+      >
         <label htmlFor={name}>{label}</label>
         <div
           className={`glass-input-wrapper textarea-wrapper ${

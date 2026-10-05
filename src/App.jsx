@@ -2,8 +2,12 @@ import { Routes, Route } from "react-router-dom";
 import Login from "./shared/pages/Login";
 import Register from "./shared/pages/Register";
 import OrganizationProfile from "./organization/pages/OrganizationProfile";
+import OrganizationProfilePage from "./organization/pages/OrganizationProfilePage";
+import EditOrganizationProfile from "./organization/pages/EditOrganizationProfile";
 import OrganizationDashboard from "./organization/pages/OrganizationDashboard";
+import ProjectDiscovery from "./organization/pages/ProjectDiscovery";
 import StudentDashboard from "./student/pages/StudentDashboard";
+import UpdateStudentProfile from "./student/pages/UpdateStudentProfile";
 import LoadingScreen from "./shared/pages/LoadingScreen";
 import LandingPage from "./shared/components/LandingPage";
 import StudentOnboarding from "./student/pages/StudentOnboarding";
@@ -43,6 +47,10 @@ function App() {
           <Route element={<StudentDashboardRoute />}>
             <Route element={<DashboardMenu />}>
               <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route
+                path="/student/profile"
+                element={<UpdateStudentProfile />}
+              />
             </Route>
           </Route>
 
@@ -60,8 +68,40 @@ function App() {
           <Route element={<OrganizationProfileRoute />}>
             <Route element={<DashboardMenu />}>
               <Route
+                path="/organization/profile"
+                element={<OrganizationProfilePage />}
+              />
+              <Route
+                path="/organization/profile/edit"
+                element={<EditOrganizationProfile />}
+              />
+              <Route
                 path="/organization/dashboard"
                 element={<OrganizationDashboard />}
+              />
+              <Route
+                path="/organization/requests"
+                element={<OrganizationDashboard showAll />}
+              />
+              <Route
+                path="/organization/requests/new"
+                element={<ProjectDiscovery mode="intro" />}
+              />
+              <Route
+                path="/organization/requests/:id"
+                element={<ProjectDiscovery mode="detail" />}
+              />
+              <Route
+                path="/organization/requests/:id/intake"
+                element={<ProjectDiscovery mode="intake" />}
+              />
+              <Route
+                path="/organization/requests/:id/proposal"
+                element={<ProjectDiscovery mode="proposal" />}
+              />
+              <Route
+                path="/organization/requests/:id/review"
+                element={<ProjectDiscovery mode="review" />}
               />
             </Route>
           </Route>

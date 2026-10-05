@@ -19,19 +19,6 @@ export const ACADEMIC_MAJORS = [
   "الهندسة الكهربائية",
   "أخرى",
 ];
-export const SPECIFIC_MAJOR = [
-  "هندسة الحاسوب",
-  "علوم الحاسوب",
-  "نظم المعلومات الإدارية",
-  "هندسة البرمجيات",
-  "الذكاء الاصطناعي وعلوم البيانات",
-  "أمن المعلومات",
-  "إدارة الأعمال",
-  "المحاسبة والتمويل",
-  "الهندسة الكهربائية",
-  "أخرى",
-];
-
 export const getGraduationYears = () => {
   const currentYear = new Date().getFullYear();
   const years = [];

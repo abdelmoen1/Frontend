@@ -4,6 +4,135 @@
   --dashboard-ink: #10253e;
   --dashboard-muted: #73849a;
   color: var(--dashboard-ink);
+  padding: 0 26px;
+  
+}
+
+.skeleton-block {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(220, 232, 240, 0.75) 25%,
+    rgba(245, 249, 251, 0.9) 50%,
+    rgba(220, 232, 240, 0.75) 75%
+  );
+  background-size: 200% 100%;
+  animation: dashboard-shimmer 1.4s ease-in-out infinite;
+}
+
+.dashboard-skeleton-banner {
+  position: relative;
+  display: flex;
+  min-height: 142px;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 22px 24px;
+  border-radius: 12px;
+  background: var(--dashboard-navy);
+}
+
+.dashboard-skeleton-copy {
+  display: flex;
+  width: min(70%, 490px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.skeleton-heading {
+  width: 55%;
+  height: 22px;
+}
+
+.skeleton-description {
+  width: 88%;
+  height: 12px;
+}
+
+.skeleton-action {
+  width: 120px;
+  height: 30px;
+  margin-top: 3px;
+}
+
+.skeleton-illustration {
+  width: 120px;
+  height: 80px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
+}
+
+.dashboard-skeleton .dashboard-section-header {
+  min-height: 23px;
+}
+
+.skeleton-section-title {
+  width: 145px;
+  height: 15px;
+}
+
+.dashboard-skeleton-stat {
+  min-width: 0;
+  padding: 12px 10px;
+  border: 1px solid #e2eaf0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.skeleton-stat-label {
+  width: 65%;
+  height: 11px;
+  margin-bottom: 10px;
+}
+
+.skeleton-stat-value {
+  width: 38%;
+  height: 22px;
+  margin-bottom: 8px;
+}
+
+.skeleton-stat-caption {
+  width: 52%;
+  height: 9px;
+}
+
+.dashboard-skeleton-card {
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e2eaf0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.dashboard-skeleton-card-compact {
+  min-height: 52px;
+}
+
+.skeleton-card-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.skeleton-card-line {
+  width: min(65%, 420px);
+  height: 12px;
+}
+
+@keyframes dashboard-shimmer {
+  to {
+    background-position: -200% 0;
+  }
 }
 
 .dashboard-banner {
@@ -263,6 +392,11 @@
 }
 
 @media (min-width: 1200px) {
+  .dashboard-skeleton-banner {
+    min-height: 160px;
+    padding: 24px 30px;
+  }
+
   .dashboard-banner {
     min-height: 160px;
     padding: 24px 30px;
