@@ -41,15 +41,6 @@ export const updateProjectRequest = (id, data) =>
     body: JSON.stringify(data),
   });
 
-export const getIntake = (id) =>
-  request(`${projectRequestsPath}/${id}/intake`);
-
-export const saveIntake = (id, data) =>
-  request(`${projectRequestsPath}/${id}/intake`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
 export const getNextDiscoveryQuestion = (id) =>
   request(`${projectRequestsPath}/${id}/next-question`, { method: "POST" });
 

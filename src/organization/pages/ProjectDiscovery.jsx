@@ -4,10 +4,9 @@ import { ArrowLeft, Check, LoaderCircle, Sparkles } from "lucide-react";
 import {
   approveProposal,
   createProjectRequest,
-  getIntake,
   getProjectRequest,
   requestRevision,
-  saveIntake,
+  updateProjectRequest,
 } from "../services/organizationService";
 import {
   CURRENT_PROCESS_OPTIONS,
@@ -108,13 +107,9 @@ function ProjectDiscovery({ mode }) {
 
     const load = async () => {
       try {
-        const result =
-          mode === "intake"
-            ? await getIntake(id)
-            : { project_request: await getProjectRequest(id), questions: [] };
+        const loaded = await getProjectRequest(id);
         if (!active) return;
 
-        const loaded = result.project_request;
         const savedAnswers = loaded.intake_data || {};
         setProject(loaded);
         setData((previous) => ({
@@ -187,11 +182,11 @@ function ProjectDiscovery({ mode }) {
     setFormErrors(nextErrors);
     if (Object.keys(nextErrors).length) return false;
 
-    const updated = await saveIntake(id, {
+    const updated = await updateProjectRequest(id, {
       title: data.title.trim(),
       problem_description: data.problem_description.trim(),
       current_process: data.current_process,
-      responses: { other_process: data.other_process },
+      intake_data: { other_process: data.other_process },
     });
     setProject(updated);
     return true;
@@ -208,7 +203,7 @@ function ProjectDiscovery({ mode }) {
     setFormErrors(nextErrors);
     if (Object.keys(nextErrors).length) return false;
 
-    const updated = await saveIntake(id, {
+    const updated = await updateProjectRequest(id, {
       target_users: data.target_users,
       desired_outcomes: data.desired_outcomes,
       existing_tools: data.existing_tools,
@@ -216,7 +211,10 @@ function ProjectDiscovery({ mode }) {
       priority: data.priority || null,
       budget_range: data.budget_range || null,
       special_requirements: data.special_requirements,
-      responses: { expected_outcome: data.expected_outcome, other_user: data.other_user },
+      intake_data: {
+        expected_outcome: data.expected_outcome,
+        other_user: data.other_user,
+      },
     });
     setProject(updated);
     return true;
@@ -248,7 +246,7 @@ function ProjectDiscovery({ mode }) {
       if (step === "problem") {
         if (!(await saveProblem())) return;
       } else if (step === "users") {
-        await saveIntake(id, {
+        await updateProjectRequest(id, {
           target_users: data.target_users,
           desired_outcomes: data.desired_outcomes,
           existing_tools: data.existing_tools,
@@ -256,7 +254,7 @@ function ProjectDiscovery({ mode }) {
           priority: data.priority || null,
           budget_range: data.budget_range || null,
           special_requirements: data.special_requirements,
-          responses: { expected_outcome: data.expected_outcome },
+          intake_data: { expected_outcome: data.expected_outcome },
         });
       }
       navigate("/organization/dashboard");
