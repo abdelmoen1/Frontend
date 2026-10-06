@@ -27,6 +27,7 @@ import {
   updateStudentProfile,
   updateStudentSkill,
 } from "../services/studentService";
+import { resolveMediaUrl } from "../../shared/utils/resolveMediaUrl";
 import "../styles/UpdateStudentProfile.css";
 
 const EMPTY_PROFILE = {
@@ -78,6 +79,12 @@ const normalizeProfile = (profile = {}) => {
   ]) {
     if (!Array.isArray(normalized[field])) normalized[field] = [];
   }
+
+  normalized.image_url = resolveMediaUrl(normalized.image_url);
+  normalized.portfolio = normalized.portfolio.map((project) => ({
+    ...project,
+    image_url: resolveMediaUrl(project.image_url),
+  }));
 
   return normalized;
 };
@@ -578,14 +585,17 @@ export default function UpdateStudentProfile() {
             {},
             selectedImage.file,
           );
-          setProfile((current) => ({
-            ...current,
-            image_url: updatedImage.image_url || current.image_url,
-          }));
-          savedProfileRef.current = {
+          setProfile((current) =>
+            normalizeProfile({
+              ...current,
+              image_url: updatedImage.image_url || current.image_url,
+            }),
+          );
+          savedProfileRef.current = normalizeProfile({
             ...savedProfileRef.current,
-            image_url: updatedImage.image_url || savedProfileRef.current.image_url,
-          };
+            image_url:
+              updatedImage.image_url || savedProfileRef.current.image_url,
+          });
           setSelectedImage(null);
           setNotice("تم حفظ التعديلات وتحديث الصورة الشخصية.");
         } catch (imageError) {
