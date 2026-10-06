@@ -1,11 +1,18 @@
-function HeroAuthForm({ isStudent, isLogin, isProfile, currentStep, mirrored = false }) {
+function HeroAuthForm({
+  isStudent,
+  isLogin,
+  isProfile,
+  isOrganizationOnboarding,
+  currentStep,
+  mirrored = false,
+}) {
   const getImageClass = () => {
+    if (isOrganizationOnboarding) return "onboardingorga";
     if (isProfile) {
       return currentStep === 2 ? "profile-image-step2" : "profile-image";
     }
     if (isLogin) return "login-image";
     if (isStudent === "student") return "student-image";
-    if(isStudent === 'orga') return "onboardingorga";
     return "orga-image";
   };
 

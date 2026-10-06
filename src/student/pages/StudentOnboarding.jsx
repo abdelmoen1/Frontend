@@ -46,7 +46,7 @@ function splitPhone(fullPhone) {
 
 function StudentOnboarding() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, logout } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -139,8 +139,14 @@ function StudentOnboarding() {
     setCurrentStep(1);
   };
 
-  const handleCancel = () => {
-    navigate("/", { replace: true });
+  const handleCancel = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Failed to logout on cancel:", error);
+    } finally {
+      navigate("/", { replace: true });
+    }
   };
 
   const handleSubmitStep2 = async (e) => {

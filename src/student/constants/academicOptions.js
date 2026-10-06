@@ -23,7 +23,7 @@ export const getGraduationYears = () => {
   const currentYear = new Date().getFullYear();
   const years = [];
   for (let y = currentYear; y <= currentYear + 6; y++) {
-    years.push(y);
+    years.push(String(y));
   }
   return years;
 };

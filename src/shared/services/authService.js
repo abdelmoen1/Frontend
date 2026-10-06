@@ -6,33 +6,28 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL;
   @returns {Promise<Object>} 
  */
 export const login = async (credentials) => {
-  console.log(BASE_URL);
+  const response = await fetch(`${BASE_URL}/login`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email: credentials.email,
+      password: credentials.password,
+    }),
+  });
 
-  try {
-    const response = await fetch(`${BASE_URL}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: credentials.email,
-        password: credentials.password,
-      }),
-    });
+  const data = await response.json();
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to sign in. Please try again.");
-    }
-
-    localStorage.setItem("auth_token", data.token);
-    localStorage.setItem("auth_user", JSON.stringify(data.user));
-
-    return data;
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to sign in. Please try again.");
   }
+
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("auth_user", JSON.stringify(data.user));
+
+  return data;
 };
 
 /**
@@ -41,38 +36,35 @@ export const login = async (credentials) => {
   @returns {Promise<Object>}
  */
 export const register = async (formData) => {
-  try {
-    const payload = {
-      name: formData.role === "student" ? formData.name : formData.orgName,
-      email: formData.email,
-      password: formData.password,
-      password_confirmation: formData.password_confirmation,
-      role: formData.role,
-    };
+  const payload = {
+    name: formData.role === "student" ? formData.name : formData.orgName,
+    email: formData.email,
+    password: formData.password,
+    password_confirmation: formData.password_confirmation,
+    role: formData.role,
+  };
 
-    const response = await fetch(`${BASE_URL}/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+  const response = await fetch(`${BASE_URL}/register`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Failed to create account. Please try again.",
-      );
-    }
-
-    localStorage.setItem("auth_token", data.token);
-    localStorage.setItem("auth_user", JSON.stringify(data.user));
-
-    return data;
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Failed to create account. Please try again.",
+    );
   }
+
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("auth_user", JSON.stringify(data.user));
+
+  return data;
 };
 
 export const getCurrentUser = async () => {

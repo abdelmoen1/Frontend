@@ -27,9 +27,9 @@ import { ORGANIZATION_TYPES } from "../constants/organizationOptions";
 
 const STEPS = ["البيانات الأساسية", "بيانات الشركة"];
 
-function OrganizationProfile() {
+function OrganizationOnboarding() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, logout } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -115,8 +115,14 @@ function OrganizationProfile() {
     setCurrentStep(1);
   };
 
-  const handleCancel = () => {
-    navigate("/", { replace: true });
+  const handleCancel = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Failed to logout on cancel:", error);
+    } finally {
+      navigate("/", { replace: true });
+    }
   };
 
   const handleSubmitStep2 = async (e) => {
@@ -164,7 +170,10 @@ function OrganizationProfile() {
       <div className="background-image"></div>
 
       <main className="signin-page no-hero">
-        <HeroAuthForm isProfile={false} isStudent={'orga'} currentStep={currentStep} />
+        <HeroAuthForm
+          isOrganizationOnboarding
+          currentStep={currentStep}
+        />
         <section className="signin-section">
           <div className="signin-container">
             <div className="signin-content">
@@ -322,4 +331,4 @@ function OrganizationProfile() {
   );
 }
 
-export default OrganizationProfile;
+export default OrganizationOnboarding;

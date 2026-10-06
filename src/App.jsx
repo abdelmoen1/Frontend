@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./shared/pages/Login";
 import Register from "./shared/pages/Register";
-import OrganizationProfile from "./organization/pages/OrganizationProfile";
+import OrganizationOnboarding from "./organization/pages/OrganizationOnboarding";
 import OrganizationProfilePage from "./organization/pages/OrganizationProfilePage";
 import EditOrganizationProfile from "./organization/pages/EditOrganizationProfile";
 import OrganizationDashboard from "./organization/pages/OrganizationDashboard";
@@ -61,7 +61,7 @@ function App() {
           <Route element={<OrganizationOnboardingRoute />}>
             <Route
               path="/organization/onboarding"
-              element={<OrganizationProfile />}
+              element={<OrganizationOnboarding />}
             />
           </Route>
 
