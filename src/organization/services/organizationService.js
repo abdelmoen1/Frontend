@@ -1,4 +1,7 @@
-const BASE_URL = import.meta.env.PROD ? "/api" : import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(
+  /\/+$/,
+  "",
+);
 
 const request = async (path, options = {}) => {
   const token = localStorage.getItem("auth_token");
@@ -7,12 +10,13 @@ const request = async (path, options = {}) => {
     headers: {
       Accept: "application/json",
       ...(options.body ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
 
-  const result = await response.json();
+  const result = await response.json().catch(() => ({}));
+
   if (!response.ok) {
     const error = new Error(result.message || "تعذر إكمال الطلب.");
     error.status = response.status;
@@ -23,83 +27,47 @@ const request = async (path, options = {}) => {
   return result.data;
 };
 
+const json = (method, data) => ({ method, body: JSON.stringify(data) });
 const projectRequestsPath = "/organization/project-requests";
 
 export const createProjectRequest = (data) =>
-  request(projectRequestsPath, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
+  request(projectRequestsPath, json("POST", data));
 export const getProjectRequests = () => request(projectRequestsPath);
-
-export const getProjectRequest = (id) => request(`${projectRequestsPath}/${id}`);
-
+export const getProjectRequest = (id) =>
+  request(`${projectRequestsPath}/${id}`);
 export const updateProjectRequest = (id, data) =>
-  request(`${projectRequestsPath}/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-
+  request(`${projectRequestsPath}/${id}`, json("PATCH", data));
 export const getNextDiscoveryQuestion = (id) =>
   request(`${projectRequestsPath}/${id}/next-question`, { method: "POST" });
-
 export const submitDiscoveryAnswer = (id, answer) =>
-  request(`${projectRequestsPath}/${id}/answer`, {
-    method: "POST",
-    body: JSON.stringify(answer),
-  });
-
+  request(`${projectRequestsPath}/${id}/answer`, json("POST", answer));
 export const analyzeProjectRequest = (id) =>
   request(`${projectRequestsPath}/${id}/analyze`, { method: "POST" });
-
 export const approveProposal = (id) =>
   request(`${projectRequestsPath}/${id}/approve`, { method: "POST" });
-
 export const requestRevision = (id, data) =>
-  request(`${projectRequestsPath}/${id}/revision`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  request(`${projectRequestsPath}/${id}/revision`, json("POST", data));
 
-export const getOrganizationProfile = async () => {
-  const token = localStorage.getItem("auth_token");
+export const getOrganizationProfile = () => request("/organization/onboarding");
+export const updateOrganizationProfile = (data) =>
+  request("/organization/onboarding", json("PATCH", data));
 
-  const response = await fetch(`${BASE_URL}/organization/onboarding`, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+// يجلب بيانات اللوحة دفعة واحدة، وأي فشل جزئي يُرجَع كرسالة بدل أن يكسر الصفحة
+export const getDashboardData = async () => {
+  const [profileRes, requestsRes] = await Promise.allSettled([
+    getOrganizationProfile(),
+    getProjectRequests(),
+  ]);
+  const errors = [];
+  let profile = null;
+  let requests = [];
 
-  const result = await response.json();
+  if (profileRes.status === "fulfilled") profile = profileRes.value;
+  else errors.push("تعذر تحميل بيانات المؤسسة.");
 
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to fetch organization profile.");
-  }
+  if (requestsRes.status === "fulfilled" && Array.isArray(requestsRes.value))
+    requests = requestsRes.value;
+  else errors.push("تعذر تحميل طلبات المشاريع.");
 
-  return result.data;
-};
-
-export const updateOrganizationProfile = async (profileData) => {
-  const token = localStorage.getItem("auth_token");
-
-  const response = await fetch(`${BASE_URL}/organization/onboarding`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(profileData),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to update organization profile.");
-  }
-
-  return result.data;
+  return { profile, requests, errors };
 };

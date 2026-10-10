@@ -181,6 +181,7 @@ function DynamicProjectDiscovery({ projectId, project }) {
   const navigate = useNavigate();
   const [state, setState] = useState(null);
   const questionIdRef = useRef(null);
+  const retryLockRef = useRef(false);
   const [answer, setAnswer] = useState(INITIAL_ANSWER);
   const [customAnswer, setCustomAnswer] = useState("");
   const [loading, setLoading] = useState(true);
@@ -210,8 +211,8 @@ function DynamicProjectDiscovery({ projectId, project }) {
           setState(result);
         }
       })
-      .catch(() => {
-        if (active) setError("تعذر إكمال التحليل حاليًا");
+      .catch((loadError) => {
+        if (active) setError(loadError.message || "تعذر إكمال التحليل حاليًا");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -233,8 +234,8 @@ function DynamicProjectDiscovery({ projectId, project }) {
         setCustomAnswer("");
         setValidationError("");
       }
-    } catch {
-      setError("تعذر إكمال التحليل حاليًا");
+    } catch (restoreError) {
+      setError(restoreError.message || "تعذر إكمال التحليل حاليًا");
     } finally {
       setLoading(false);
     }
@@ -247,9 +248,15 @@ function DynamicProjectDiscovery({ projectId, project }) {
   );
 
   const retry = async () => {
+    if (retryLockRef.current || submitting) return;
+    retryLockRef.current = true;
     setRetrying(true);
-    await restoreDiscovery();
-    setRetrying(false);
+    try {
+      await restoreDiscovery();
+    } finally {
+      retryLockRef.current = false;
+      setRetrying(false);
+    }
   };
 
   const saveAndReturn = () => {
@@ -313,7 +320,7 @@ function DynamicProjectDiscovery({ projectId, project }) {
           || "تحقق من إجابتك وحاول مرة أخرى.",
         );
       } else {
-        setError("تعذر إكمال التحليل حاليًا");
+        setError(submitError.message || "تعذر إكمال التحليل حاليًا");
       }
     } finally {
       setSubmitting(false);
@@ -337,9 +344,10 @@ function DynamicProjectDiscovery({ projectId, project }) {
         <section className="project-discovery-card discovery-error-card" role="alert">
           <span className="project-success-icon"><Sparkles size={23} /></span>
           <h1>تعذر إكمال التحليل حاليًا</h1>
-          <p>إجاباتك محفوظة ويمكنك المحاولة مرة أخرى.</p>
+          <p>{error}</p>
+          <p>إجاباتك محفوظة. إعادة المحاولة تستكمل الجلسة الحالية دون تكرار الإجابة.</p>
           <div className="project-flow-actions">
-            <button className="project-primary-button" onClick={retry} type="button">
+            <button className="project-primary-button" disabled={retrying} onClick={retry} type="button">
               إعادة المحاولة
             </button>
             <button className="project-secondary-button" onClick={saveAndReturn} type="button">
@@ -390,7 +398,7 @@ function DynamicProjectDiscovery({ projectId, project }) {
         <section className="project-discovery-card discovery-error-card" role="alert">
           <h1>تعذر إكمال التحليل حاليًا</h1>
           <p>إجاباتك محفوظة ويمكنك المحاولة مرة أخرى.</p>
-          <button className="project-primary-button" onClick={retry} type="button">
+          <button className="project-primary-button" disabled={retrying} onClick={retry} type="button">
             إعادة المحاولة
           </button>
         </section>

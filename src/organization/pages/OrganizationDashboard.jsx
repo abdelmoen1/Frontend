@@ -2,417 +2,420 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
-  ArrowUpLeft,
-  BriefcaseBusiness,
-  CalendarDays,
   CheckCircle2,
   ClipboardList,
   FileText,
-  Lightbulb,
-  MessageCircleQuestion,
   Plus,
   Rocket,
-  Sparkles,
-  UsersRound,
 } from "lucide-react";
+
 import { useAuth } from "../../shared/auth/useAuth";
-import {
-  getOrganizationProfile,
-  getProjectRequests,
-} from "../services/organizationService";
+import { getDashboardData } from "../services/organizationService";
 import { PROJECT_REQUEST_STATUS_LABELS } from "../constants/projectRequestOptions";
+import "../styles/OrganizationDashboard.css"; // الأنماط المشتركة (project-*) تبقى كما هي
 import "../styles/OrganizationDashboard.css";
 
 const FILTERS = [
   { id: "all", label: "الكل" },
-  { id: "review", label: "بانتظار المراجعة" },
-  { id: "active", label: "قيد التنفيذ" },
-  { id: "complete", label: "مكتملة" },
+  { id: "needs_review", label: "بانتظار مراجعتك" },
+  { id: "in_progress", label: "قيد المتابعة" },
+  { id: "approved", label: "معتمدة" },
+  { id: "converted", label: "محوّلة لفرصة" },
+  { id: "rejected", label: "مرفوضة" },
 ];
 
-const filterRequest = (request, filter) => {
-  if (filter === "review") {
-    return ["proposal_ready", "revision_requested", "analyzing"].includes(
-      request.status,
-    );
-  }
-  if (filter === "active") return request.status === "approved";
-  if (filter === "complete") {
-    return request.status === "converted_to_opportunity";
-  }
-  return true;
+const STATUS_LABELS = {
+  draft: "مسودة",
+  intake_in_progress: "استكمال المتطلبات",
+  analyzing: "جارٍ تحليل الطلب",
+  proposal_ready: "المقترح جاهز للمراجعة",
+  revision_requested: "بانتظار تعديل المقترح",
+  approved: "تم اعتماد المقترح",
+  rejected: "مرفوض",
+  converted_to_opportunity: "تحوّل إلى فرصة",
 };
+
+const PROGRESS = {
+  draft: 10,
+  intake_in_progress: 30,
+  analyzing: 50,
+  revision_requested: 60,
+  proposal_ready: 70,
+  approved: 85,
+  converted_to_opportunity: 100,
+  rejected: 0,
+};
+
+const IN_PROGRESS = [
+  "draft",
+  "intake_in_progress",
+  "analyzing",
+  "revision_requested",
+];
+
+const MATCH = {
+  all: () => true,
+  needs_review: (s) => s === "proposal_ready",
+  in_progress: (s) => IN_PROGRESS.includes(s),
+  approved: (s) => s === "approved",
+  converted: (s) => s === "converted_to_opportunity",
+  rejected: (s) => s === "rejected",
+};
+
+const statusLabel = (s) =>
+  STATUS_LABELS[s] || PROJECT_REQUEST_STATUS_LABELS[s] || "حالة غير محددة";
+
+const formatDate = (v) => {
+  const d = v ? new Date(v) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? new Intl.DateTimeFormat("ar", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }).format(d)
+    : "—";
+};
+
+const actionPath = (s, id) =>
+  ["proposal_ready", "revision_requested"].includes(s)
+    ? `/organization/requests/${id}/review`
+    : ["approved", "rejected", "converted_to_opportunity"].includes(s)
+      ? `/organization/requests/${id}`
+      : `/organization/requests/${id}/intake`;
+
+const actionLabel = (s) =>
+  ({
+    proposal_ready: "مراجعة المقترح",
+    revision_requested: "متابعة التعديل",
+    approved: "عرض الطلب",
+    rejected: "عرض التفاصيل",
+    converted_to_opportunity: "عرض التفاصيل",
+    analyzing: "متابعة الطلب",
+  })[s] || "استكمال الطلب";
+
+const Mountains = () => (
+  <svg width="431" height="207" viewBox="-1 88 431 207" aria-hidden="true">
+    <defs>
+      <linearGradient id="odg0" x1="0" y1="0" x2="0" y2="1">
+        <stop stopColor="#256DB4" />
+        <stop offset="1" stopColor="#13385E" />
+      </linearGradient>
+      <linearGradient id="odg1" x1="0" y1="0" x2="0" y2="1">
+        <stop stopColor="#1D5C9C" />
+        <stop offset="1" stopColor="#0E2A4A" />
+      </linearGradient>
+      <linearGradient id="odg2" x1="0" y1="0" x2="0" y2="1">
+        <stop stopColor="#164E83" />
+        <stop offset="1" stopColor="#0C2340" />
+      </linearGradient>
+      <linearGradient id="odg3" x1="0" y1="0" x2="1" y2="1">
+        <stop stopColor="#FBBF24" />
+        <stop offset="1" stopColor="#F59E0B" />
+      </linearGradient>
+    </defs>
+    <path
+      opacity=".6"
+      d="M108.3 395.6L292.3 165.6L418.8 395.6Z"
+      fill="url(#odg0)"
+    />
+    <path
+      opacity=".8"
+      d="M-56.9 390.6L132.8 172.1L311.1 390.6Z"
+      fill="url(#odg1)"
+    />
+    <path d="M190.9 373L328.9 194.7L478.4 373Z" fill="url(#odg2)" />
+    <path opacity=".55" d="M331.3 194.7L480.8 373H285.3Z" fill="#091B32" />
+    <path d="M37.5 362.9L221.5 207.7L382.5 362.9Z" fill="#1B528A" />
+    <path opacity=".75" d="M226.3 207.7L387.3 362.9H249.3Z" fill="#0C2543" />
+    <circle cx="295.7" cy="212.4" r="55.2" fill="url(#odg3)" />
+  </svg>
+);
 
 function OrganizationDashboard({ showAll = false }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState([]);
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    let isMounted = true;
-
-    Promise.allSettled([getOrganizationProfile(), getProjectRequests()])
-      .then((results) => {
-        if (!isMounted) return;
-
-        const [profileResult, requestsResult] = results;
-        const nextErrors = [];
-
-        if (profileResult.status === "fulfilled") {
-          setProfile(profileResult.value);
-        } else {
-          console.error("تعذر تحميل بيانات المؤسسة:", profileResult.reason);
-          nextErrors.push("تعذر تحميل بيانات المؤسسة.");
-        }
-
-        if (requestsResult.status === "fulfilled") {
-          setRequests(requestsResult.value);
-        } else {
-          console.error("تعذر تحميل طلبات المشاريع:", requestsResult.reason);
-          nextErrors.push("تعذر تحميل طلبات المشاريع.");
-        }
-
-        setErrors(nextErrors);
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
+    let alive = true;
+    getDashboardData().then(({ profile, requests, errors }) => {
+      if (!alive) return;
+      setProfile(profile);
+      setRequests(requests);
+      setErrors(errors);
+      setIsLoading(false);
+    });
     return () => {
-      isMounted = false;
+      alive = false;
     };
   }, []);
 
-  const counts = [
-    {
-      label: "إجمالي الطلبات",
-      value: requests.length,
-      icon: ClipboardList,
-      tone: "blue",
-    },
-    {
-      label: "بانتظار المراجعة",
-      value: requests.filter((item) =>
-        ["proposal_ready", "revision_requested", "analyzing"].includes(
-          item.status,
-        ),
-      ).length,
-      icon: FileText,
-      tone: "orange",
-    },
-    {
-      label: "المشاريع النشطة",
-      value: requests.filter((item) => item.status === "approved").length,
-      icon: Rocket,
-      tone: "purple",
-    },
-    {
-      label: "الفرص المكتملة",
-      value: requests.filter(
-        (item) => item.status === "converted_to_opportunity",
-      ).length,
-      icon: CheckCircle2,
-      tone: "green",
-    },
-  ];
+  const total = requests.length;
+  const count = (s) => requests.filter((r) => r.status === s).length;
 
-  const filteredRequests = useMemo(
-    () => requests.filter((item) => filterRequest(item, selectedFilter)),
-    [requests, selectedFilter],
+  const stats = useMemo(
+    () => [
+      { label: "إجمالي طلبات المشاريع", value: total, icon: ClipboardList },
+      {
+        label: "مقترحات بانتظار مراجعتك",
+        value: count("proposal_ready"),
+        icon: FileText,
+      },
+      { label: "مقترحات معتمدة", value: count("approved"), icon: Rocket },
+      {
+        label: "طلبات تحولت إلى فرص",
+        value: count("converted_to_opportunity"),
+        icon: CheckCircle2,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requests],
   );
 
-  const requiredProfileFields = [
-    profile?.organization_name,
-    profile?.organization_type,
-    profile?.industry,
-    profile?.description,
-    profile?.location,
-  ];
-  const profileCompletion = Math.round(
-    (requiredProfileFields.filter((value) => Boolean(value?.trim?.() || value))
-      .length /
-      requiredProfileFields.length) *
-      100,
+  const filtered = useMemo(
+    () => requests.filter((r) => MATCH[filter](r.status)),
+    [requests, filter],
   );
+  const visible = showAll ? filtered : filtered.slice(0, 5);
+
+  const fields = profile
+    ? [
+        profile.organization_name,
+        profile.organization_type,
+        profile.industry,
+        profile.description,
+        profile.location,
+      ]
+    : [];
+  const completion = profile
+    ? Math.round(
+        (fields.filter((v) => String(v || "").trim()).length / fields.length) *
+          100,
+      )
+    : null;
+
+  const name = profile?.organization_name || user?.name || "مؤسستك";
+  const loadFailed = errors.some((e) => e.includes("طلبات"));
 
   if (isLoading) {
     return (
       <main
-        className="organization-dashboard project-dashboard-loading"
+        className="od"
+        dir="rtl"
         aria-busy="true"
         aria-label="جارٍ تحميل لوحة المؤسسة"
       >
-        <div className="project-loading-line wide" />
-        <div className="project-summary-grid">
-          {counts.map((item) => (
-            <div className="project-loading-card" key={item.label} />
+        <div className="sk-hero">
+          <span className="sk-d" style={{ width: "42%", height: 30 }} />
+          <span className="sk-d" style={{ width: "62%", height: 14 }} />
+          <div className="sk-btns">
+            <span className="sk-d sk-btn" />
+            <span className="sk-d sk-btn" />
+          </div>
+        </div>
+
+        <div className="od-row">
+          <div className="sk-card">
+            <span className="sk" style={{ width: "50%", height: 14 }} />
+            <span className="sk" style={{ width: 90, height: 42 }} />
+            <span className="sk" style={{ height: 6 }} />
+          </div>
+          <div className="sk-card">
+            <span className="sk" style={{ width: "55%", height: 26 }} />
+            <span className="sk" style={{ width: "90%", height: 14 }} />
+            <span className="sk" style={{ width: "70%", height: 14 }} />
+          </div>
+        </div>
+
+        <span
+          className="sk"
+          style={{
+            display: "block",
+            width: 160,
+            height: 26,
+            margin: "44px 0 20px",
+          }}
+        />
+        <div className="od-stats">
+          {[0, 1, 2, 3].map((i) => (
+            <div className="sk-card sk-stat" key={i}>
+              <span className="sk sk-ic" />
+              <span className="sk" style={{ width: 70, height: 40 }} />
+              <span className="sk" style={{ height: 6 }} />
+            </div>
           ))}
         </div>
-        <div className="project-loading-card project-loading-list" />
+
+        <span className="sk sk-th" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span className="sk sk-tr" key={i} />
+        ))}
       </main>
     );
   }
 
-  const visibleRequests = showAll
-    ? filteredRequests
-    : filteredRequests.slice(0, 3);
-  const organizationName =
-    profile?.organization_name || user?.name || "مؤسستك";
-
-  const getActionPath = (status, id) => {
-    if (status === "proposal_ready" || status === "revision_requested") {
-      return `/organization/requests/${id}/review`;
-    }
-    if (status === "approved") return `/organization/requests/${id}`;
-    return `/organization/requests/${id}/intake`;
-  };
-
-  const getActionLabel = (status) => {
-    if (status === "proposal_ready" || status === "revision_requested") {
-      return "مراجعة المقترح";
-    }
-    if (status === "approved") return "عرض المشروع";
-    return "متابعة الطلب";
-  };
-
   return (
-    <main className="organization-dashboard organization-home" dir="rtl">
-      <section className="organization-welcome">
-        <div className="organization-welcome-copy">
-          <span className="organization-welcome-label">
-            مساحة مؤسستك <Sparkles size={14} aria-hidden="true" />
-          </span>
-          <h1>مرحبًا، {organizationName} 👋</h1>
+    <main className="od">
+      <section className="od-hero">
+        <Mountains />
+        <div className="od-hero-text">
+          <h1>مرحبًا، {name} 👋</h1>
           <p>
             حوّل احتياجات مؤسستك إلى مشاريع رقمية واضحة، وتابع خطوات تطويرها من
             مكان واحد.
           </p>
         </div>
-        <div className="organization-welcome-actions">
-          <Link className="organization-guide-link" to="/organization/requests">
-            <FileText size={16} aria-hidden="true" />
-            دليل الطلبات
+        <div className="od-hero-actions">
+          <Link className="od-btn ghost" to="/organization/requests">
+            <FileText size={18} aria-hidden="true" />
+            طلبات المشاريع
           </Link>
-          <Link
-            className="organization-create-button"
-            to="/organization/requests/new"
-          >
-            <Plus size={17} aria-hidden="true" />
+          <Link className="od-btn main" to="/organization/requests/new">
+            <Plus size={18} aria-hidden="true" />
             إنشاء مشروع جديد
           </Link>
         </div>
       </section>
 
-      {errors.map((error) => (
-        <p className="project-alert project-alert-error" role="alert" key={error}>
-          {error}
+      {errors.map((e) => (
+        <p
+          className="project-alert project-alert-error"
+          role="alert"
+          key={e}
+          style={{ marginTop: 16 }}
+        >
+          {e}
         </p>
       ))}
 
-      <section className="organization-stat-grid" aria-label="ملخص الطلبات">
-        {counts.map(({ label, value, icon: Icon, tone }) => (
-          <article className="organization-stat-card" key={label}>
-            <span className={`organization-stat-icon ${tone}`}>
-              <Icon size={18} aria-hidden="true" />
-            </span>
-            <span className="organization-stat-label">{label}</span>
-            <strong>{value}</strong>
-            <span className="organization-stat-caption">
-              {value === 1 ? "طلب واحد" : `${value} طلبات`}
-            </span>
-            <span
-              className={`organization-stat-indicator ${tone}`}
-              aria-hidden="true"
-            />
+      <div className="od-row">
+        <article className="od-card">
+          <p>اكتمال بيانات المؤسسة</p>
+          <div className="od-big">
+            {completion === null ? "—" : `${completion}%`}
+          </div>
+          <div
+            className="od-pb"
+            style={{ margin: "14px 0 10px", maxWidth: "none" }}
+          >
+            <i style={{ width: `${completion ?? 0}%` }} />
+          </div>
+          <Link className="od-link" to="/organization/profile/edit">
+            تعديل الملف التعريفي <ArrowLeft size={15} aria-hidden="true" />
+          </Link>
+        </article>
+        <article className="od-card wide">
+          <h2>كيف تحوّل GoTrainee فكرتك إلى مشروع ناجح؟</h2>
+          <p>
+            اشرح تحدياتك اليومية، ثم احصل على مقترح واضح لنطاق الحل، وبعد
+            اعتماده انتقل إلى الخطوة التالية وتابع حالة طلبك من لوحتك.
+          </p>
+        </article>
+      </div>
+
+      <h2 className="od-sec">نظرة عامة</h2>
+      <section className="od-stats" aria-label="ملخص طلبات المشاريع">
+        {stats.map(({ label, value, icon: Icon }) => (
+          <article className="od-stat" key={label}>
+            <div className="od-stat-top">
+              <span className="od-ic">
+                <Icon size={18} aria-hidden="true" />
+              </span>
+              {label}
+            </div>
+            <div className="od-num">{value}</div>
+            <div className="od-bar">
+              <i style={{ width: `${total ? (value / total) * 100 : 0}%` }} />
+            </div>
           </article>
         ))}
       </section>
 
-      <section className="organization-guide" id="project-guide">
-        <div className="organization-section-heading">
-          <div className="organization-guide-heading-icon">
-            <Lightbulb size={18} aria-hidden="true" />
-          </div>
-          <div>
-            <h2>كيف تحوّل GoTrainee فكرتك إلى مشروع رقمي ناجح؟</h2>
-            <p>ثلاث خطوات تساعدك على الانتقال من التحدي إلى حل قابل للتنفيذ.</p>
-          </div>
-        </div>
-        <div className="organization-guide-grid">
-          <article className="organization-guide-card">
-            <span className="organization-guide-number">١</span>
-            <span className="organization-guide-icon blue">
-              <MessageCircleQuestion size={19} aria-hidden="true" />
-            </span>
-            <h3>اشرح تحدياتك اليومية</h3>
-            <p>
-              شاركنا كيف تسير أعمالك اليوم وما المشكلة التي ترغب في حلها داخل
-              مؤسستك.
-            </p>
-          </article>
-          <article className="organization-guide-card">
-            <span className="organization-guide-number">٢</span>
-            <span className="organization-guide-icon orange">
-              <Lightbulb size={19} aria-hidden="true" />
-            </span>
-            <h3>احصل على مقترح واضح</h3>
-            <p>
-              نرتب احتياجك في تصور عملي يساعدك على فهم نطاق الحل والخطوات
-              المقترحة.
-            </p>
-          </article>
-          <article className="organization-guide-card">
-            <span className="organization-guide-number">٣</span>
-            <span className="organization-guide-icon blue">
-              <UsersRound size={19} aria-hidden="true" />
-            </span>
-            <h3>تواصل مع أصحاب الخبرة</h3>
-            <p>
-              بعد اعتماد الفكرة، تصبح جاهزًا لربطها بالمهارات المناسبة لتنفيذها.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section className="organization-requests">
-        <div className="organization-requests-heading">
-          <div>
-            <h2>{showAll ? "طلبات المشاريع" : "آخر الطلبات والمشاريع"}</h2>
-            <p>تابع حالة كل طلب وانتقل مباشرة إلى الخطوة التالية.</p>
-          </div>
-          <div className="organization-request-filters" aria-label="تصفية الطلبات">
-            {FILTERS.map((filter) => (
+      <section style={{ marginTop: 40 }}>
+        <div className="od-head">
+          <h3>{showAll ? "طلبات المشاريع" : "آخر الطلبات والمشاريع"}</h3>
+          <div className="od-filters" aria-label="تصفية الطلبات">
+            {FILTERS.map((f) => (
               <button
-                className={
-                  selectedFilter === filter.id
-                    ? "organization-filter active"
-                    : "organization-filter"
-                }
-                key={filter.id}
+                key={f.id}
                 type="button"
-                aria-pressed={selectedFilter === filter.id}
-                onClick={() => setSelectedFilter(filter.id)}
+                className={filter === f.id ? "od-filter active" : "od-filter"}
+                aria-pressed={filter === f.id}
+                onClick={() => setFilter(f.id)}
               >
-                {filter.label}
+                {f.label}
               </button>
             ))}
           </div>
         </div>
 
-        {visibleRequests.length > 0 ? (
-          <div className="organization-request-list">
-            {visibleRequests.map((item) => (
-              <article className="organization-request-row" key={item.id}>
-                <span className="organization-request-icon">
-                  <BriefcaseBusiness size={18} aria-hidden="true" />
-                </span>
-                <div className="organization-request-info">
-                  <h3>{item.title}</h3>
-                  <div className="organization-request-meta">
-                    <span
-                      className={`project-status-badge project-status-${item.status}`}
-                    >
-                      {PROJECT_REQUEST_STATUS_LABELS[item.status] ||
-                        item.status}
-                    </span>
-                    <span>
-                      <CalendarDays size={13} aria-hidden="true" />
-                      {new Date(item.created_at).toLocaleDateString("ar")}
-                    </span>
-                  </div>
-                </div>
-                <Link
-                  className="organization-request-action"
-                  to={getActionPath(item.status, item.id)}
+        {visible.length > 0 ? (
+          <>
+            <div className="od-cols od-th">
+              <span>عنوان الطلب</span>
+              <span>الحالة</span>
+              <span>التقدّم</span>
+              <span>التاريخ</span>
+              <span />
+            </div>
+            {visible.map((r) => (
+              <article className="od-cols od-tr" key={r.id}>
+                <span className="t">{r.title}</span>
+                <span
+                  className={`project-status-badge project-status-${r.status}`}
                 >
-                  {getActionLabel(item.status)}
+                  {statusLabel(r.status)}
+                </span>
+                <div className="od-pb">
+                  <i style={{ width: `${PROGRESS[r.status] ?? 0}%` }} />
+                </div>
+                <time className="m" dateTime={r.created_at || undefined}>
+                  {formatDate(r.created_at)}
+                </time>
+                <Link className="od-link" to={actionPath(r.status, r.id)}>
+                  {actionLabel(r.status)}{" "}
                   <ArrowLeft size={15} aria-hidden="true" />
                 </Link>
               </article>
             ))}
-            {!showAll && filteredRequests.length > 3 && (
-              <Link
-                className="organization-view-all"
-                to="/organization/requests"
-              >
-                عرض جميع الطلبات
-                <ArrowLeft size={15} aria-hidden="true" />
-              </Link>
+            {!showAll && filtered.length > 5 && (
+              <div className="od-more">
+                <Link className="od-link" to="/organization/requests">
+                  عرض جميع الطلبات <ArrowLeft size={15} aria-hidden="true" />
+                </Link>
+              </div>
             )}
-          </div>
+          </>
         ) : (
-          <div className="organization-empty-state">
-            <span className="organization-empty-icon">
-              <BriefcaseBusiness size={24} aria-hidden="true" />
-            </span>
-            <h3>
-              {requests.length
-                ? "لا توجد طلبات ضمن هذا التصنيف"
-                : "ابدأ أول مشروع لمؤسستك"}
-            </h3>
+          <div className="od-empty">
+            <h4>
+              {loadFailed
+                ? "تعذر تحميل الطلبات"
+                : total
+                  ? "لا توجد طلبات ضمن هذا التصنيف"
+                  : "ابدأ أول مشروع لمؤسستك"}
+            </h4>
             <p>
-              {requests.length
-                ? "جرّب تصنيفًا آخر لعرض طلباتك."
-                : "أخبرنا عن تحدٍ تواجهه، وسنساعدك على تحويله إلى مشروع رقمي واضح."}
+              {loadFailed
+                ? "تحقق من اتصالك بالإنترنت ثم حدّث الصفحة."
+                : total
+                  ? "جرّب تصنيفًا آخر لعرض طلباتك."
+                  : "أخبرنا عن تحدٍ تواجهه، وسنساعدك على تحويله إلى مشروع رقمي واضح."}
             </p>
-            {!requests.length && (
+            {!total && !loadFailed && (
               <Link
-                className="organization-create-button"
+                className="od-link"
                 to="/organization/requests/new"
+                style={{ marginTop: 12 }}
               >
-                <Plus size={16} aria-hidden="true" />
-                إنشاء أول مشروع
+                <Plus size={15} aria-hidden="true" /> إنشاء أول مشروع
               </Link>
             )}
           </div>
         )}
-      </section>
-
-      <section className="organization-bottom-grid">
-        <article className="organization-profile-progress">
-          <div className="organization-bottom-heading">
-            <span className="organization-bottom-icon orange">
-              <Sparkles size={17} aria-hidden="true" />
-            </span>
-            <div>
-              <h2>اكتمال بيانات المؤسسة</h2>
-              <p>البيانات المكتملة تساعد على فهم احتياجاتك بصورة أفضل.</p>
-            </div>
-            <strong>{profileCompletion}%</strong>
-          </div>
-          <div
-            className="organization-progress-track"
-            role="progressbar"
-            aria-label="اكتمال بيانات المؤسسة"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow={profileCompletion}
-          >
-            <span style={{ width: `${profileCompletion}%` }} />
-          </div>
-          <p className="organization-progress-note">
-            {profileCompletion === 100
-              ? "بيانات مؤسستك الأساسية مكتملة."
-              : "أكمل بيانات المؤسسة الأساسية لتحسين تجربة إنشاء الطلبات."}
-          </p>
-        </article>
-
-        <article className="organization-help-card">
-          <span className="organization-bottom-icon blue">
-            <MessageCircleQuestion size={18} aria-hidden="true" />
-          </span>
-          <h2>هل لديك فكرة لمشروع؟</h2>
-          <p>
-            ابدأ بمشاركة التحدي، وسنرشدك خطوة بخطوة لصياغة طلب واضح.
-          </p>
-          <Link to="/organization/requests/new">
-            ابدأ طلب مشروع
-            <ArrowUpLeft size={15} aria-hidden="true" />
-          </Link>
-        </article>
       </section>
     </main>
   );

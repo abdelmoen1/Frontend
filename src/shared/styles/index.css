@@ -1,11 +1,11 @@
-:root {
-  --main-color: #011751;
-}
+  :root {
+    --main-color: #011751;
+  }
 
-body {
-  font-family: "Cairo", sans-serif;
-}
+  body {
+    font-family: "Cairo", sans-serif;
+  }
 
-html{
-  scroll-behavior: smooth;
-}
+  html{
+    scroll-behavior: smooth;
+  }
