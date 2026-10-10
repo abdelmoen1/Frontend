@@ -262,16 +262,24 @@ function OrganizationDashboard({ showAll = false }) {
       <section className="od-hero">
         <Mountains />
         <div className="od-hero-text">
-          <h1>مرحبًا، {name} 👋</h1>
+          <h1>مرحباً بك في GoTrainee،{name} 👋</h1>
           <p>
-            حوّل احتياجات مؤسستك إلى مشاريع رقمية واضحة، وتابع خطوات تطويرها من
-            مكان واحد.
+            حول احتياج مؤسستك الى مشروع رقمي واضح و قابل للتنفيذ بكل سهولة و
+            بدون تعقيدات تقنية،
           </p>
         </div>
         <div className="od-hero-actions">
-          <Link className="od-btn ghost" to="/organization/requests">
-            <FileText size={18} aria-hidden="true" />
-            طلبات المشاريع
+          <Link className="od-btn ghost" to="/organization/profile">
+            <div
+              className="od-big"
+              style={{
+                // نحول النسبة مثل 75 إلى 0.75 لتستخدم في الشفافية، أو نحتفظ بها كـ string مثل "75%"
+                "--p": completion !== null ? completion / 100 : 1,
+              }}
+            >
+              {completion === null ? "—" : `${completion}%`}
+            </div>
+            إكمال الملف الشخصي
           </Link>
           <Link className="od-btn main" to="/organization/requests/new">
             <Plus size={18} aria-hidden="true" />
@@ -292,27 +300,21 @@ function OrganizationDashboard({ showAll = false }) {
       ))}
 
       <div className="od-row">
-        <article className="od-card">
-          <p>اكتمال بيانات المؤسسة</p>
-          <div className="od-big">
-            {completion === null ? "—" : `${completion}%`}
-          </div>
-          <div
-            className="od-pb"
-            style={{ margin: "14px 0 10px", maxWidth: "none" }}
-          >
-            <i style={{ width: `${completion ?? 0}%` }} />
-          </div>
-          <Link className="od-link" to="/organization/profile/edit">
-            تعديل الملف التعريفي <ArrowLeft size={15} aria-hidden="true" />
-          </Link>
-        </article>
         <article className="od-card wide">
-          <h2>كيف تحوّل GoTrainee فكرتك إلى مشروع ناجح؟</h2>
+          <h2>أخبرنا عن الفكرة التي تريد تنفيذها</h2>
           <p>
-            اشرح تحدياتك اليومية، ثم احصل على مقترح واضح لنطاق الحل، وبعد
-            اعتماده انتقل إلى الخطوة التالية وتابع حالة طلبك من لوحتك.
+            لا تحتاج إلى أي معرفة تقنية. أخبرنا عن التحدي اليومي الذي تواجهه
+            مؤسستك، <br />
+            وسنساعدك خطوة بخطوة على تحويله إلى مشروع تقني واضح وقابل للتنفيذ
+            بأيدي طلاب متميزين.{" "}
           </p>
+        </article>
+        <article className="od-card">
+          <ul>
+            <li>إشراف أكاديمي وفني متواصل</li>
+            <li>بدون متطلبات برمجية معقدة</li>
+            <li>يستغرق فقط ٤ إلى ٦ دقائق</li>
+          </ul>
         </article>
       </div>
 
