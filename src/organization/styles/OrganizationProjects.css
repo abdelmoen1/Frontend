@@ -1,0 +1,256 @@
+.organization-projects-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 18px 24px 36px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.organization-projects-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 18px;
+}
+
+.organization-projects-heading h1 {
+  margin: 0;
+  color: #071528;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.op-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.op-table {
+  width: 100%;
+  min-width: 820px;
+}
+
+.op-table-header,
+.op-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 2.2fr)
+    minmax(110px, 0.8fr)
+    minmax(100px, 0.75fr)
+    minmax(115px, 0.8fr)
+    minmax(105px, 0.8fr);
+  align-items: center;
+  gap: 14px;
+  padding-inline: 16px;
+  direction: rtl;
+}
+
+.op-table-header {
+  min-height: 40px;
+  border-radius: 8px;
+  background: #021853;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.op-table-row {
+  min-height: 48px;
+  margin-top: 7px;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+  font-size: 12px;
+}
+
+.op-project-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.op-project-title > span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.op-project-icon {
+  display: none;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.op-date {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.op-progress {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  direction: ltr;
+}
+
+.op-progress-track {
+  display: block;
+  width: 64px;
+  height: 5px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #e2e8f0;
+}
+
+.op-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #00a8cc;
+}
+
+.op-progress small {
+  color: #475569;
+  font-size: 10px;
+}
+
+.op-no-progress {
+  color: #94a3b8;
+}
+
+.op-status {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 21px;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.op-status-intake_in_progress,
+.op-status-analyzing,
+.op-status-proposal_ready,
+.op-status-revision_requested {
+  border-color: #cffafe;
+  background: #ecfeff;
+  color: #00a8cc;
+}
+
+.op-status-approved,
+.op-status-converted_to_opportunity {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.op-status-rejected {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.op-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.op-action:hover {
+  color: #2099c7;
+}
+
+.op-error {
+  margin: 0 0 12px;
+  padding: 11px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.op-loading {
+  display: grid;
+  gap: 7px;
+}
+
+.op-skeleton {
+  height: 48px;
+  border-radius: 9px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f8fafc 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: op-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes op-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.op-empty {
+  display: flex;
+  min-height: 250px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+  text-align: center;
+}
+
+.op-empty h2 {
+  margin: 14px 0 5px;
+  color: #071528;
+  font-size: 19px;
+}
+
+.op-empty p {
+  max-width: 460px;
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.op-empty a {
+  padding: 10px 17px;
+  border-radius: 22px;
+  background: #2099c7;
+  color: #071528;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .organization-projects-page {
+    padding: 12px 0 28px;
+  }
+
+  .organization-projects-heading h1 {
+    font-size: 19px;
+  }
+
+  .op-table {
+    min-width: 820px;
+  }
+}

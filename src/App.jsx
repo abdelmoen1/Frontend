@@ -12,6 +12,7 @@ import LoadingScreen from "./shared/pages/LoadingScreen";
 import LandingPage from "./shared/components/LandingPage";
 import StudentOnboarding from "./student/pages/StudentOnboarding";
 import DashboardMenu from "./shared/pages/DashboardMenu";
+import OrganizationProjects from "./organization/pages/OrganizationProjects";
 import { AuthProvider } from "./shared/auth/AuthProvider";
 import {
   GuestRoute,
@@ -81,7 +82,7 @@ function App() {
               />
               <Route
                 path="/organization/requests"
-                element={<OrganizationDashboard showAll />}
+                element={<OrganizationProjects />}
               />
               <Route
                 path="/organization/requests/new"
