@@ -250,11 +250,12 @@
 }
 .od-cols {
   display: grid;
-  grid-template-columns: 2fr 1.3fr 1.2fr 1fr 1fr;
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
   gap: 12px;
   padding: 0 24px;
 }
+
 .od-th {
   height: 41px;
   border-radius: 16px;
@@ -291,7 +292,7 @@
   overflow: hidden;
 }
 .od-pb i {
-  background: var(--cyan);
+  background: #00a8cc;
 }
 .od-link {
   display: inline-flex;
@@ -304,6 +305,7 @@
   text-decoration: none;
   white-space: nowrap;
 }
+
 .od-empty {
   padding: 40px 20px;
   border: 1px dashed #d5e0ec;

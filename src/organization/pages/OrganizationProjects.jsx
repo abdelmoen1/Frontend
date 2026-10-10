@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { getDashboardData } from "../services/organizationService";
 import { PROJECT_REQUEST_STATUS_LABELS } from "../constants/projectRequestOptions";
 import "../styles/OrganizationProjects.css";
-
+import "../styles/OrganizationDashboard.css";
 const STATUS = {
   draft: "مسودة",
   intake_in_progress: "استكمال المتطلبات",
@@ -119,11 +119,11 @@ export default function OrganizationProjects() {
         <div className="op-table-wrap">
           <div className="op-table">
             <div className="op-table-header">
-              <span>المشروع</span>
-              <span>الموعد</span>
-              <span>التقدم</span>
+              <span>عنوان الطلب</span>
+              <span>التاريخ</span>
+              <span>التقدّم</span>
               <span>الحالة</span>
-              <span>الإجراء</span>
+              <span />
             </div>
 
             {requests.map((request) => {
@@ -131,31 +131,19 @@ export default function OrganizationProjects() {
               const action = getAction(request);
 
               return (
-                <article className="op-table-row" key={request.id}>
-                  <div className="op-project-title">
-                    <span className="op-project-icon">
-                      <BriefcaseBusiness size={16} />
-                    </span>
-                    <span>{request.title || "طلب بلا عنوان"}</span>
-                  </div>
+                <article className="od-cols od-tr" key={request.id}>
+                  <span className="t">{request.title || "طلب بلا عنوان"}</span>
 
-                  <span className="op-date">
+                  <time className="m" dateTime={request.deadline || undefined}>
                     {request.deadline
                       ? formatDate(request.deadline)
                       : "لم يحدد"}
-                  </span>
-
-                  <div className="op-progress">
-                    {progress == null ? (
-                      <span className="op-no-progress">—</span>
-                    ) : (
-                      <>
-                        <span className="op-progress-track">
-                          <i style={{ width: `${progress}%` }} />
-                        </span>
-                        <small>{progress}%</small>
-                      </>
-                    )}
+                  </time>
+                  <div className="f-1">
+                    <small>{progress ?? 0}%</small>
+                    <div className="od-pb">
+                      <i style={{ width: `${progress ?? 0}%` }} />
+                    </div>
                   </div>
 
                   <span className={`op-status op-status-${request.status}`}>
@@ -164,9 +152,8 @@ export default function OrganizationProjects() {
                       request.status}
                   </span>
 
-                  <Link className="op-action" to={action.path}>
-                    {action.label}
-                    <ArrowLeft size={14} aria-hidden="true" />
+                  <Link className="od-link" to={action.path}>
+                    {action.label} <ArrowLeft size={15} aria-hidden="true" />
                   </Link>
                 </article>
               );

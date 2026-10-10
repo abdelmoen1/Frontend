@@ -339,44 +339,32 @@ function OrganizationDashboard({ showAll = false }) {
       <section style={{ marginTop: 40 }}>
         <div className="od-head">
           <h3>{showAll ? "طلبات المشاريع" : "آخر الطلبات والمشاريع"}</h3>
-          <div className="od-filters" aria-label="تصفية الطلبات">
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={filter === f.id ? "od-filter active" : "od-filter"}
-                aria-pressed={filter === f.id}
-                onClick={() => setFilter(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {visible.length > 0 ? (
           <>
             <div className="od-cols od-th">
               <span>عنوان الطلب</span>
-              <span>الحالة</span>
-              <span>التقدّم</span>
               <span>التاريخ</span>
+              <span>التقدّم</span>
+              <span>الحالة</span>
               <span />
             </div>
             {visible.map((r) => (
               <article className="od-cols od-tr" key={r.id}>
                 <span className="t">{r.title}</span>
-                <span
-                  className={`project-status-badge project-status-${r.status}`}
-                >
-                  {statusLabel(r.status)}
-                </span>
-                <div className="od-pb">
-                  <i style={{ width: `${PROGRESS[r.status] ?? 0}%` }} />
-                </div>
                 <time className="m" dateTime={r.created_at || undefined}>
                   {formatDate(r.created_at)}
                 </time>
+                <div className="f-1">
+                  <small>{PROGRESS[r.status] ?? 0}%</small>
+                  <div className="od-pb">
+                    <i style={{ width: `${PROGRESS[r.status] ?? 0}%` }} />
+                  </div>
+                </div>
+                <span className={`op-status op-status-${r.status}`}>
+                  {statusLabel(r.status)}
+                </span>
                 <Link className="od-link" to={actionPath(r.status, r.id)}>
                   {actionLabel(r.status)}{" "}
                   <ArrowLeft size={15} aria-hidden="true" />

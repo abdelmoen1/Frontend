@@ -5,7 +5,7 @@ import OrganizationOnboarding from "./organization/pages/OrganizationOnboarding"
 import OrganizationProfilePage from "./organization/pages/OrganizationProfilePage";
 import EditOrganizationProfile from "./organization/pages/EditOrganizationProfile";
 import OrganizationDashboard from "./organization/pages/OrganizationDashboard";
-import ProjectDiscovery from "./organization/pages/ProjectDiscovery";
+import ProjectDiscovery from "./organization/pages/ProjectIntro";
 import StudentDashboard from "./student/pages/StudentDashboard";
 import UpdateStudentProfile from "./student/pages/UpdateStudentProfile";
 import LoadingScreen from "./shared/pages/LoadingScreen";

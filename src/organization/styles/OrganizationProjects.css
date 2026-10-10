@@ -2,7 +2,7 @@
   width: 100%;
   min-height: 100%;
   padding: 18px 24px 36px;
-  background: #f8fafc;
+  background: var(--page-background);
   color: #0f172a;
   font-family: inherit;
 }
@@ -52,7 +52,7 @@
   border-radius: 8px;
   background: #021853;
   color: #fff;
-  font-size: 12px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -62,7 +62,7 @@
   border-radius: 9px;
   background: #fff;
   box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .op-project-title {
@@ -136,7 +136,7 @@
   border-radius: 20px;
   background: #f8fafc;
   color: #475569;
-  font-size: 10px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -253,4 +253,9 @@
   .op-table {
     min-width: 820px;
   }
+}
+.f-1{
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
