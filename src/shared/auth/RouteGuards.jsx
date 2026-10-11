@@ -1,19 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
-
-function getUserDestination(user) {
-  if (user?.role === "student") {
-    return user.onboarding_completed
-      ? "/loading"
-      : "/student/onboarding";
-  }
-
-  if (user?.role === "organization") {
-    return user.onboarding_completed ? "/loading" : "/organization/onboarding";
-  }
-
-  return "/";
-}
+import { getUserDestination } from "./destination";
 
 export function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();

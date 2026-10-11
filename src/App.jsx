@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./shared/pages/Login";
 import Register from "./shared/pages/Register";
+import GoogleCallback from "./shared/pages/GoogleCallback";
 import OrganizationOnboarding from "./organization/pages/OrganizationOnboarding";
 import OrganizationProfilePage from "./organization/pages/OrganizationProfilePage";
 import EditOrganizationProfile from "./organization/pages/EditOrganizationProfile";
@@ -13,6 +14,9 @@ import LandingPage from "./shared/components/LandingPage";
 import StudentOnboarding from "./student/pages/StudentOnboarding";
 import DashboardMenu from "./shared/pages/DashboardMenu";
 import OrganizationProjects from "./organization/pages/OrganizationProjects";
+import ProjectProblemInfo from "./organization/pages/ProjectProblemInfo";
+import DynamicProjectDiscovery from "./organization/components/DynamicProjectDiscovery";
+import ProjectProposal from "./organization/pages/ProjectProposal";
 import { AuthProvider } from "./shared/auth/AuthProvider";
 import {
   GuestRoute,
@@ -30,6 +34,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
         {/* Only guests */}
         <Route element={<GuestRoute />}>
@@ -89,16 +94,24 @@ function App() {
                 element={<ProjectDiscovery mode="intro" />}
               />
               <Route
+                path="/organization/requests/new/problem"
+                element={<ProjectProblemInfo />}
+              />
+              <Route
+                path="/organization/requests/:id/problem"
+                element={<ProjectProblemInfo />}
+              />
+              <Route
                 path="/organization/requests/:id"
                 element={<ProjectDiscovery mode="detail" />}
               />
               <Route
                 path="/organization/requests/:id/intake"
-                element={<ProjectDiscovery mode="intake" />}
+                element={<DynamicProjectDiscovery />}
               />
               <Route
                 path="/organization/requests/:id/proposal"
-                element={<ProjectDiscovery mode="proposal" />}
+                element={<ProjectProposal />}
               />
               <Route
                 path="/organization/requests/:id/review"

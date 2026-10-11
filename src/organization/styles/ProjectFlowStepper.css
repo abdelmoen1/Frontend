@@ -1,0 +1,93 @@
+.pf-head {
+  margin-bottom: 16px;
+  direction: rtl;
+  text-align: right;
+}
+
+.pf-lead {
+  margin: 0 0 14px;
+  color: #021853;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.pf-steps {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* الخط الواصل بين المراحل */
+.pf-steps::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+.pf-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-step:first-child {
+  align-items: flex-start;
+}
+
+.pf-step:last-child {
+  align-items: flex-end;
+}
+
+.pf-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1.5px solid #94a3b8;
+  border-radius: 50%;
+  background: #fff;
+  color: #fff;
+}
+
+.pf-step-active .pf-dot {
+  border: 2px solid #021853;
+}
+
+.pf-step-active .pf-dot::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #021853;
+}
+
+.pf-step-done .pf-dot {
+  border-color: #021853;
+  background: #021853;
+}
+
+.pf-label {
+  color: #64748b;
+  font-size: 15px;
+}
+
+.pf-step-active .pf-label {
+  color: #021853;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .pf-label {
+    font-size: 14px;
+  }
+}

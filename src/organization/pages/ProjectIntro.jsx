@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
-import { createProjectRequest } from "../services/organizationService";
 import "../styles/ProjectIntro.css";
 
 const STEPS = [
@@ -63,25 +61,8 @@ const STEPS = [
 export default function ProjectIntro() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleStart = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const draft = await createProjectRequest({});
-
-      navigate(`/organization/requests/${draft.id}/intake`);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "تعذر بدء الطلب، حاول مرة أخرى.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // يبدأ المسار بنموذج المشكلة، ولا يُنشأ الطلب إلا بعد حفظ بياناته
+  const handleStart = () => navigate("/organization/requests/new/problem");
 
   return (
     <div className="pi-layout" dir="rtl">
@@ -104,32 +85,20 @@ export default function ProjectIntro() {
           ))}
         </section>
 
-        {error && (
-          <p className="pi-error" role="alert">
-            {error}
-          </p>
-        )}
-
         <footer className="pi-bar">
           <button
             className="pi-next"
             type="button"
             onClick={handleStart}
-            disabled={loading}
-            aria-busy={loading}
           >
-            {loading ? (
-              <Loader2 className="pi-spin" size={18} aria-hidden="true" />
-            ) : null}
             ابدأ الآن
-            {!loading && <ArrowLeft size={18} aria-hidden="true" />}
+            <ArrowLeft size={18} aria-hidden="true" />
           </button>
 
           <button
             className="pi-back"
             type="button"
-            onClick={() => navigate("/organization")}
-            disabled={loading}
+            onClick={() => navigate("/organization/dashboard")}
           >
             <ArrowRight size={18} aria-hidden="true" />
             رجوع

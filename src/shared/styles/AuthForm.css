@@ -390,7 +390,7 @@ option {
 
 .error-message {
   color: var(--error);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   margin-top: calc(1px - var(--form-gap));
   margin-left: 5px;
@@ -1469,4 +1469,78 @@ body:has(#organizationProfileStep2) .background-image {
 .resize-height {
   margin: 0 !important;
   margin-top: -10px !important;
+}
+
+/* ================================
+   حالات الإرسال والأخطاء العامة
+================================ */
+.auth-alert {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.7;
+  text-align: right;
+  animation: fadeIn 0.3s ease;
+}
+
+.signin-button,
+.google-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.signin-button:disabled,
+.google-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auth-spinner {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: auth-spin 0.8s linear infinite;
+}
+
+.auth-spinner-dark {
+  width: 32px;
+  height: 32px;
+  border-color: #dbe4ee;
+  border-top-color: #152f52;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.oauth-callback {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  color: #152f52;
+  font-size: 15px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-spinner {
+    animation-duration: 2s;
+  }
 }

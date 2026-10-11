@@ -29,7 +29,6 @@
 
 .op-table {
   width: 100%;
-  min-width: 820px;
 }
 
 .op-table-header,
@@ -40,7 +39,7 @@
     minmax(110px, 0.8fr)
     minmax(100px, 0.75fr)
     minmax(115px, 0.8fr)
-    minmax(105px, 0.8fr);
+    minmax(200px, 1.2fr);
   align-items: center;
   gap: 14px;
   padding-inline: 16px;
@@ -241,7 +240,90 @@
   text-decoration: none;
 }
 
-@media (max-width: 700px) {
+/* صفوف الطلبات تستخدم نفس أعمدة رأس الجدول */
+.op-table .od-cols {
+  grid-template-columns:
+    minmax(220px, 2.2fr)
+    minmax(110px, 0.8fr)
+    minmax(100px, 0.75fr)
+    minmax(115px, 0.8fr)
+    minmax(200px, 1.2fr);
+  gap: 14px;
+  padding-inline: 16px;
+}
+
+.op-table .od-tr {
+  min-height: 52px;
+  margin-top: 7px;
+}
+
+/* التجاوب حسب عرض مساحة المحتوى الفعلية (بعد الشريط الجانبي) */
+.organization-projects-page {
+  box-sizing: border-box;
+  container-type: inline-size;
+}
+
+@container (max-width: 860px) {
+  .op-table {
+    min-width: 0;
+  }
+
+  .op-table-header {
+    display: none;
+  }
+
+  /* كل طلب يتحول إلى بطاقة */
+  .op-table .od-tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title status"
+      "date date"
+      "progress progress"
+      "link link";
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+
+  .op-table .od-tr .t {
+    grid-area: title;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .op-table .od-tr .op-status {
+    grid-area: status;
+    align-self: start;
+  }
+
+  .op-table .od-tr .m {
+    grid-area: date;
+  }
+
+  .op-table .od-tr .m::before {
+    content: "التاريخ: ";
+  }
+
+  .op-table .od-tr .f-1 {
+    grid-area: progress;
+  }
+
+  .op-table .od-tr .od-pb {
+    flex: 1;
+    max-width: none;
+  }
+
+  .op-table .od-tr .op-row-actions {
+    grid-area: link;
+    justify-self: end;
+  }
+
+  .op-empty {
+    min-height: 220px;
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 767px) {
   .organization-projects-page {
     padding: 12px 0 28px;
   }
@@ -249,13 +331,55 @@
   .organization-projects-heading h1 {
     font-size: 19px;
   }
-
-  .op-table {
-    min-width: 820px;
-  }
 }
 .f-1{
   display: flex;
   align-items: center;
   gap: 10px;
+}
+/* أزرار الإجراءات في كل صف */
+.op-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.op-table .op-delete {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 32px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #dc2626;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.op-table .op-delete:hover {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.op-table .op-delete:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
+}
+
+.op-table .op-delete svg {
+  flex-shrink: 0;
 }

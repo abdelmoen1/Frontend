@@ -1,4 +1,3 @@
-import React from "react";
 import EyeButton from "./EyeButton"; // تأكد من مسار الملف
 
 function InputFileds({
@@ -14,7 +13,10 @@ function InputFileds({
   setPassword,
   disabled = false,
   fullWidth = false,
+  autoComplete,
 }) {
+  const errorId = `${name}-error`;
+
   return (
     <div
       className={`form-group animate-element delay-300 ${fullWidth ? "full" : ""}`}
@@ -31,14 +33,20 @@ function InputFileds({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          autoComplete={name}
+          autoComplete={autoComplete || name}
           disabled={disabled}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
         />
         {type === "password" && (
           <EyeButton showPassword={ifPassword} setShowPassword={setPassword} />
         )}
       </div>
-      {error && <span className="error-message">{error}</span>}
+      {error && (
+        <span className="error-message" id={errorId}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }

@@ -37,6 +37,8 @@ export const getProjectRequest = (id) =>
   request(`${projectRequestsPath}/${id}`);
 export const updateProjectRequest = (id, data) =>
   request(`${projectRequestsPath}/${id}`, json("PATCH", data));
+export const deleteProjectRequest = (id) =>
+  request(`${projectRequestsPath}/${id}`, { method: "DELETE" });
 export const getNextDiscoveryQuestion = (id) =>
   request(`${projectRequestsPath}/${id}/next-question`, { method: "POST" });
 export const submitDiscoveryAnswer = (id, answer) =>

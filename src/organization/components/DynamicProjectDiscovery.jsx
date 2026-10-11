@@ -1,482 +1,509 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, LoaderCircle, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Bot, Check, LoaderCircle, RotateCcw } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+
+import ProjectFlowStepper from "./ProjectFlowStepper";
+import { Skeleton, SkeletonGroup } from "./Skeleton";
 import {
   analyzeProjectRequest,
   getNextDiscoveryQuestion,
   submitDiscoveryAnswer,
 } from "../services/organizationService";
+import "../styles/DynamicProjectDiscovery.css";
 
-const INITIAL_ANSWER = "";
+const CHOICE_TYPES = ["single_choice", "multi_choice"];
+const YES_NO_OPTIONS = [
+  { value: true, label_ar: "نعم" },
+  { value: false, label_ar: "لا" },
+];
 
-function DiscoveryQuestionInput({
-  question,
-  answer,
-  setAnswer,
-  customAnswer,
-  setCustomAnswer,
-}) {
-  const choiceTypes = ["single_choice", "multi_choice"];
-  const isChoice = choiceTypes.includes(question.type);
-  const selectedValues = Array.isArray(answer)
-    ? answer
-    : answer === ""
-      ? []
-      : [answer];
-  const customOptionSelected = isChoice
-    && question.options.some(
-      (option) => option.allows_custom_text && selectedValues.includes(option.value),
-    );
+const isEmptyAnswer = (answer) =>
+  answer === "" || (Array.isArray(answer) && answer.length === 0);
 
-  const toggleOption = (option) => {
-    if (question.type === "single_choice") {
-      setAnswer(selectedValues.includes(option.value) ? "" : option.value);
-      if (!option.allows_custom_text) setCustomAnswer("");
-      return;
-    }
-
-    const nextValues = selectedValues.includes(option.value)
-      ? selectedValues.filter((value) => value !== option.value)
-      : [...selectedValues, option.value];
-    setAnswer(nextValues);
-    if (!nextValues.some((value) =>
-      question.options.some((item) => item.value === value && item.allows_custom_text)
-    )) {
-      setCustomAnswer("");
-    }
-  };
-
-  if (question.type === "yes_no") {
-    return (
-      <div className="discovery-answer-options">
-        {[
-          { value: true, label: "نعم" },
-          { value: false, label: "لا" },
-        ].map((option) => (
-          <button
-            aria-pressed={answer === option.value}
-            className={`project-option-card ${answer === option.value ? "selected" : ""}`}
-            key={option.label}
-            onClick={() => setAnswer(option.value)}
-            type="button"
-          >
-            <span className="project-option-check">
-              {answer === option.value ? <Check size={16} aria-hidden="true" /> : null}
-            </span>
-            {option.label}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  if (isChoice) {
-    return (
-      <>
-        <div className="project-option-grid">
-          {question.options.map((option) => (
-            <button
-              aria-pressed={selectedValues.includes(option.value)}
-              className={`project-option-card ${selectedValues.includes(option.value) ? "selected" : ""}`}
-              key={option.value}
-              onClick={() => toggleOption(option)}
-              type="button"
-            >
-              <span className="project-option-check">
-                {selectedValues.includes(option.value) ? (
-                  <Check size={16} aria-hidden="true" />
-                ) : null}
-              </span>
-              {option.label_ar}
-            </button>
-          ))}
-        </div>
-        {customOptionSelected && (
-          <label className="project-field discovery-custom-answer">
-            <span>أخبرنا بالمزيد</span>
-            <textarea
-              autoFocus
-              maxLength={2000}
-              onChange={(event) => setCustomAnswer(event.target.value)}
-              placeholder="اكتب ما يناسب مؤسستك"
-              rows={3}
-              value={customAnswer}
-            />
-          </label>
-        )}
-      </>
-    );
-  }
-
-  const inputProps = {
-    autoFocus: true,
-    maxLength: question.type === "short_text" ? 2000 : 10000,
-    onChange: (event) => setAnswer(event.target.value),
-    placeholder: "اكتب إجابتك هنا",
-    value: answer,
-  };
-
-  if (question.type === "long_text") {
-    return (
-      <textarea
-        {...inputProps}
-        aria-label={question.text_ar}
-        className="discovery-text-input"
-        rows={5}
-      />
-    );
-  }
-
-  return (
-    <input
-      {...inputProps}
-      aria-label={question.text_ar}
-      className="discovery-text-input"
-      maxLength={question.type === "date" || question.type === "number" ? undefined : inputProps.maxLength}
-      min={question.type === "number" ? "0" : undefined}
-      placeholder={question.type === "number" ? "أدخل رقمًا" : inputProps.placeholder}
-      type={
-        question.type === "number"
-          ? "number"
-          : question.type === "date"
-            ? "date"
-            : "text"
-      }
-    />
-  );
-}
-
-function HistoryItem({ item }) {
-  const selectedValues = Array.isArray(item.selected_answer)
+// يحوّل الإجابة المحفوظة إلى نص مقروء بنفس تسميات الخيارات
+const formatAnswer = (item) => {
+  const values = Array.isArray(item.selected_answer)
     ? item.selected_answer
     : [item.selected_answer];
-  const labelsByValue = new Map(
+  const labels = new Map(
     (item.question?.options || []).map((option) => [option.value, option.label_ar]),
   );
-  const displayedAnswer = selectedValues
+  const text = values
     .map((value) => {
       if (value === true) return "نعم";
       if (value === false) return "لا";
-      return labelsByValue.get(value) || value;
+      return labels.get(value) || value;
     })
-    .filter(Boolean)
+    .filter((value) => value !== null && value !== "")
     .join("، ");
 
+  return item.custom_answer ? `${text} — ${item.custom_answer}` : text;
+};
+
+function ChatMessage({ role, children }) {
   return (
-    <li className="discovery-history-item">
-      <strong>{item.question?.text_ar}</strong>
-      {item.answered_at ? (
-        <p>
-          {displayedAnswer}
-          {item.custom_answer ? ` — ${item.custom_answer}` : ""}
-        </p>
-      ) : (
-        <p className="project-muted">بانتظار إجابتك</p>
-      )}
+    <li className={`dc-msg dc-msg-${role}`}>
+      <span className="dc-msg-author">
+        {role === "assistant" ? (
+          <>
+            <Bot size={12} aria-hidden="true" /> المساعد
+          </>
+        ) : (
+          "أنت"
+        )}
+      </span>
+      <div className="dc-msg-text">{children}</div>
     </li>
   );
 }
 
-function DynamicProjectDiscovery({ projectId, project }) {
+function AnswerSuggestions({ question, answer, onToggle, disabled }) {
+  const options = question.type === "yes_no" ? YES_NO_OPTIONS : question.options;
+  if (!options?.length) return null;
+
+  const selected = Array.isArray(answer) ? answer : [answer];
+
+  return (
+    <div
+      className="dc-chips"
+      role="group"
+      aria-label={question.type === "multi_choice" ? "اختر إجابة أو أكثر" : "اختر إجابة"}
+    >
+      {options.map((option) => {
+        const active = selected.includes(option.value);
+        return (
+          <button
+            key={String(option.value)}
+            type="button"
+            className={`dc-chip ${active ? "dc-chip-active" : ""}`}
+            aria-pressed={active}
+            onClick={() => onToggle(option)}
+            disabled={disabled}
+          >
+            {active && <Check size={13} aria-hidden="true" />}
+            {option.label_ar}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function DynamicProjectDiscovery() {
+  const { id: projectId } = useParams();
   const navigate = useNavigate();
+
   const [state, setState] = useState(null);
-  const questionIdRef = useRef(null);
-  const retryLockRef = useRef(false);
-  const [answer, setAnswer] = useState(INITIAL_ANSWER);
-  const [customAnswer, setCustomAnswer] = useState("");
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [retrying, setRetrying] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [validationError, setValidationError] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [generatingProposal, setGeneratingProposal] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const [customAnswer, setCustomAnswer] = useState("");
   const [proposalError, setProposalError] = useState("");
+  const lockRef = useRef(false);
+  const questionIdRef = useRef(null);
+  const threadRef = useRef(null);
 
-  const fetchDiscovery = useCallback(async () => {
-    const result = await getNextDiscoveryQuestion(projectId);
-    questionIdRef.current = result.question?.id || null;
-    setState(result);
+  const question = state?.status === "question" ? state.question : null;
+  const history = state?.history || [];
+  const answeredCount = history.filter((item) => item.answered_at).length;
+  const customOption = question?.options?.find((option) => option.allows_custom_text);
+  const isChoice = CHOICE_TYPES.includes(question?.type);
+
+  const applyState = useCallback((nextState) => {
+    // لا نمسح المسودة إلا عند الانتقال إلى سؤال مختلف
+    if (questionIdRef.current !== (nextState.question?.id || null)) {
+      setAnswer("");
+      setCustomAnswer("");
+      setValidationError("");
+    }
+    questionIdRef.current = nextState.question?.id || null;
+    setState(nextState);
     setError("");
-    return result;
-  }, [projectId]);
+  }, []);
+
+  // قفل واحد يمنع طلبات متزامنة (جلب سؤال/إرسال إجابة/إعداد مقترح)
+  const runExclusive = useCallback(async (task) => {
+    if (lockRef.current) return;
+    lockRef.current = true;
+    setBusy(true);
+    try {
+      await task();
+    } finally {
+      lockRef.current = false;
+      setBusy(false);
+    }
+  }, []);
+
+  const refresh = useCallback(
+    () =>
+      runExclusive(async () => {
+        try {
+          applyState(await getNextDiscoveryQuestion(projectId));
+        } catch (loadError) {
+          setError(loadError.message || "تعذر تحميل السؤال التالي حاليًا.");
+        }
+      }),
+    [applyState, projectId, runExclusive],
+  );
 
   useEffect(() => {
     let active = true;
+    lockRef.current = true;
 
     getNextDiscoveryQuestion(projectId)
-      .then((result) => {
-        if (active) {
-          questionIdRef.current = result.question?.id || null;
-          setState(result);
-        }
-      })
-      .catch((loadError) => {
-        if (active) setError(loadError.message || "تعذر إكمال التحليل حاليًا");
-      })
+      .then((result) => active && applyState(result))
+      .catch(
+        (loadError) =>
+          active && setError(loadError.message || "تعذر بدء جلسة الاكتشاف حاليًا."),
+      )
       .finally(() => {
+        lockRef.current = false;
         if (active) setLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [projectId]);
+  }, [applyState, projectId]);
 
-  const restoreDiscovery = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const previousQuestionId = questionIdRef.current;
-      const result = await fetchDiscovery();
-      if (previousQuestionId && result.question?.id !== previousQuestionId) {
-        setAnswer(INITIAL_ANSWER);
-        setCustomAnswer("");
-        setValidationError("");
-      }
-    } catch (restoreError) {
-      setError(restoreError.message || "تعذر إكمال التحليل حاليًا");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchDiscovery]);
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  }, [history.length, busy, state?.status]);
 
-  const question = state?.question;
-  const questionNumber = useMemo(
-    () => state?.history?.length || 1,
-    [state?.history?.length],
-  );
-
-  const retry = async () => {
-    if (retryLockRef.current || submitting) return;
-    retryLockRef.current = true;
-    setRetrying(true);
-    try {
-      await restoreDiscovery();
-    } finally {
-      retryLockRef.current = false;
-      setRetrying(false);
-    }
-  };
-
-  const saveAndReturn = () => {
-    navigate("/organization/dashboard");
-  };
-
-  const generateProposal = async () => {
-    setGeneratingProposal(true);
-    setProposalError("");
-    try {
-      await analyzeProjectRequest(projectId);
-      navigate(`/organization/requests/${projectId}/proposal`);
-    } catch {
-      setProposalError("تعذر إعداد المقترح حاليًا. إجاباتك محفوظة، ويمكنك المحاولة مرة أخرى.");
-    } finally {
-      setGeneratingProposal(false);
-    }
-  };
-
-  const submit = async (event) => {
-    event.preventDefault();
+  const toggleOption = (option) => {
     setValidationError("");
-    if (answer === "" || (Array.isArray(answer) && answer.length === 0)) {
+    if (question.type !== "multi_choice") {
+      const next = answer === option.value ? "" : option.value;
+      setAnswer(next);
+      if (!option.allows_custom_text || next === "") setCustomAnswer("");
+      return;
+    }
+
+    const current = Array.isArray(answer) ? answer : [];
+    const next = current.includes(option.value)
+      ? current.filter((value) => value !== option.value)
+      : [...current, option.value];
+    setAnswer(next);
+    if (customOption && !next.includes(customOption.value)) setCustomAnswer("");
+  };
+
+  // الكتابة في سؤال اختيار تعني اختيار "أخرى" وإضافة توضيح لها
+  const handleCustomText = (value) => {
+    setValidationError("");
+    setCustomAnswer(value);
+    if (!customOption || !value.trim()) return;
+    if (question.type === "multi_choice") {
+      const current = Array.isArray(answer) ? answer : [];
+      if (!current.includes(customOption.value)) setAnswer([...current, customOption.value]);
+    } else if (answer !== customOption.value) {
+      setAnswer(customOption.value);
+    }
+  };
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (!question || lockRef.current) return;
+
+    if (isEmptyAnswer(answer)) {
       setValidationError("أكمل إجابتك للمتابعة.");
       return;
     }
-    if (
-      question.options?.some(
-        (option) =>
-          option.allows_custom_text
-          && (Array.isArray(answer) ? answer.includes(option.value) : answer === option.value),
-      )
-      && !customAnswer.trim()
-    ) {
+    const customSelected =
+      customOption &&
+      (Array.isArray(answer) ? answer.includes(customOption.value) : answer === customOption.value);
+    if (customSelected && !customAnswer.trim()) {
       setValidationError("أخبرنا بالمزيد عن اختيارك.");
       return;
     }
 
-    setSubmitting(true);
-    setSaved(false);
-    setError("");
-    try {
-      const nextState = await submitDiscoveryAnswer(projectId, {
-        question_id: question.id,
-        selected_answer: answer,
-        ...(customAnswer.trim() ? { custom_answer: customAnswer.trim() } : {}),
-      });
-      questionIdRef.current = nextState.question?.id || null;
-      setAnswer(INITIAL_ANSWER);
-      setCustomAnswer("");
-      setValidationError("");
-      setSaved(true);
-      setState(nextState);
-    } catch (submitError) {
-      if (submitError.status === 422) {
-        const fieldErrors = submitError.errors || {};
-        setValidationError(
-          fieldErrors.custom_answer?.[0]
-          || fieldErrors.selected_answer?.[0]
-          || submitError.message
-          || "تحقق من إجابتك وحاول مرة أخرى.",
-        );
-      } else {
-        setError(submitError.message || "تعذر إكمال التحليل حاليًا");
+    const payload = {
+      question_id: question.id,
+      selected_answer:
+        question.type === "number" ? Number(answer) : typeof answer === "string" ? answer.trim() : answer,
+      ...(customSelected ? { custom_answer: customAnswer.trim() } : {}),
+    };
+
+    runExclusive(async () => {
+      try {
+        applyState(await submitDiscoveryAnswer(projectId, payload));
+      } catch (submitError) {
+        if (submitError.status === 422) {
+          const fieldErrors = submitError.errors || {};
+          setValidationError(
+            fieldErrors.custom_answer?.[0] ||
+              fieldErrors.selected_answer?.[0] ||
+              submitError.message ||
+              "تحقق من إجابتك وحاول مرة أخرى.",
+          );
+          return;
+        }
+        // الإجابة قد تكون حُفظت قبل فشل توليد السؤال التالي، فنُبقيها في الحقل
+        // لأن إعادة إرسالها نفسها آمنة، ونعرض خيار إعادة المحاولة
+        setError(submitError.message || "تعذر حفظ إجابتك حاليًا.");
+        if (submitError.status === 409) {
+          try {
+            applyState(await getNextDiscoveryQuestion(projectId));
+          } catch {
+            // يبقى الخطأ ظاهرًا مع زر إعادة المحاولة
+          }
+        }
       }
-    } finally {
-      setSubmitting(false);
-    }
+    });
   };
 
-  if (loading || retrying) {
-    return (
-      <main aria-busy="true" className="project-flow-page" dir="rtl">
-        <section className="project-discovery-card project-loading-card">
-          <LoaderCircle aria-hidden="true" className="project-spinner" size={30} />
-          <p>{state ? "نحلل إجابتك..." : "نحلل احتياج مؤسستك..."}</p>
-        </section>
-      </main>
-    );
-  }
+  const generateProposal = () =>
+    runExclusive(async () => {
+      setProposalError("");
+      try {
+        await analyzeProjectRequest(projectId);
+        navigate(`/organization/requests/${projectId}/proposal`);
+      } catch (analyzeError) {
+        setProposalError(
+          analyzeError.message ||
+            "تعذر إعداد المقترح حاليًا. إجاباتك محفوظة، ويمكنك المحاولة مرة أخرى.",
+        );
+      }
+    });
 
-  if (error) {
-    return (
-      <main className="project-flow-page" dir="rtl">
-        <section className="project-discovery-card discovery-error-card" role="alert">
-          <span className="project-success-icon"><Sparkles size={23} /></span>
-          <h1>تعذر إكمال التحليل حاليًا</h1>
-          <p>{error}</p>
-          <p>إجاباتك محفوظة. إعادة المحاولة تستكمل الجلسة الحالية دون تكرار الإجابة.</p>
-          <div className="project-flow-actions">
-            <button className="project-primary-button" disabled={retrying} onClick={retry} type="button">
-              إعادة المحاولة
-            </button>
-            <button className="project-secondary-button" onClick={saveAndReturn} type="button">
-              حفظ والعودة لاحقًا
-            </button>
-          </div>
-        </section>
-      </main>
-    );
-  }
+  const renderComposerField = () => {
+    const common = {
+      className: "dc-input",
+      disabled: busy,
+      "aria-label": question.text_ar,
+    };
 
-  if (state?.status === "complete") {
-    return (
-      <main className="project-flow-page" dir="rtl">
-        <section className="project-discovery-card project-success-card">
-          <span className="project-success-icon"><Check size={27} /></span>
-          <span className="project-eyebrow">اكتشاف احتياج المؤسسة</span>
-          <h1>تم جمع المعلومات الأساسية بنجاح</h1>
-          <p>
-            اكتمل جمع المعلومات اللازمة عن {project?.title || "مشروعكم"}. يمكنك
-            الآن إعداد مسودة مقترح المشروع لمراجعتها.
-          </p>
-          <p className="proposal-draft-notice">
-            هذا المقترح أولي ومبني على المعلومات التي قدمتها المؤسسة، ويمكن مراجعته وتعديله قبل الاعتماد.
-          </p>
-          {proposalError && <p className="discovery-validation-error" role="alert">{proposalError}</p>}
-          <div className="project-flow-actions">
-            <button
-              className="project-primary-button"
-              disabled={generatingProposal}
-              onClick={generateProposal}
-              type="button"
-            >
-              {generatingProposal ? "جارٍ إعداد مقترح المشروع..." : "إعداد مقترح المشروع"}
-            </button>
-            <button className="project-secondary-button" onClick={saveAndReturn} type="button">
-              حفظ والعودة لاحقًا
-            </button>
-          </div>
-        </section>
-      </main>
-    );
-  }
+    if (isChoice) {
+      return (
+        <input
+          {...common}
+          type="text"
+          maxLength={2000}
+          value={customAnswer}
+          onChange={(event) => handleCustomText(event.target.value)}
+          disabled={busy || !customOption}
+          placeholder={
+            customOption ? "اكتب إجابتك أو اختر اقتراحًا..." : "اختر اقتراحًا من الأعلى"
+          }
+        />
+      );
+    }
+    if (question.type === "yes_no") {
+      return <input {...common} type="text" disabled placeholder="اختر نعم أو لا" />;
+    }
 
-  if (!question) {
+    const change = (event) => {
+      setValidationError("");
+      setAnswer(event.target.value);
+    };
+
+    if (question.type === "long_text") {
+      return (
+        <textarea
+          {...common}
+          rows={3}
+          maxLength={10000}
+          value={answer}
+          onChange={change}
+          placeholder="اكتب إجابتك..."
+        />
+      );
+    }
+
+    const type = { number: "number", date: "date" }[question.type] || "text";
     return (
-      <main className="project-flow-page" dir="rtl">
-        <section className="project-discovery-card discovery-error-card" role="alert">
-          <h1>تعذر إكمال التحليل حاليًا</h1>
-          <p>إجاباتك محفوظة ويمكنك المحاولة مرة أخرى.</p>
-          <button className="project-primary-button" disabled={retrying} onClick={retry} type="button">
-            إعادة المحاولة
-          </button>
-        </section>
-      </main>
+      <input
+        {...common}
+        type={type}
+        min={type === "number" ? "0" : undefined}
+        step={type === "number" ? "any" : undefined}
+        maxLength={type === "text" ? 2000 : undefined}
+        value={answer}
+        onChange={change}
+        placeholder={type === "number" ? "أدخل رقمًا" : "اكتب إجابتك..."}
+      />
     );
-  }
+  };
+
+  const counter =
+    state?.status === "complete"
+      ? "اكتملت الأسئلة"
+      : question
+        ? `السؤال ${answeredCount + 1}`
+        : null;
 
   return (
-    <main className="project-flow-page" dir="rtl">
-      <div className="project-flow-narrow discovery-flow">
-        <header className="project-flow-heading">
-          <span className="project-eyebrow">
-            <Sparkles size={16} aria-hidden="true" /> اكتشاف احتياج المؤسسة
-          </span>
-          <p className="discovery-question-count">السؤال {questionNumber}</p>
-          <h1>{project?.title}</h1>
-          <p>سؤال واحد في كل مرة، وإجابتك تساعدنا على فهم احتياج مؤسستك بدقة.</p>
+    <div className="dc" dir="rtl">
+      <ProjectFlowStepper current={1} />
+
+      <section className="dc-card" aria-busy={loading || busy}>
+        <header className="dc-header">
+          <h1>
+            Traino <span>مساعد GoTrainee</span>
+          </h1>
+          {counter && <span className="dc-counter">{counter}</span>}
         </header>
 
-        <form className="project-discovery-card" onSubmit={submit}>
-          <div className="discovery-question-heading">
-            <span className="project-eyebrow">نحتاج إلى معرفة المزيد</span>
-            <h2>{question.text_ar}</h2>
-          </div>
-          <div className="discovery-answer-control">
-            <DiscoveryQuestionInput
-              answer={answer}
-              customAnswer={customAnswer}
-              question={question}
-              setAnswer={setAnswer}
-              setCustomAnswer={setCustomAnswer}
-            />
-          </div>
-          {validationError && (
-            <p className="discovery-validation-error" role="alert">{validationError}</p>
-          )}
-          {saved && <p className="discovery-saved-status" role="status">تم حفظ التقدم</p>}
-          {submitting && (
-            <p aria-live="polite" className="discovery-saving-status">
-              جاري حفظ التقدم...
-            </p>
-          )}
-          <footer className="project-flow-actions discovery-actions">
-            <button
-              className="project-secondary-button"
-              disabled={submitting}
-              onClick={saveAndReturn}
-              type="button"
-            >
-              حفظ والعودة لاحقًا
+        {loading ? (
+          <SkeletonGroup label="نجهّز جلسة الأسئلة">
+            <div className="dc-body">
+              <div className="dc-sk-thread">
+                <Skeleton className="dc-sk-bubble" width="62%" height={78} radius={10} />
+                <Skeleton className="dc-sk-bubble dc-sk-user" width="30%" height={54} radius={10} />
+                <Skeleton className="dc-sk-bubble" width="55%" height={64} radius={10} />
+              </div>
+              <div className="dc-topics">
+                <Skeleton width="70%" height={16} className="dc-sk-center" />
+                {[0, 1, 2, 3, 4].map((row) => (
+                  <Skeleton key={row} width={`${85 - row * 8}%`} height={13} className="dc-sk-topic" />
+                ))}
+              </div>
+            </div>
+            <div className="dc-footer">
+              <div className="dc-chips">
+                {[0, 1, 2].map((chip) => (
+                  <Skeleton key={chip} width={96} height={30} radius={999} />
+                ))}
+              </div>
+              <div className="dc-composer">
+                <Skeleton height={42} radius={8} />
+                <Skeleton width={80} height={42} radius={6} />
+              </div>
+            </div>
+          </SkeletonGroup>
+        ) : !state ? (
+          <div className="dc-state" role="alert">
+            <p>{error || "تعذر بدء جلسة الاكتشاف حاليًا."}</p>
+            <button className="dc-send" type="button" onClick={refresh} disabled={busy}>
+              <RotateCcw size={15} aria-hidden="true" /> إعادة المحاولة
             </button>
-            <button className="project-primary-button" disabled={submitting} type="submit">
-              {submitting ? (
-                <>
-                  <LoaderCircle className="project-spinner" size={17} aria-hidden="true" />
-                  نحلل إجابتك...
-                </>
-              ) : (
-                <>
-                  متابعة <ChevronLeft size={17} aria-hidden="true" />
-                </>
-              )}
-            </button>
-          </footer>
-        </form>
+          </div>
+        ) : (
+          <>
+            <div className="dc-body">
+              <ol className="dc-thread" ref={threadRef} aria-live="polite">
+                {history.length === 0 && state.status !== "complete" && (
+                  <li className="dc-empty">لا توجد أسئلة بعد.</li>
+                )}
 
-        {state.history?.length > 0 && (
-          <details className="discovery-history">
-            <summary>مراجعة ما شاركته ({state.history.filter((item) => item.answered_at).length})</summary>
-            <ol>
-              {state.history.map((item) => (
-                <HistoryItem item={item} key={`${item.sequence}-${item.question?.id}`} />
-              ))}
-            </ol>
-          </details>
+                {history.map((item) => (
+                  <li className="dc-turn" key={`${item.sequence}-${item.question?.id}`}>
+                    <ol>
+                      <ChatMessage role="assistant">{item.question?.text_ar}</ChatMessage>
+                      {item.answered_at && (
+                        <ChatMessage role="user">{formatAnswer(item)}</ChatMessage>
+                      )}
+                    </ol>
+                  </li>
+                ))}
+
+                {state.status === "complete" && (
+                  <ChatMessage role="assistant">
+                    شكرًا لك! اكتملت الأسئلة وأصبح لدينا ما يكفي لإعداد مسودة المقترح.
+                    المسودة أولية ويمكنك مراجعتها وتعديلها قبل الاعتماد.
+                  </ChatMessage>
+                )}
+
+                {busy && state.status !== "complete" && (
+                  <li className="dc-msg dc-msg-assistant dc-typing" role="status">
+                    <span className="dc-msg-author">
+                      <Bot size={12} aria-hidden="true" /> المساعد
+                    </span>
+                    <div className="dc-msg-text">
+                      <LoaderCircle className="dc-spin" size={14} aria-hidden="true" />
+                      نحفظ إجابتك ونجهّز السؤال التالي...
+                    </div>
+                  </li>
+                )}
+              </ol>
+
+              <aside className="dc-topics" aria-label="محاور الفهم">
+                <h2>محاور الفهم</h2>
+                {history.length === 0 ? (
+                  <p className="dc-topics-empty">ستظهر هنا المحاور التي نناقشها.</p>
+                ) : (
+                  <ul>
+                    {history.map((item) => {
+                      const current = !item.answered_at && item.question?.id === question?.id;
+                      return (
+                        <li
+                          key={`${item.sequence}-${item.question?.id}`}
+                          className={
+                            item.answered_at ? "dc-topic-done" : current ? "dc-topic-current" : ""
+                          }
+                          title={item.question?.text_ar}
+                        >
+                          <span className="dc-topic-mark" aria-hidden="true">
+                            {item.answered_at ? <Check size={13} strokeWidth={3} /> : null}
+                          </span>
+                          <span className="dc-topic-text">{item.question?.text_ar}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </aside>
+            </div>
+
+            {error && (
+              <div className="dc-alert" role="alert">
+                <p>{error} إجاباتك المحفوظة لن تضيع.</p>
+                <button type="button" onClick={refresh} disabled={busy}>
+                  <RotateCcw size={14} aria-hidden="true" /> إعادة المحاولة
+                </button>
+              </div>
+            )}
+
+            {state.status === "complete" ? (
+              <footer className="dc-footer">
+                {proposalError && (
+                  <p className="dc-validation" role="alert">
+                    {proposalError}
+                  </p>
+                )}
+                <div className="dc-complete-actions">
+                  <button className="dc-send" type="button" onClick={generateProposal} disabled={busy}>
+                    {busy ? "جارٍ إعداد مسودة المقترح..." : "إعداد مسودة المقترح"}
+                  </button>
+                  <button
+                    className="dc-secondary"
+                    type="button"
+                    onClick={() => navigate("/organization/dashboard")}
+                    disabled={busy}
+                  >
+                    العودة لاحقًا
+                  </button>
+                </div>
+              </footer>
+            ) : question ? (
+              <form className="dc-footer" onSubmit={submit}>
+                <AnswerSuggestions
+                  question={question}
+                  answer={answer}
+                  onToggle={toggleOption}
+                  disabled={busy}
+                />
+                <div className="dc-composer">
+                  {renderComposerField()}
+                  <button className="dc-send" type="submit" disabled={busy}>
+                    {busy ? <LoaderCircle className="dc-spin" size={16} aria-hidden="true" /> : null}
+                    إرسال
+                  </button>
+                </div>
+                {validationError && (
+                  <p className="dc-validation" role="alert">
+                    {validationError}
+                  </p>
+                )}
+                <p className="dc-hint">يمكنك الخروج والعودة لاحقًا، المحادثة تحفظ تلقائيًا.</p>
+              </form>
+            ) : null}
+          </>
         )}
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }
 

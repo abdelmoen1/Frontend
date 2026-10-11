@@ -1,106 +1,88 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { ApiError, requestJson } from "../utils/apiErrors";
+
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/+$/, "");
+// مسارات Google OAuth على جذر الخادم (مجموعة web)، وليست تحت /api
+const BACKEND_ORIGIN = BASE_URL.replace(/\/api$/, "");
+
+const jsonPost = (body) => ({
+  method: "POST",
+  headers: { Accept: "application/json", "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+const authHeaders = () => ({
+  Accept: "application/json",
+  Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+});
+
+// يحفظ الجلسة فقط عند استجابة نجاح مكتملة؛ أي شكل آخر يُعامل كخطأ غير متوقع
+const persistSession = (data) => {
+  if (typeof data?.token !== "string" || !data.token || typeof data.user !== "object" || !data.user) {
+    throw new ApiError({ kind: "invalid_response", status: 200 });
+  }
+
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("auth_user", JSON.stringify(data.user));
+  return data;
+};
 
 /**
   دالة تسجيل الدخول وإرسال البيانات للـ API
-  @param {Object} credentials 
-  @returns {Promise<Object>} 
+  @param {Object} credentials
+  @returns {Promise<Object>}
  */
-export const login = async (credentials) => {
-  const response = await fetch(`${BASE_URL}/login`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: credentials.email,
-      password: credentials.password,
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to sign in. Please try again.");
-  }
-
-  localStorage.setItem("auth_token", data.token);
-  localStorage.setItem("auth_user", JSON.stringify(data.user));
-
-  return data;
-};
+export const login = async (credentials) =>
+  persistSession(
+    await requestJson(
+      `${BASE_URL}/login`,
+      jsonPost({ email: credentials.email, password: credentials.password }),
+    ),
+  );
 
 /**
  * دالة تسجيل حساب جديد (طالب أو مؤسسة) وإرسال البيانات للـ API
-  @param {Object} formData 
+  @param {Object} formData
   @returns {Promise<Object>}
  */
-export const register = async (formData) => {
-  const payload = {
-    name: formData.role === "student" ? formData.name : formData.orgName,
-    email: formData.email,
-    password: formData.password,
-    password_confirmation: formData.password_confirmation,
-    role: formData.role,
-  };
+export const register = async (formData) =>
+  persistSession(
+    await requestJson(
+      `${BASE_URL}/register`,
+      jsonPost({
+        name: formData.role === "student" ? formData.name : formData.orgName,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+        role: formData.role,
+      }),
+    ),
+  );
 
-  const response = await fetch(`${BASE_URL}/register`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Failed to create account. Please try again.",
-    );
-  }
-
-  localStorage.setItem("auth_token", data.token);
-  localStorage.setItem("auth_user", JSON.stringify(data.user));
-
-  return data;
+// رابط بدء Google OAuth؛ الخادم يتحقق من intent/role ولا يقبل غير student/organization
+export const googleAuthUrl = (intent, role) => {
+  const query = new URLSearchParams({ intent });
+  if (intent === "register" && role) query.set("role", role);
+  return `${BACKEND_ORIGIN}/auth/google/redirect?${query}`;
 };
 
+// يستبدل رمز التبادل قصير العمر بجلسة Sanctum (نفس استجابة تسجيل الدخول)
+export const exchangeGoogleCode = async (code) =>
+  persistSession(await requestJson(`${BASE_URL}/auth/google/exchange`, jsonPost({ code })));
+
 export const getCurrentUser = async () => {
-  const token = localStorage.getItem("auth_token");
-  const response = await fetch(`${BASE_URL}/me`, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    if (response.status === 401) {
+  try {
+    const data = await requestJson(`${BASE_URL}/me`, { headers: authHeaders() });
+    localStorage.setItem("auth_user", JSON.stringify(data.user));
+    return data.user;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
     }
-    throw new Error(data.message || "Failed to fetch current user.");
+    throw error;
   }
-
-  localStorage.setItem("auth_user", JSON.stringify(data.user));
-  return data.user;
 };
 
 export const logoutUser = async () => {
-  const token = localStorage.getItem("auth_token");
-  const response = await fetch(`${BASE_URL}/logout`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to log out on the server.");
-  }
+  await requestJson(`${BASE_URL}/logout`, { method: "POST", headers: authHeaders() });
 };

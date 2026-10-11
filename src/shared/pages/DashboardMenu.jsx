@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FaSignOutAlt, FaSearch, FaBell, FaUserCircle } from "react-icons/fa";
 import { Building2, LayoutDashboard, Plus, UserRound } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
+import { showAlert, Swal } from "../utils/alerts";
 import logo from "../assets/logo.svg";
 import "../styles/DashboardMenu.css";
 
@@ -21,12 +22,27 @@ function DashboardMenu() {
       : "/student/dashboard";
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-    } finally {
-      navigate("/", { replace: true });
-    }
+    if (isLoggingOut) return;
+
+    const result = await showAlert({
+      icon: "question",
+      title: "هل تريد تسجيل الخروج؟",
+      text: "ستحتاج إلى تسجيل الدخول مرة أخرى للوصول إلى حسابك.",
+      showCancelButton: true,
+      confirmButtonText: "تسجيل الخروج",
+      cancelButtonText: "إلغاء",
+      focusCancel: true,
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      // logout يمسح الجلسة محليًا حتى لو فشل طلب الخادم
+      preConfirm: async () => {
+        setIsLoggingOut(true);
+        await logout();
+        return true;
+      },
+    });
+
+    if (result.isConfirmed) navigate("/", { replace: true });
   };
 
   return (

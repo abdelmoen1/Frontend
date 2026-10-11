@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import HeroAuthForm from "../components/HeroAuthForm";
 import "../styles/AuthForm.css";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineMail } from "react-icons/md";
 import { CiLock, CiUser } from "react-icons/ci";
@@ -9,6 +9,41 @@ import { FaRegBuilding } from "react-icons/fa";
 import InputFileds from "../components/InputFileds";
 import { register } from "../services/authService";
 import { useAuth } from "../auth/useAuth";
+import { getUserDestination } from "../auth/destination";
+import { useOAuthError } from "../auth/useOAuthError";
+import { normalizeAuthError } from "../utils/apiErrors";
+import GoogleAuthButton from "../components/GoogleAuthButton";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// نفس قواعد RegisterRequest في الخادم
+const validate = (formData, isStudent) => {
+  const errors = {};
+  const nameField = isStudent ? "name" : "orgName";
+  const nameValue = formData[nameField].trim();
+  if (!nameValue) {
+    errors[nameField] = isStudent ? "الرجاء إدخال الاسم الكامل." : "الرجاء إدخال اسم المؤسسة.";
+  } else if (nameValue.length > 255) {
+    errors[nameField] = "الاسم يجب ألا يتجاوز 255 حرفًا.";
+  }
+
+  const email = formData.email.trim();
+  if (!email) errors.email = "البريد الإلكتروني مطلوب.";
+  else if (!EMAIL_PATTERN.test(email)) errors.email = "صيغة البريد الإلكتروني غير صحيحة.";
+
+  const { password, password_confirmation: confirmation } = formData;
+  if (!password) errors.password = "كلمة المرور مطلوبة.";
+  else if (password.length < 8) errors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل.";
+  else if (!/\p{L}/u.test(password)) errors.password = "كلمة المرور يجب أن تحتوي على حرف واحد على الأقل.";
+  else if (!/\p{N}/u.test(password)) errors.password = "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل.";
+
+  if (!confirmation) errors.password_confirmation = "تأكيد كلمة المرور مطلوب.";
+  else if (password !== confirmation) errors.password_confirmation = "تأكيد كلمة المرور غير مطابق.";
+
+  return errors;
+};
+
+const focusField = (name) => document.getElementById(name)?.focus();
 
 function Register() {
   const navigate = useNavigate();
@@ -26,6 +61,9 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState({});
+  const oauthError = useOAuthError();
+  const [generalError, setGeneralError] = useState(oauthError);
+  const submittingRef = useRef(false);
   const [selectedRole, setSelectedRole] = useState("student");
 
   const handleChange = (e) => {
@@ -34,11 +72,15 @@ function Register() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    setErrorMsg((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev));
+    setGeneralError("");
   };
 
   const handleRoleChange = (e) => {
     setSelectedRole(e.target.value);
     setFormData((prev) => ({ ...prev, role: e.target.value }));
+    setErrorMsg({});
+    setGeneralError("");
   };
 
   const organizationFormData = [
@@ -46,6 +88,7 @@ function Register() {
       id: 1,
       label: "اسم المؤسسة أو الشركة الرسمي",
       name: "orgName",
+      autoComplete: "organization",
       placeholder: "اسم المنشأة أو المؤسسة",
       type: "text",
       icon: <FaRegBuilding className="input-icon" />,
@@ -57,6 +100,7 @@ function Register() {
       id: 2,
       label: "البريد الإلكتروني",
       name: "email",
+      autoComplete: "email",
       placeholder: "student@example.com",
       type: "email",
       icon: <MdOutlineMail className="input-icon" />,
@@ -68,6 +112,7 @@ function Register() {
       id: 3,
       label: "كلمة المرور",
       name: "password",
+      autoComplete: "new-password",
       icon: <CiLock className="input-icon" />,
       type: "password",
       placeholder: "••••••••••••",
@@ -81,6 +126,7 @@ function Register() {
       id: 4,
       label: "تأكيد كلمة المرور",
       name: "password_confirmation",
+      autoComplete: "new-password",
       icon: <CiLock className="input-icon" />,
       type: "password",
       placeholder: "••••••••••••",
@@ -97,6 +143,7 @@ function Register() {
       id: 1,
       label: "الاسم كامل",
       name: "name",
+      autoComplete: "name",
       icon: <CiUser className="input-icon" />,
       type: "text",
       placeholder: "أحمد محمد النجار",
@@ -108,6 +155,7 @@ function Register() {
       id: 2,
       label: "البريد الإلكتروني",
       name: "email",
+      autoComplete: "email",
       icon: <MdOutlineMail className="input-icon" />,
       type: "email",
       placeholder: "student@email.com",
@@ -119,6 +167,7 @@ function Register() {
       id: 3,
       label: "كلمة المرور",
       name: "password",
+      autoComplete: "new-password",
       icon: <CiLock className="input-icon" />,
       type: "password",
       placeholder: "••••••••••••",
@@ -132,6 +181,7 @@ function Register() {
       id: 4,
       label: "تأكيد كلمة المرور",
       name: "password_confirmation",
+      autoComplete: "new-password",
       icon: <CiLock className="input-icon" />,
       type: "password",
       placeholder: "••••••••••••",
@@ -145,52 +195,40 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = {};
+    if (submittingRef.current) return;
 
     const isStudent = selectedRole === "student";
-    const nameValue = isStudent ? formData.name : formData.orgName;
-
-    if (!nameValue) {
-      newErrors[isStudent ? "name" : "orgName"] = isStudent
-        ? "الرجاء إدخال الاسم الكامل"
-        : "الرجاء إدخال اسم المؤسسة";
-    }
-    if (!formData.email) {
-      newErrors.email = "البريد الإلكتروني مطلوب";
-    }
-    if (!formData.password) {
-      newErrors.password = "كلمة المرور مطلوبة";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
-    }
-    if (formData.password !== formData.password_confirmation) {
-      newErrors.password_confirmation = "كلمة المرور لا تطابق";
-    }
-
+    const newErrors = validate(formData, isStudent);
     setErrorMsg(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    setGeneralError("");
+    if (Object.keys(newErrors).length > 0) {
+      focusField(Object.keys(newErrors)[0]);
+      return;
+    }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
-      const payload = {
+      const result = await register({
         ...formData,
-        role: selectedRole === "orga" ? "organization" : "student",
-      };
-      const result = await register(payload);
+        name: formData.name.trim(),
+        orgName: formData.orgName.trim(),
+        email: formData.email.trim(),
+        role: isStudent ? "student" : "organization",
+      });
       setAuthenticatedUser(result.user);
-      const destination = result.user.role === "student"
-        ? result.user.onboarding_completed
-          ? "/loading"
-          : "/student/onboarding"
-        : result.user.role === "organization"
-          ? result.user.onboarding_completed
-            ? "/loading"
-            : "/organization/onboarding"
-          : "/";
-      navigate(destination, { replace: true });
+      navigate(getUserDestination(result.user), { replace: true });
     } catch (error) {
-      console.log(error);
+      const { general, fields } = normalizeAuthError(error, {
+        operation: "register",
+        // حقل name في الخادم يقابل اسم الطالب أو اسم المؤسسة حسب نوع الحساب
+        fieldMap: { name: isStudent ? "name" : "orgName", role: null },
+      });
+      setErrorMsg(fields);
+      setGeneralError(general);
+      if (Object.keys(fields).length) focusField(Object.keys(fields)[0]);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -217,7 +255,14 @@ function Register() {
                 id="signinForm"
                 className="signin-form animate-element delay-100"
                 onSubmit={handleSubmit}
+                noValidate
+                aria-busy={loading}
               >
+                {generalError && (
+                  <p className="auth-alert" role="alert">
+                    {generalError}
+                  </p>
+                )}
                 <div className="role-toggle-container animate-element delay-300">
                   <input
                     type="radio"
@@ -264,6 +309,7 @@ function Register() {
                     value={input.value}
                     ifPassword={input.ifPassword}
                     setPassword={input.setPassword}
+                    autoComplete={input.autoComplete}
                   />
                 ))}
 
@@ -287,24 +333,23 @@ function Register() {
                   className="signin-button animate-element delay-600"
                   type="submit"
                   disabled={loading}
+                  aria-busy={loading}
                 >
-                  {loading ? "يتم إنشاء الحساب...." : "إنشاء الحساب"}
+                  {loading && <span className="auth-spinner" aria-hidden="true" />}
+                  {loading ? "يتم إنشاء الحساب..." : "إنشاء الحساب"}
                 </button>
               </form>
 
-              <button
-                id="googleSignIn"
-                className="google-button animate-element delay-800"
-                type="button"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 48 48">
-                  <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917" />
-                  <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691" />
-                  <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.9 11.9 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44" />
-                  <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917" />
-                </svg>
-                <span>المتابعة بواسطة حساب جوجل</span>
-              </button>
+              <GoogleAuthButton
+                intent="register"
+                role={selectedRole === "student" ? "student" : "organization"}
+                label={
+                  selectedRole === "student"
+                    ? "إنشاء حساب طالب عبر Google"
+                    : "إنشاء حساب مؤسسة عبر Google"
+                }
+                disabled={loading}
+              />
 
               <p className="create-account animate-element delay-900">
                 لديك حساب بالفعل؟{" "}

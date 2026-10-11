@@ -1,0 +1,92 @@
+/* نوافذ SweetAlert بتنسيق التطبيق (تُستخدم عبر shared/utils/alerts.js) */
+.swal2-popup.gt-swal {
+  direction: rtl;
+  width: min(440px, calc(100vw - 32px));
+  padding: 24px 22px 22px;
+  border-radius: 16px;
+  font-family: inherit;
+}
+
+.swal2-popup.gt-swal .gt-swal-title {
+  padding: 8px 0 0;
+  color: #071528;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.swal2-popup.gt-swal .gt-swal-text {
+  margin: 8px 0 0;
+  padding: 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.swal2-popup.gt-swal .gt-swal-actions {
+  gap: 10px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.swal2-popup.gt-swal .gt-swal-btn {
+  box-sizing: border-box;
+  min-width: 130px;
+  height: 42px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.swal2-popup.gt-swal .gt-swal-confirm-primary {
+  background: #021853;
+  color: #fff;
+}
+
+.swal2-popup.gt-swal .gt-swal-confirm-primary:hover {
+  background: #0d4f8b;
+}
+
+.swal2-popup.gt-swal .gt-swal-confirm-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.swal2-popup.gt-swal .gt-swal-confirm-danger:hover {
+  background: #b91c1c;
+}
+
+.swal2-popup.gt-swal .gt-swal-cancel {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #071528;
+}
+
+.swal2-popup.gt-swal .gt-swal-cancel:hover {
+  background: #f1f5f9;
+}
+
+.swal2-popup.gt-swal .gt-swal-btn:focus-visible {
+  outline: 2px solid #2099c7;
+  outline-offset: 2px;
+}
+
+.swal2-popup.gt-swal .gt-swal-error {
+  margin: 14px 0 0;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+@media (max-width: 420px) {
+  .swal2-popup.gt-swal .gt-swal-btn {
+    flex: 1 1 100%;
+  }
+}

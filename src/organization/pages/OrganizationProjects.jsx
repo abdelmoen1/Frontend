@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
-import { getDashboardData } from "../services/organizationService";
+import { ArrowLeft, BriefcaseBusiness, Trash2 } from "lucide-react";
+import { showAlert, Swal } from "../../shared/utils/alerts";
+import {
+  deleteProjectRequest,
+  getDashboardData,
+} from "../services/organizationService";
 import { PROJECT_REQUEST_STATUS_LABELS } from "../constants/projectRequestOptions";
 import "../styles/OrganizationProjects.css";
 import "../styles/OrganizationDashboard.css";
@@ -97,6 +101,41 @@ export default function OrganizationProjects() {
     };
   }, []);
 
+  const handleDelete = async (project) => {
+    const result = await showAlert({
+      tone: "danger",
+      icon: "warning",
+      title: "هل أنت متأكد من أنك تريد حذف المشروع؟",
+      // نستخدم text بدل html حتى لا يُفسَّر عنوان المشروع كـ HTML
+      text: `سيتم حذف "${project.title || "طلب بلا عنوان"}" وكل إجاباته ومقترحه نهائيًا، ولا يمكن التراجع عن ذلك.`,
+      showCancelButton: true,
+      confirmButtonText: "نعم، احذف المشروع",
+      cancelButtonText: "إلغاء",
+      focusCancel: true,
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      preConfirm: async () => {
+        try {
+          await deleteProjectRequest(project.id);
+          return true;
+        } catch (error) {
+          Swal.showValidationMessage(error.message || "تعذر حذف المشروع، حاول مرة أخرى.");
+          return false;
+        }
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    setRequests((current) => current.filter((item) => item.id !== project.id));
+    showAlert({
+      icon: "success",
+      title: "تم حذف المشروع",
+      timer: 1800,
+      showConfirmButton: false,
+    });
+  };
+
   return (
     <main className="organization-projects-page" dir="rtl">
       <header className="organization-projects-heading">
@@ -152,9 +191,22 @@ export default function OrganizationProjects() {
                       request.status}
                   </span>
 
-                  <Link className="od-link" to={action.path}>
-                    {action.label} <ArrowLeft size={15} aria-hidden="true" />
-                  </Link>
+                  <div className="op-row-actions">
+                    <Link className="od-link" to={action.path}>
+                      {action.label} <ArrowLeft size={15} aria-hidden="true" />
+                    </Link>
+                    {request.status !== "converted_to_opportunity" && (
+                      <button
+                        className="op-delete"
+                        type="button"
+                        onClick={() => handleDelete(request)}
+                        aria-label={`حذف ${request.title || "الطلب"}`}
+                      >
+                        <Trash2 size={15} aria-hidden="true" />
+                        <span>حذف</span>
+                      </button>
+                    )}
+                  </div>
                 </article>
               );
             })}
