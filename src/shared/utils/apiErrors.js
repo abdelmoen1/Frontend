@@ -11,11 +11,13 @@ export const AUTH_MESSAGES = {
   sessionExpired: "انتهت صلاحية الجلسة. حدّث الصفحة وحاول مرة أخرى.",
   unauthenticated: "انتهت جلستك. سجّل الدخول مرة أخرى.",
   conflict: "تعذر إكمال الطلب لوجود تعارض مع بيانات موجودة.",
+  timeout: "استغرق الرد وقتًا أطول من المتوقع. قد يكون طلبك قد حُفظ؛ أعد المحاولة.",
 };
 
 // رسالة عربية آمنة حسب نوع الخطأ وحالته، دون الاعتماد على نص الخادم
 export function statusMessage({ kind, status, retryAfter }, operation) {
   if (kind === "network") return AUTH_MESSAGES.network;
+  if (kind === "timeout") return AUTH_MESSAGES.timeout;
   if (kind !== "http") return AUTH_MESSAGES.unexpected;
   if (status === 422) return AUTH_MESSAGES.validation;
   if (status === 401) {
@@ -38,7 +40,7 @@ export class ApiError extends Error {
     // message آمن للعرض مباشرة في الصفحات التي تعرض error.message
     super(statusMessage({ kind, status, retryAfter }));
     this.name = "ApiError";
-    this.kind = kind; // "network" | "http" | "invalid_response"
+    this.kind = kind; // "network" | "timeout" | "http" | "invalid_response"
     this.status = status;
     this.data = data;
     this.retryAfter = retryAfter;
@@ -53,8 +55,9 @@ export async function requestJson(url, options = {}, fetchImpl = fetch) {
   let response;
   try {
     response = await fetchImpl(url, options);
-  } catch {
-    throw new ApiError({ kind: "network" });
+  } catch (error) {
+    // AbortController يُستخدم كمهلة انتظار؛ نميّزها عن انقطاع الشبكة
+    throw new ApiError({ kind: error?.name === "AbortError" ? "timeout" : "network" });
   }
 
   const text = await response.text().catch(() => "");
@@ -84,7 +87,20 @@ export async function requestJson(url, options = {}, fetchImpl = fetch) {
   return data;
 }
 
-const hasArabic = (text) => /[؀-ۿ]/.test(text);
+const hasArabic = (text) => /[\u0600-\u06FF]/.test(text);
+
+/**
+ * رسالة آمنة للعرض: رسائل الخادم العربية (التي نكتبها نحن) تُعرض كما هي، وما عداها
+ * يُستبدل برسالة عامة حسب الحالة حتى لا تظهر تفاصيل داخلية.
+ */
+export function userMessage(error) {
+  if (!(error instanceof ApiError)) return AUTH_MESSAGES.unexpected;
+  const serverMessage = error.data?.message;
+  if (error.kind === "http" && typeof serverMessage === "string" && hasArabic(serverMessage)) {
+    return serverMessage.trim();
+  }
+  return error.message;
+}
 
 // احتياطي لرسائل Laravel الإنجليزية (مثلًا خادم لم يُحدَّث بعد)
 const ENGLISH_RULES = [

@@ -8,6 +8,7 @@ import {
   oauthErrorMessage,
   requestJson,
   translateFieldMessage,
+  userMessage,
 } from "./apiErrors.js";
 
 const fakeResponse = (status, body, headers = {}) => ({
@@ -36,6 +37,17 @@ describe("requestJson", () => {
     await assert.rejects(
       requestJson("/x", {}, async () => fakeResponse(429, { message: "Too Many" }, { "Retry-After": "42" })),
       (error) => error.kind === "http" && error.status === 429 && error.retryAfter === 42,
+    );
+  });
+
+  it("classifies an aborted request (client timeout) separately from network failures", async () => {
+    await assert.rejects(
+      requestJson("/x", {}, async () => {
+        const abort = new Error("aborted");
+        abort.name = "AbortError";
+        throw abort;
+      }),
+      (error) => error.kind === "timeout" && error.message === AUTH_MESSAGES.timeout,
     );
   });
 
@@ -143,6 +155,16 @@ describe("translateFieldMessage", () => {
   it("keeps Arabic messages and never returns raw English", () => {
     assert.equal(translateFieldMessage("هذا البريد الإلكتروني مسجّل مسبقًا."), "هذا البريد الإلكتروني مسجّل مسبقًا.");
     assert.equal(translateFieldMessage("Something internal happened"), "قيمة هذا الحقل غير صالحة.");
+  });
+});
+
+describe("userMessage", () => {
+  it("shows our Arabic server messages but never raw English or internal details", () => {
+    const saved = httpError(503, { message: "تعذر التواصل مع خدمة الذكاء الاصطناعي حاليًا." });
+    assert.equal(userMessage(saved), "تعذر التواصل مع خدمة الذكاء الاصطناعي حاليًا.");
+    assert.equal(userMessage(httpError(500, { message: "SQLSTATE[42S02] table missing" })), AUTH_MESSAGES.unexpected);
+    assert.equal(userMessage(new ApiError({ kind: "network" })), AUTH_MESSAGES.network);
+    assert.equal(userMessage(new Error("boom")), AUTH_MESSAGES.unexpected);
   });
 });
 

@@ -6,6 +6,7 @@ import {
   FileText,
   LoaderCircle,
   MessageSquare,
+  PencilLine,
   RotateCcw,
   Users,
   Wallet,
@@ -27,6 +28,9 @@ const rows = (value, keys) =>
   Array.isArray(value)
     ? value.filter((row) => row && keys.some((key) => text(row[key])))
     : [];
+
+// حالات مغلقة لا يقبل الخادم فيها تعديلًا أو متابعة للمحادثة
+const CLOSED_STATUSES = ["approved", "rejected", "converted_to_opportunity"];
 
 const LOAD_ERRORS = {
   403: "لا تملك صلاحية عرض هذا الطلب.",
@@ -136,9 +140,14 @@ function ProposalContent({ proposal }) {
   const hasOverview =
     summary || problemStatement || solution || situation || painPoints.length ||
     impact || objectives.length || targetUsers.length || successCriteria.length;
+  // أقسام اختيارية: لا تظهر إلا إذا ولّدها المقترح فعلًا
+  const risks = strings(proposal.risks);
+  const paymentSchedule = rows(proposal.payment_schedule, ["milestone", "share"]);
+
   const hasSrs =
     scopeGroups.length || functional.length || nonFunctional.length || outOfScope.length ||
-    assumptions.length || needsConfirmation.length || techRows.length || integrations.length;
+    assumptions.length || needsConfirmation.length || risks.length || techRows.length ||
+    integrations.length;
   const hasTeam = team.length || skills.length || operational.length;
 
   return (
@@ -260,6 +269,11 @@ function ProposalContent({ proposal }) {
                 <BulletList items={needsConfirmation} />
               </Block>
             )}
+            {risks.length > 0 && (
+              <Block title="المخاطر والاعتماديات">
+                <BulletList items={risks} />
+              </Block>
+            )}
             {(techRows.length > 0 || integrations.length > 0 || rationale) && (
               <Block title="التوصية التقنية" wide>
                 {techRows.length > 0 && (
@@ -325,6 +339,20 @@ function ProposalContent({ proposal }) {
               مراجعة النطاق.
             </p>
           </div>
+          {paymentSchedule.length > 0 && (
+            <div className="prp-payment">
+              <h3>جدول دفعات مقترح</h3>
+              <DataTable
+                columns={[
+                  { key: "milestone", label: "المرحلة" },
+                  { key: "share", label: "الحصة" },
+                  { key: "notes", label: "ملاحظات" },
+                ]}
+                data={paymentSchedule}
+              />
+              <p className="prp-muted">اقتراح مرتبط بالمراحل وليس التزامًا، ويُتفق عليه لاحقًا.</p>
+            </div>
+          )}
         </Section>
       )}
 
@@ -554,10 +582,26 @@ export default function ProjectProposal() {
                 {generatedAt && <span>أُعدّت في {generatedAt}</span>}
               </p>
             </div>
-            <Link className="prp-btn" to={chatLink}>
-              <MessageSquare size={16} aria-hidden="true" /> العودة إلى المحادثة
-            </Link>
+            <div className="prp-hero-actions">
+              {/* التعديل يكمل نفس المحادثة المرتبطة بهذا الطلب ولا ينشئ طلبًا جديدًا */}
+              {!CLOSED_STATUSES.includes(record.status) && (
+                <Link className="prp-btn prp-btn-primary" to={`${chatLink}?revise=1`}>
+                  <PencilLine size={16} aria-hidden="true" /> تعديل أو توضيح المقترح
+                </Link>
+              )}
+              <Link className="prp-btn" to={chatLink}>
+                <MessageSquare size={16} aria-hidden="true" /> عرض المحادثة
+              </Link>
+            </div>
           </header>
+
+          {record.status !== "proposal_ready" && !CLOSED_STATUSES.includes(record.status) && (
+            <p className="prp-revision" role="status">
+              <b>التعديلات قيد المعالجة: </b>
+              هذه هي النسخة السابقة من المقترح. أكمل المحادثة ثم حدّث المقترح لتظهر التغييرات.{" "}
+              <Link to={chatLink}>متابعة المحادثة</Link>
+            </p>
+          )}
 
           <p className="prp-notice">
             هذه مسودة أولية أعدّها المساعد من إجاباتك، وكل المدد والتكاليف فيها تقديرية

@@ -1,30 +1,42 @@
+import { ApiError, requestJson, userMessage } from "../../shared/utils/apiErrors";
+
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(
   /\/+$/,
   "",
 );
 
-const request = async (path, options = {}) => {
+const DEFAULT_TIMEOUT_MS = 30000;
+// طلبات الذكاء الاصطناعي قد تتضمن استدعاءين لـ Gemini مع إعادة المحاولة في الخادم
+const AI_TIMEOUT_MS = 150000;
+
+const request = async (path, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) => {
   const token = localStorage.getItem("auth_token");
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  const result = await response.json().catch(() => ({}));
+  try {
+    const result = await requestJson(`${BASE_URL}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const error = new Error(result.message || "تعذر إكمال الطلب.");
-    error.status = response.status;
-    error.errors = result.errors || {};
+    return result.data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      // نحافظ على شكل الخطأ الذي تعتمد عليه الصفحات: status و errors و message آمنة
+      error.errors = error.data?.errors || {};
+      error.message = userMessage(error);
+    }
     throw error;
+  } finally {
+    clearTimeout(timer);
   }
-
-  return result.data;
 };
 
 const json = (method, data) => ({ method, body: JSON.stringify(data) });
@@ -40,11 +52,11 @@ export const updateProjectRequest = (id, data) =>
 export const deleteProjectRequest = (id) =>
   request(`${projectRequestsPath}/${id}`, { method: "DELETE" });
 export const getNextDiscoveryQuestion = (id) =>
-  request(`${projectRequestsPath}/${id}/next-question`, { method: "POST" });
+  request(`${projectRequestsPath}/${id}/next-question`, { method: "POST" }, AI_TIMEOUT_MS);
 export const submitDiscoveryAnswer = (id, answer) =>
-  request(`${projectRequestsPath}/${id}/answer`, json("POST", answer));
+  request(`${projectRequestsPath}/${id}/answer`, json("POST", answer), AI_TIMEOUT_MS);
 export const analyzeProjectRequest = (id) =>
-  request(`${projectRequestsPath}/${id}/analyze`, { method: "POST" });
+  request(`${projectRequestsPath}/${id}/analyze`, { method: "POST" }, AI_TIMEOUT_MS);
 export const approveProposal = (id) =>
   request(`${projectRequestsPath}/${id}/approve`, { method: "POST" });
 export const requestRevision = (id, data) =>

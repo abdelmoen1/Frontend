@@ -526,3 +526,37 @@
 .prp-stat .sk + .sk {
   margin-top: 6px;
 }
+
+/* إجراءات المراجعة والتعديل */
+
+.prp-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.prp-revision a {
+  color: inherit;
+  font-weight: 700;
+}
+
+.prp-payment {
+  margin-top: 14px;
+}
+
+.prp-payment h3 {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: 16px;
+}
+
+.prp-payment .prp-muted {
+  margin: 8px 0 0;
+}
+
+@media (max-width: 560px) {
+  .prp-hero-actions,
+  .prp-hero-actions .prp-btn {
+    width: 100%;
+  }
+}

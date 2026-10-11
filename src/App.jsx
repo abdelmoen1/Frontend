@@ -103,7 +103,7 @@ function App() {
               />
               <Route
                 path="/organization/requests/:id"
-                element={<ProjectDiscovery mode="detail" />}
+                element={<ProjectProposal />}
               />
               <Route
                 path="/organization/requests/:id/intake"
@@ -115,7 +115,7 @@ function App() {
               />
               <Route
                 path="/organization/requests/:id/review"
-                element={<ProjectDiscovery mode="review" />}
+                element={<ProjectProposal />}
               />
             </Route>
           </Route>

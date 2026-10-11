@@ -2,8 +2,10 @@
   --navy: #021853;
   --sky: #2b97cf;
   --green: #16a34a;
+  --amber: #b45309;
   --line: #e2e8f0;
   --soft: #f1f5f9;
+  --muted: #64748b;
 
   box-sizing: border-box;
   width: min(1100px, 100%);
@@ -18,6 +20,15 @@
 .dc *::before,
 .dc *::after {
   box-sizing: border-box;
+}
+
+.dc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .dc-card {
@@ -71,54 +82,103 @@
   white-space: nowrap;
 }
 
+/* شريط "لدينا ما يكفي" */
+
+.dc-ready {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #14532d;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.dc-ready p {
+  margin: 0;
+}
+
+.dc-ready-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 /* المحادثة ولوحة المحاور */
 
 .dc-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px;
+  grid-template-columns: minmax(0, 1fr) 230px;
   gap: 20px;
   padding: 20px 0;
   border-bottom: 1px solid var(--line);
 }
 
-.dc-thread,
-.dc-thread ol {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.dc-thread-wrap {
+  position: relative;
+  min-width: 0;
 }
 
 .dc-thread {
-  max-height: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: clamp(360px, 58vh, 620px);
+  margin: 0;
+  padding: 0 0 4px;
+  padding-inline-end: 6px;
   overflow-y: auto;
-  padding-inline-end: 4px;
-  scroll-behavior: smooth;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.dc-thread:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.dc-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .dc-msg {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-width: min(460px, 85%);
+  gap: 6px;
+  max-width: min(560px, 88%);
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 15px;
-  line-height: 1.8;
+  line-height: 1.85;
+}
+
+.dc-msg p {
+  margin: 0;
 }
 
 .dc-msg-assistant {
   align-self: flex-start;
+  border-start-start-radius: 4px;
   background: #eef2f7;
   color: var(--navy);
 }
 
 .dc-msg-user {
   align-self: flex-end;
+  border-start-end-radius: 4px;
   background: var(--sky);
   color: #fff;
+}
+
+.dc-msg-failed {
+  background: #fff;
+  border: 1px dashed #f87171;
+  color: #7f1d1d;
 }
 
 .dc-msg-author {
@@ -129,22 +189,150 @@
   opacity: 0.75;
 }
 
-.dc-msg-text {
+.dc-msg-text,
+.dc-reply,
+.dc-question {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
 }
 
-.dc-typing .dc-msg-text {
+.dc-reply {
+  color: #334155;
+}
+
+.dc-question {
+  font-weight: 700;
+}
+
+.dc-why {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dc-msg-status {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  color: #475569;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.dc-inline-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dc-skipped {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dc-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 0;
+  color: var(--amber);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dc-divider::before,
+.dc-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #fde68a;
 }
 
 .dc-empty {
-  color: #64748b;
+  color: var(--muted);
   font-size: 15px;
 }
+
+.dc-jump {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(2, 24, 83, 0.12);
+  color: var(--navy);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+/* مؤشر انتظار رد المساعد */
+
+.dc-typing {
+  color: #475569;
+}
+
+.dc-typing-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.dc-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.dc-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sky);
+  animation: dc-bounce 1.2s ease-in-out infinite;
+}
+
+.dc-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dc-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes dc-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+.dc-slow {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* لوحة محاور الفهم */
 
 .dc-topics {
   align-self: start;
@@ -161,64 +349,223 @@
   text-align: center;
 }
 
-.dc-topics ul {
+.dc-topics > ul {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.dc-topics li {
+.dc-topics-empty {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.df-area {
+  border-radius: 8px;
+}
+
+.df-area-current {
+  background: #e0f2fe;
+}
+
+.df-area-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  color: #64748b;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
   font-size: 14px;
+  text-align: right;
+  cursor: pointer;
 }
 
-.dc-topic-text {
+.df-area-toggle:disabled {
+  cursor: default;
+}
+
+.df-area-toggle:not(:disabled):hover {
+  background: #eef2f7;
+}
+
+.df-area-toggle:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 1px;
+}
+
+.df-area-label {
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.dc-topic-mark {
+.df-area-sufficient .df-area-toggle,
+.df-area-partial .df-area-toggle {
+  color: var(--navy);
+}
+
+.df-area-current .df-area-toggle {
+  color: #075985;
+  font-weight: 700;
+}
+
+.df-now {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--sky);
+  color: #fff;
+  font-size: 11px;
+}
+
+.df-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.df-chevron-open {
+  transform: rotate(180deg);
+}
+
+.df-mark {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 12px;
-  height: 12px;
-  border: 1px solid #94a3b8;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #94a3b8;
   border-radius: 50%;
+  color: #fff;
 }
 
-.dc-topic-done {
-  color: var(--green) !important;
+.df-mark-sufficient {
+  border-color: var(--green);
+  background: var(--green);
 }
 
-.dc-topic-done .dc-topic-mark {
-  border: 0;
+.df-mark-partial {
+  border-color: var(--sky);
+  background: linear-gradient(90deg, #fff 50%, var(--sky) 50%);
 }
 
-.dc-topic-current {
-  background: #e0f2fe;
-  color: var(--sky) !important;
+.df-mark-unknown {
+  border-color: var(--amber);
+  color: var(--amber);
 }
 
-.dc-topic-current .dc-topic-mark {
-  border: 2px solid var(--sky);
-}
-
-.dc-topics-empty {
-  margin: 0;
+.df-mark-not_applicable {
+  border-color: #cbd5e1;
   color: #94a3b8;
+}
+
+.df-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 8px;
+  padding: 0 8px 0 0;
+  list-style: none;
+}
+
+.df-item {
+  position: relative;
+  padding-inline-start: 12px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.df-item::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  right: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sky);
+}
+
+.df-item-assumption::before,
+.df-item-open_question::before,
+.df-item-contradiction::before {
+  background: var(--amber);
+}
+
+.df-item-unknown::before {
+  background: #94a3b8;
+}
+
+.df-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-inline-start: 6px;
+}
+
+.df-tag {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.df-tag-priority {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+/* ملخص ما فهمناه */
+
+.df-summary {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: #0b1c30;
+}
+
+.df-summary h3 {
+  margin: 0 0 10px;
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.df-summary-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.df-summary-area dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--navy);
   font-size: 14px;
-  text-align: center;
+  font-weight: 700;
+}
+
+.df-summary-area dd {
+  margin: 0;
+}
+
+.df-summary-empty,
+.df-summary-missing {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* حالات التحميل والخطأ */
@@ -236,6 +583,11 @@
 
 .dc-state p {
   margin: 0;
+}
+
+.dc-muted {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .dc-alert {
@@ -270,18 +622,31 @@
   cursor: pointer;
 }
 
-/* شريط الإدخال */
+/* الإكمال وشريط الإدخال */
+
+.dc-complete {
+  padding-top: 14px;
+}
 
 .dc-footer {
   padding-top: 14px;
 }
 
+.dc-mode-hint {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
 .dc-chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-top: 4px;
 }
 
 .dc-chip {
@@ -289,9 +654,9 @@
   align-items: center;
   gap: 4px;
   padding: 6px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
-  background: var(--soft);
+  background: #fff;
   color: var(--navy);
   font: inherit;
   font-size: 14px;
@@ -309,25 +674,46 @@
   color: #075985;
 }
 
+.dc-date {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.dc-date input {
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+}
+
 .dc-composer {
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
   gap: 8px;
 }
 
 .dc-input {
   flex: 1;
   min-width: 0;
-  min-height: 42px;
-  padding: 9px 14px;
+  min-height: 44px;
+  max-height: 180px;
+  padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #f8fafc;
   color: #0b1c30;
   font: inherit;
   font-size: 15px;
+  line-height: 1.6;
   outline: none;
-  resize: vertical;
+  resize: none;
+  overflow-y: auto;
 }
 
 .dc-input:focus {
@@ -335,8 +721,13 @@
   box-shadow: 0 0 0 3px rgba(43, 151, 207, 0.15);
 }
 
+.dc-input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
 .dc-input:disabled {
   cursor: not-allowed;
+  opacity: 0.75;
 }
 
 .dc-send,
@@ -346,11 +737,13 @@
   justify-content: center;
   gap: 6px;
   min-width: 60px;
+  min-height: 44px;
   padding: 8px 18px;
-  border-radius: 6px;
+  border-radius: 10px;
   font: inherit;
   font-size: 15px;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -366,16 +759,23 @@
   color: var(--navy);
 }
 
+/* أيقونة الإرسال تتجه يسارًا في الواجهة العربية */
+.dc-send-icon {
+  transform: scaleX(-1);
+}
+
 .dc-send:disabled,
 .dc-secondary:disabled,
-.dc-chip:disabled {
+.dc-chip:disabled,
+.dc-inline-retry:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 .dc-send:focus-visible,
 .dc-secondary:focus-visible,
-.dc-chip:focus-visible {
+.dc-chip:focus-visible,
+.dc-jump:focus-visible {
   outline: 2px solid var(--sky);
   outline-offset: 2px;
 }
@@ -384,6 +784,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 12px;
 }
 
 .dc-validation {
@@ -408,9 +809,20 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .dc-dots i,
+  .dc-spin {
+    animation-duration: 2.4s;
+  }
+
+  .dc-thread {
+    scroll-behavior: auto;
+  }
+}
+
 @media (max-width: 760px) {
   .dc-card {
-    padding: 16px 14px;
+    padding: 16px 12px;
   }
 
   .dc-body {
@@ -422,7 +834,15 @@
   }
 
   .dc-thread {
-    max-height: none;
+    height: min(62vh, 560px);
+  }
+
+  .dc-msg {
+    max-width: 94%;
+  }
+
+  .dc-send span {
+    display: none;
   }
 }
 
