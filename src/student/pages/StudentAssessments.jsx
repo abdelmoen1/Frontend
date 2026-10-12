@@ -20,6 +20,7 @@ import {
 import { IoMdArrowDropleft } from "react-icons/io";
 
 import welcomeImg from "../assets/welcome.png";
+import PreAssessmentDialog from "../components/PreAssessmentDialog";
 import { getAssessments, startAssessmentSession, updateStudentProfile } from "../services/studentService";
 import {
   assessmentSettings,
@@ -131,7 +132,8 @@ export default function StudentAssessments() {
   const [filter, setFilter] = useState("all");
   const [savingSpecialization, setSavingSpecialization] = useState(false);
   const [specializationError, setSpecializationError] = useState("");
-  const confirmRef = useRef(null);
+  const statusRef = useRef(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -190,10 +192,18 @@ export default function StudentAssessments() {
   const activeFilter = categories.includes(filter) ? filter : "all";
   const visible = state.included.filter((skill) => activeFilter === "all" || skill.category === activeFilter);
 
-  const goToConfirm = (event) => {
-    event.preventDefault();
-    confirmRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    confirmRef.current?.focus({ preventScroll: true });
+  // زر "اختبار المهارات": يفتح نافذة التعليمات عند اكتمال الاختيارات، وإلا ينقل الطالب إلى ما ينقصه
+  const openDialog = () => {
+    if (!state.selectionsComplete) {
+      const firstMissing = state.included.find((skill) => !levels[skill.id]);
+      const target = firstMissing && !state.tooMany ? document.getElementById(`pre-level-${firstMissing.id}`) : statusRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.focus({ preventScroll: true });
+      return;
+    }
+    setConfirmed(false);
+    setStartError(null);
+    setDialogOpen(true);
   };
 
   const removeSkill = (id) => {
@@ -249,10 +259,16 @@ export default function StudentAssessments() {
           <h1 id="pre-title">مهاراتي</h1>
           <p>اختر مستوى التقييم لكل مهارة من مهاراتك، لتساعدنا نتيجتك على ترشيح الفرص والمشاريع المناسبة لك.</p>
           <div className="pre-hero-actions">
-            <a href="#pre-confirm" className="pre-btn pre-btn-primary" onClick={goToConfirm}>
+            <button
+              type="button"
+              className="pre-btn pre-btn-primary"
+              onClick={openDialog}
+              disabled={loading || Boolean(error) || locked || skills.length === 0}
+              aria-haspopup="dialog"
+            >
               اختبار المهارات
               <IoMdArrowDropleft aria-hidden="true" />
-            </a>
+            </button>
             <Link to="/student/profile" className="pre-btn pre-btn-ghost">
               إضافة مهارة جديدة
               <CirclePlus size={18} aria-hidden="true" />
@@ -383,6 +399,21 @@ export default function StudentAssessments() {
                 ))}
               </div>
 
+              {/* ما ينقص قبل فتح نافذة التعليمات؛ زر "اختبار المهارات" ينقل التركيز إلى هنا */}
+              <div ref={statusRef} tabIndex={-1} className="pre-status" aria-live="polite">
+                {state.tooMany && (
+                  <p className="pre-missing">
+                    يشمل التقييم الواحد {rules.maxSkills} مهارات كحد أقصى. احذف {state.included.length - rules.maxSkills} من
+                    القائمة (يمكنك تقييمها في جلسة لاحقة).
+                  </p>
+                )}
+                {state.included.length > 0 && state.missing.length > 0 && (
+                  <p className="pre-missing">
+                    اختر مستوى التقييم لكل مهارة قبل البدء. المتبقي: <bdi>{state.missing.join("، ")}</bdi>
+                  </p>
+                )}
+              </div>
+
               <ul className="pre-skills">
                 {visible.map((skill) => (
                   <SkillRow
@@ -417,79 +448,19 @@ export default function StudentAssessments() {
             </section>
           )}
 
-          {skills.length > 0 && (
-            <section
-              className="pre-confirm"
-              id="pre-confirm"
-              ref={confirmRef}
-              tabIndex={-1}
-              aria-labelledby="pre-confirm-title"
-            >
-              <h2 id="pre-confirm-title">تأكيد بدء التقييم</h2>
-              <p className="pre-confirm-summary">
-                {state.included.length} مهارات · {shown(rules.questions)} أسئلة · {shown(rules.minutes)} دقيقة
-              </p>
-              {state.tooMany && (
-                <p className="pre-missing" role="status">
-                  يشمل التقييم الواحد {rules.maxSkills} مهارات كحد أقصى. احذف {state.included.length - rules.maxSkills} من
-                  القائمة أعلاه (يمكنك تقييمها في جلسة لاحقة).
-                </p>
-              )}
-              {state.included.length > 0 && state.missing.length > 0 && (
-                <p className="pre-missing" role="status">
-                  اختر مستوى التقييم لكل مهارة قبل البدء. المتبقي: <bdi>{state.missing.join("، ")}</bdi>
-                </p>
-              )}
-              <label className="pre-check">
-                <input
-                  type="checkbox"
-                  checked={confirmed}
-                  onChange={(event) => setConfirmed(event.target.checked)}
-                  disabled={locked}
-                />
-                <span>
-                  قرأت تعليمات التقييم وفهمتها: {shown(rules.questions)} أسئلة خلال {shown(rules.minutes)} دقيقة، تظهر
-                  واحدًا تلو الآخر، ولا يمكن تعديل الإجابة بعد إرسالها.
-                </span>
-              </label>
-              <div className="pre-confirm-actions">
-                <button
-                  type="button"
-                  className="pre-btn pre-btn-primary"
-                  onClick={start}
-                  disabled={!state.canStart || locked}
-                  aria-busy={starting}
-                >
-                  {starting ? "جارٍ إعداد الأسئلة..." : "ابدأ التقييم"}
-                  <IoMdArrowDropleft aria-hidden="true" />
-                </button>
-                <Link to="/student/profile" className="pre-btn pre-btn-outline">
-                  تعديل مهاراتي
-                </Link>
-              </div>
-              {starting && (
-                <div className="asmt-working" role="status" aria-live="polite">
-                  <span className="asmt-spinner" aria-hidden="true" />
-                  <span>يُعد الذكاء الاصطناعي أسئلة جديدة لمهاراتك ومستوياتها ويتحقق منها. قد يستغرق ذلك حتى دقيقة.</span>
-                </div>
-              )}
-              {startError && (
-                <div className="asmt-alert" role="alert">
-                  <p>{startError.message}</p>
-                  {startError.retryable && (
-                    <button type="button" className="pre-btn pre-btn-outline" onClick={start} disabled={starting}>
-                      <RotateCcw size={15} aria-hidden="true" /> إعادة المحاولة
-                    </button>
-                  )}
-                </div>
-              )}
-              {activeSession && (
-                <p className="pre-unavailable" role="note">
-                  لديك تقييم غير مكتمل؛ أكمله أولًا من الرابط أعلى الصفحة قبل بدء تقييم جديد.
-                </p>
-              )}
-            </section>
-          )}
+          <PreAssessmentDialog
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            onStart={start}
+            rules={rules}
+            skills={state.included}
+            levels={levels}
+            confirmed={confirmed}
+            onConfirm={setConfirmed}
+            canStart={state.canStart && !locked}
+            starting={starting}
+            error={startError}
+          />
 
           {history.length > 0 && (
             <section className="asmt-section" aria-labelledby="asmt-history">

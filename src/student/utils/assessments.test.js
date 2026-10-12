@@ -349,8 +349,15 @@ describe("pre-assessment screen", () => {
     const { readFile } = await import("node:fs/promises");
     const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
     assert.match(page, /<select/);
-    assert.match(page, /type="checkbox"/);
     assert.doesNotMatch(page, /15\s*(?:سؤال|أسئلة|دقيقة)/);
+    // التعليمات والتأكيد في نافذة <dialog> تُفتح من زر "اختبار المهارات" في البانر
+    assert.match(page, /<PreAssessmentDialog/);
+    assert.match(page, /onClick=\{openDialog\}/);
+    const dialog = await readFile(new URL("../components/PreAssessmentDialog.jsx", import.meta.url), "utf8");
+    assert.match(dialog, /<dialog/);
+    assert.match(dialog, /type="checkbox"/);
+    assert.match(dialog, /disabled=\{!canStart \|\| starting\}/);
+    assert.doesNotMatch(dialog, /\b10 أسئلة|\b30 دقيقة|\b9 \+ 1/);
     // القيم من إعدادات الخادم، والبدء يرسل الخريطة الكاملة للمهارات ومستوياتها
     assert.match(page, /rules\.questions/);
     assert.match(page, /rules\.minutes/);
