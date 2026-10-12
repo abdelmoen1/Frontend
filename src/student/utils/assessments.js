@@ -59,10 +59,10 @@ export function skillView(skill) {
   };
 }
 
-/** المهارات المقترحة للمسار المختار أولًا، ثم بقية مهارات المنصة. */
+/** مهارات التخصص المختار أولًا، ثم بقية مهارات المنصة. */
 export function groupSkills(skills, specialization) {
   const list = (Array.isArray(skills) ? skills : []).filter((skill) => skill && skill.id).map(skillView);
-  const suggestedIds = (Array.isArray(specialization?.suggested_skills) ? specialization.suggested_skills : []).map(
+  const suggestedIds = (Array.isArray(specialization?.skills) ? specialization.skills : []).map(
     (skill) => skill.id,
   );
   const byId = new Map(list.map((skill) => [skill.id, skill]));

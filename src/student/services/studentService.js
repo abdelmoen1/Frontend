@@ -195,23 +195,16 @@ export const deleteStudentSkill = async (skill_id) => {
   return result.data;
 };
 
-export const completeStudentOnboarding = async () => {
-  const response = await fetch(
-    `${BASE_URL}/student/onboarding/complete`,
-    {
+// يحفظ بيانات الإكمال كلها في طلب واحد (الاسم، الدراسة، التخصص، skill_ids من مهارات التخصص)؛
+// يرمي ApiError وفيه أخطاء الحقول عند 422
+export const completeStudentOnboarding = async (payload) =>
+  (
+    await requestJson(`${BASE_URL}/student/onboarding/complete`, {
       method: "POST",
       headers: getAuthHeaders(),
-    },
-  );
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to complete onboarding.");
-  }
-
-  return result.data;
-};
+      body: JSON.stringify(payload),
+    })
+  ).data;
 
 // فرص المشاريع: الخادم يعيد فقط المشاريع المنشورة التي يطابق الطالب أحد أدوارها.
 // الأخطاء تحمل status (مثل 404 لفرصة لم تعد متاحة) لعرض الحالة المناسبة.

@@ -39,10 +39,10 @@ describe("choosing what to assess", () => {
     assert.equal(skillView(skill({ status: "weird" })).status, "not_assessed");
   });
 
-  it("puts the specialization's suggested skills first using real ids", () => {
+  it("puts the specialization skills first using real ids", () => {
     const groups = groupSkills(
       [skill({ id: 1, name: "PHP" }), skill({ id: 2, name: "Laravel" }), skill({ id: 3, name: "Figma" })],
-      { suggested_skills: [{ id: 2, name: "Laravel" }, { id: 1, name: "PHP" }, { id: 99, name: "Missing" }] },
+      { skills: [{ id: 2, name: "Laravel" }, { id: 1, name: "PHP" }, { id: 99, name: "Missing" }] },
     );
     assert.deepEqual(groups.suggested.map((item) => item.name), ["Laravel", "PHP"]);
     assert.deepEqual(groups.others.map((item) => item.name), ["Figma"]);

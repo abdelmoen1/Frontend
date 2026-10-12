@@ -27,7 +27,7 @@ function StepIndicator({ currentStep, steps }) {
               </span>
             </div>
             {stepNumber !== steps.length && (
-              <span className="step-connector"></span>
+              <span className={`step-connector ${isDone ? "step-connector-done" : ""}`}></span>
             )}
           </div>
         );

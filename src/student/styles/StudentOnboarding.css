@@ -1,0 +1,531 @@
+/* ============================================================
+   إكمال ملف الطالب: نفس هوية صفحات الإكمال (AuthForm.css) مع
+   تحسينات القراءة والتنسيق لهذه الصفحة فقط.
+============================================================ */
+
+.signin-page.student-onboarding:has(.profile-logo) .profile-logo {
+  margin-bottom: 26px;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .step-indicator {
+  margin-bottom: 22px;
+}
+
+/* العنوان */
+.student-onboarding .onboarding-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 22px;
+  text-align: right;
+}
+
+.student-onboarding .onboarding-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .profile-step-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 38px;
+}
+
+.student-onboarding .onboarding-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #64748b;
+}
+
+/* الحقول: خط أوضح ومسافات أهدأ */
+.signin-page.student-onboarding:has(.profile-logo) .signin-form {
+  gap: 18px;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .form-group label,
+.student-onboarding .chips-label,
+.student-onboarding .spec-picker legend {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  text-align: right;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .glass-input-wrapper {
+  height: 44px;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .glass-input-wrapper input,
+.signin-page.student-onboarding:has(.profile-logo) .select-field-wrapper select,
+.signin-page.student-onboarding:has(.profile-logo) .phone-code-wrapper select {
+  height: 42px;
+  font-size: 14px;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .form-group + .error-message,
+.signin-page.student-onboarding:has(.profile-logo) .error-message {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #dc2626;
+}
+
+/* الأزرار: متساوية وتملأ السطر */
+.signin-page.student-onboarding:has(.profile-logo) .form-step-actions {
+  margin-top: 6px;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .form-step-actions .signin-button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 46px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.signin-page.student-onboarding:has(.profile-logo) .form-step-actions .next-button:disabled {
+  background: #021853;
+}
+
+.student-onboarding .auth-alert {
+  margin-top: -4px;
+}
+
+.student-onboarding .onboarding-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 180px;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* ============================================================
+   بطاقات التخصص
+============================================================ */
+.student-onboarding .spec-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.student-onboarding .spec-picker legend {
+  padding: 0;
+}
+
+.student-onboarding .spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.student-onboarding .spec-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 70px;
+  padding: 12px;
+  padding-left: 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: right;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.student-onboarding .spec-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.student-onboarding .spec-card:hover {
+  border-color: #9bb4d2;
+}
+
+.student-onboarding .spec-card:has(input:focus-visible) {
+  outline: 2px solid #152f52;
+  outline-offset: 2px;
+}
+
+.student-onboarding .spec-card.is-selected {
+  border-color: #152f52;
+  background: #f5f8ff;
+  box-shadow: inset 0 0 0 1px #152f52;
+}
+
+.student-onboarding .spec-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #152f52;
+  font-size: 15px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.student-onboarding .spec-card.is-selected .spec-icon {
+  background: #152f52;
+  color: #ffffff;
+}
+
+.student-onboarding .spec-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.student-onboarding .spec-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.student-onboarding .spec-text small {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.student-onboarding .spec-check {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #152f52;
+  font-size: 15px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.student-onboarding .spec-card.is-selected .spec-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.student-onboarding .spec-card.is-skeleton {
+  cursor: default;
+  border-color: #eef2f7;
+  background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: onboarding-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes onboarding-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.student-onboarding .onboarding-inline-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.student-onboarding .onboarding-inline-alert button {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid #b91c1c;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #b91c1c;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ============================================================
+   حقل المهارات (Chips + Autocomplete)
+============================================================ */
+.student-onboarding .chips-field {
+  position: relative;
+  width: 100%;
+}
+
+.student-onboarding .chips-control {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: text;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.student-onboarding .chips-control:focus-within {
+  border-color: #9bb4d2;
+  box-shadow: 0 0 0 2px rgba(21, 47, 82, 0.06);
+}
+
+.student-onboarding .chips-control.has-error {
+  border-color: #dc2626;
+}
+
+.student-onboarding .chips-control.is-disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
+.student-onboarding .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #152f52;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  animation: onboarding-chip-in 0.18s ease-out;
+}
+
+.student-onboarding .chip bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes onboarding-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.student-onboarding .chip-remove {
+  display: grid;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.student-onboarding .chip-remove:hover,
+.student-onboarding .chip-remove:focus-visible {
+  background: #dbe3ff;
+  color: #b91c1c;
+  outline: none;
+}
+
+.student-onboarding .chips-input {
+  flex: 1 1 140px;
+  min-width: 110px;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: right;
+}
+
+.student-onboarding .chips-input::placeholder {
+  color: #a8b1bf;
+}
+
+.student-onboarding .chips-input:disabled {
+  cursor: not-allowed;
+}
+
+.student-onboarding .chips-dropdown {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: 232px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+}
+
+.student-onboarding .chips-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.student-onboarding .chips-option.is-active {
+  background: #f1f5f9;
+  color: #152f52;
+}
+
+.student-onboarding .chips-option mark {
+  background: transparent;
+  color: #152f52;
+  font-weight: 800;
+}
+
+.student-onboarding .chips-option-add {
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+.student-onboarding .chips-option.is-active .chips-option-add {
+  color: #152f52;
+}
+
+.student-onboarding .chips-empty {
+  padding: 14px 10px;
+  color: #94a3b8;
+  font-size: 12.5px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.student-onboarding .chips-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 11.5px;
+}
+
+.student-onboarding .chips-meta .is-full {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.student-onboarding .chips-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.student-onboarding .chips-suggestions-title {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.student-onboarding .chips-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.student-onboarding .chips-suggestion:hover,
+.student-onboarding .chips-suggestion:focus-visible {
+  border-color: #152f52;
+  border-style: solid;
+  background: #f5f8ff;
+  color: #152f52;
+  outline: none;
+}
+
+/* ملاحظات */
+.student-onboarding .onboarding-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #dbe4ff;
+  border-radius: 10px;
+  background: #f5f8ff;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.student-onboarding .onboarding-note svg {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  color: #2947b8;
+}
+
+@media (max-width: 520px) {
+  .student-onboarding .spec-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signin-page.student-onboarding:has(.profile-logo) .profile-step-title {
+    font-size: 22px;
+    line-height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-onboarding .spec-card.is-skeleton,
+  .student-onboarding .chip {
+    animation: none;
+  }
+}
