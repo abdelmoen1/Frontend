@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Clock3, FileText, RotateCcw, X } from "lucide-react";
 import { IoMdArrowRoundBack } from "react-icons/io";
 
-import bannerImg from "../../organization/assets/organization_register.jpg";
+import bannerImg from "../assets/assessment_banner.png";
 import { levelLabel } from "../utils/assessments";
 
 // تمييز العدد بالعربية: 3-10 جمع (أسئلة/دقائق)، وما فوقها مفرد منصوب (سؤالًا/دقيقة)

@@ -1113,8 +1113,8 @@
 
 /* نافذة ما قبل الاختبار (<dialog>)؛ الخلفية #071528 بشفافية 20% */
 .pre-dialog {
-  width: min(800px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
+  width: min(1000px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
   padding: 0;
   overflow: auto;
   border: 0;
@@ -1124,15 +1124,18 @@
   box-shadow: 0 24px 60px rgba(7, 21, 40, 0.25);
 }
 
+/* الصفحة خلف النافذة مموهة وأغمق قليلًا */
 .pre-dialog::backdrop {
-  background: rgba(7, 21, 40, 0.2);
+  background: rgba(7, 21, 40, 0.3);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 .pre-dialog-body {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 26px 26px;
+  gap: 24px;
+  padding: 30px 38px 36px;
   text-align: right;
 }
 
@@ -1146,7 +1149,7 @@
 .pre-dialog-head h2 {
   margin: 0;
   color: var(--asmt-navy);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 800;
 }
 
@@ -1173,42 +1176,60 @@
   outline-offset: 2px;
 }
 
-/* البانر: صورة المكتب تظهر في الجهة اليسرى وتتلاشى نحو الكحلي حيث النص */
+/* البانر: صورة المكتب (زرقاء أصلًا) مع تدرج كحلي من جهة النص. الصورة أكبر من البانر بـ 6px من كل جهة حتى يُقص
+   الخط الفاتح على حوافها */
 .pre-dialog-banner {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
-  min-height: 132px;
-  padding: 22px 24px;
-  border-radius: 12px;
-  background:
-    linear-gradient(to left, #061a46 0%, #061a46 45%, rgba(6, 26, 70, 0.55) 75%, rgba(6, 26, 70, 0.35) 100%),
-    var(--pre-banner-img) left center / cover no-repeat,
-    #061a46;
+  gap: 10px;
+  min-height: 220px;
+  padding: 32px 36px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #061a46;
   color: #fff;
 }
 
+.pre-dialog-banner::before,
+.pre-dialog-banner::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+}
+
+.pre-dialog-banner::before {
+  inset: -6px;
+  background: var(--pre-banner-img) center / cover no-repeat;
+}
+
+.pre-dialog-banner::after {
+  inset: 0;
+  background: linear-gradient(to left, rgba(4, 18, 52, 0.92) 0%, rgba(4, 18, 52, 0.8) 38%, rgba(4, 18, 52, 0.2) 72%, rgba(4, 18, 52, 0) 100%);
+}
+
 .pre-dialog-banner b {
-  max-width: 60%;
+  max-width: 58%;
   color: #45b8ec;
-  font-size: 16px;
+  font-size: 21px;
   font-weight: 800;
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
 .pre-dialog-banner p {
-  max-width: 60%;
+  max-width: 58%;
   margin: 0;
   color: #e2e8f0;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.9;
 }
 
 .pre-dialog-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 18px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1217,36 +1238,36 @@
 .pre-dialog-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
+  gap: 16px;
+  padding: 22px 24px;
   border: 1px solid #edf1f5;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
   box-shadow: 0 2px 10px rgba(16, 37, 62, 0.05);
 }
 
 .pre-dialog-card .pre-tile {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
 }
 
 .pre-dialog-card small {
   display: block;
   color: var(--asmt-muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .pre-dialog-card b {
   color: var(--asmt-navy);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 800;
 }
 
 .pre-dialog-skills h3 {
   margin: 0 0 10px;
   color: var(--asmt-navy);
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .pre-dialog-skills ul {
@@ -1283,10 +1304,10 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 16px 18px;
+  gap: 18px;
+  padding: 22px 24px;
   border: 1px solid #edf1f5;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
   box-shadow: 0 2px 10px rgba(16, 37, 62, 0.05);
 }
@@ -1294,7 +1315,24 @@
 .pre-dialog-confirm .pre-check {
   flex: 1 1 280px;
   margin: 0;
+  font-size: 16px;
   font-weight: 700;
+}
+
+.pre-dialog-confirm .pre-check input {
+  width: 20px;
+  height: 20px;
+}
+
+.pre-dialog-confirm .pre-btn {
+  min-height: 50px;
+  padding: 10px 30px;
+  font-size: 16px;
+}
+
+.pre-dialog-skills li {
+  padding: 8px 14px;
+  font-size: 15px;
 }
 
 .pre-dialog-confirm .pre-btn-primary:disabled {
@@ -1338,12 +1376,14 @@
     grid-template-columns: 1fr;
   }
 
-  /* على الجوال الصورة خلفية كاملة تحت طبقة كحلية حتى يبقى النص مقروءًا */
+  /* على الجوال طبقة كحلية متساوية فوق الصورة كلها حتى يبقى النص مقروءًا */
   .pre-dialog-banner {
-    background:
-      linear-gradient(rgba(6, 26, 70, 0.85), rgba(6, 26, 70, 0.85)),
-      var(--pre-banner-img) center / cover no-repeat,
-      #061a46;
+    min-height: 0;
+    padding: 22px 20px;
+  }
+
+  .pre-dialog-banner::after {
+    background: rgba(4, 18, 52, 0.82);
   }
 
   .pre-dialog-banner b,
