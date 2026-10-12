@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { CiLock, CiUser } from "react-icons/ci";
-import { FaCalendarAlt, FaInfoCircle, FaUniversity } from "react-icons/fa";
+import { FaBriefcase, FaCalendarAlt, FaInfoCircle, FaUniversity } from "react-icons/fa";
 
 import { completeStudentOnboarding, getSpecializations, getStudentOnboarding } from "../services/studentService";
 import { useAuth } from "../../shared/auth/useAuth";
@@ -14,7 +14,6 @@ import StepIndicator from "../../shared/components/StepIndicator";
 import SelectField from "../../shared/components/SelectField";
 import PhoneField, { COUNTRY_CODES } from "../../shared/components/PhoneField";
 import SkillChipsInput from "../components/SkillChipsInput";
-import SpecializationPicker from "../components/SpecializationPicker";
 
 import "../../shared/styles/AuthForm.css";
 import "../styles/StudentOnboarding.css";
@@ -313,14 +312,28 @@ function StudentOnboarding() {
 
                   {step === 2 && (
                     <>
-                      <SpecializationPicker
-                        specializations={specializations}
+                      <SelectField
+                        label="التخصص"
+                        icon={<FaBriefcase className="input-icon" />}
+                        name="professional_specialization"
                         value={form.professional_specialization}
-                        onChange={handleSpecialization}
+                        onChange={(event) => handleSpecialization(event.target.value)}
+                        options={specializations.map((item) => ({ value: item.key, label: item.label }))}
                         error={errors.professional_specialization}
-                        status={catalogStatus}
-                        onRetry={loadCatalog}
+                        placeholder={catalogStatus === "loading" ? "جارٍ تحميل التخصصات..." : "اختر تخصصك"}
+                        disabled={catalogStatus !== "ready"}
                       />
+
+                      {catalogStatus === "error" && (
+                        <div className="onboarding-inline-alert" role="alert">
+                          <span>تعذر تحميل قائمة التخصصات.</span>
+                          <button type="button" onClick={loadCatalog}>
+                            إعادة المحاولة
+                          </button>
+                        </div>
+                      )}
+
+                      {specialization?.description && <p className="onboarding-field-hint">{specialization.description}</p>}
 
                       <SkillChipsInput
                         label="المهارات"
