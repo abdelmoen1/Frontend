@@ -3,18 +3,23 @@ import { describe, it } from "node:test";
 
 import {
   ASSESSMENTS_PATH,
+  LEVELS,
   answerError,
   assessmentError,
+  assessmentLink,
+  attemptSummary,
   formatClock,
   groupSkills,
   insertIndent,
+  levelNote,
+  parseAssessmentQuery,
   progressView,
+  questionMeta,
   remainingSeconds,
   resultsView,
   sessionPath,
   skillView,
   specializationNotice,
-  toggleSkill,
 } from "./assessments.js";
 
 const skill = (overrides = {}) => ({
@@ -24,19 +29,43 @@ const skill = (overrides = {}) => ({
   practical: false,
   status: "not_assessed",
   verified: false,
+  verified_level: null,
   score: null,
-  next_attempt_at: null,
+  levels: {},
   can_assess: true,
   ...overrides,
 });
 
 describe("choosing what to assess", () => {
-  it("shows the server's status for each skill and whether it can be chosen", () => {
-    assert.equal(skillView(skill()).selectable, true);
-    assert.equal(skillView(skill({ status: "passed", verified: true, can_assess: false })).selectable, false);
-    assert.match(skillView(skill({ status: "failed", can_assess: false, next_attempt_at: "2026-10-13T10:00:00+00:00" })).note, /إعادة تقييمها بعد/);
-    assert.match(skillView(skill({ name: "Figma", practical: true, status: "passed", can_assess: false })).note, /تحققًا من إدارة المنصة/);
-    assert.equal(skillView(skill({ status: "weird" })).status, "not_assessed");
+  it("shows the verified level and each level's status from the server", () => {
+    const view = skillView(
+      skill({
+        status: "passed",
+        verified_level: "beginner",
+        levels: {
+          beginner: { status: "passed", score: 90, can_assess: false, next_attempt_at: "2026-10-13T10:00:00+00:00" },
+          intermediate: { status: "failed", score: 50, can_assess: true },
+          advanced: { status: "not_assessed", can_assess: true },
+        },
+      }),
+    );
+    assert.equal(view.verifiedLevel, "beginner");
+    assert.equal(view.verifiedLevelLabel, "مبتدئ");
+    assert.deepEqual(
+      view.levels.map((level) => [level.key, level.status, level.canAssess]),
+      [
+        ["beginner", "passed", false],
+        ["intermediate", "failed", true],
+        ["advanced", "not_assessed", true],
+      ],
+    );
+    // إعادة مهارة ناجحة مسموحة (بمستوى أعلى)
+    assert.equal(view.selectable, true);
+    assert.match(levelNote(view, "beginner"), /بعد/);
+    assert.match(levelNote(skillView(skill({ verified_level: "intermediate" })), "beginner"), /لن تخفض/);
+    assert.equal(levelNote(view, "advanced"), "");
+    assert.match(skillView(skill({ name: "Figma", practical: true, status: "passed" })).note, /تحققًا من إدارة المنصة/);
+    assert.equal(skillView(skill({ status: "weird", verified_level: "expert" })).verifiedLevel, null);
   });
 
   it("puts the specialization skills first using real ids", () => {
@@ -48,10 +77,16 @@ describe("choosing what to assess", () => {
     assert.deepEqual(groups.others.map((item) => item.name), ["Figma"]);
   });
 
-  it("limits the number of skills per session", () => {
-    assert.deepEqual(toggleSkill([1, 2], 3, 3), [1, 2, 3]);
-    assert.deepEqual(toggleSkill([1, 2, 3], 4, 3), [1, 2, 3]);
-    assert.deepEqual(toggleSkill([1, 2, 3], 2, 3), [1, 3]);
+  it("reads a preselected skill and level from the link and summarizes the attempt", () => {
+    assert.deepEqual(parseAssessmentQuery("?skill=12&level=intermediate"), { skillId: 12, level: "intermediate" });
+    assert.deepEqual(parseAssessmentQuery("?skill=abc&level=expert"), { skillId: null, level: null });
+    assert.equal(assessmentLink(12, "advanced"), "/student/assessment?skill=12&level=advanced");
+    assert.equal(assessmentLink(undefined, undefined), "/student/assessment");
+    assert.deepEqual(
+      attemptSummary({ questions: { practical: 7, written: 3 }, time_limit_minutes: { beginner: 35, intermediate: 45 } }, "intermediate"),
+      { practical: 7, written: 3, total: 10, minutes: 45 },
+    );
+    assert.deepEqual(LEVELS.map((level) => level.label), ["مبتدئ", "متوسط", "متقدم"]);
   });
 
   it("asks for a professional specialization when it is missing or unknown", () => {
@@ -63,6 +98,12 @@ describe("choosing what to assess", () => {
   it("links to the list and to a session", () => {
     assert.equal(ASSESSMENTS_PATH, "/student/assessment");
     assert.equal(sessionPath(7), "/student/assessment/sessions/7");
+  });
+
+  it("labels practical and written questions", () => {
+    assert.deepEqual(questionMeta({ category: "practical", type: "debugging" }), { category: "سؤال عملي", type: "إصلاح خطأ" });
+    assert.deepEqual(questionMeta({ category: "written", type: "reasoning" }), { category: "سؤال كتابي", type: "تبرير واستدلال" });
+    assert.deepEqual(questionMeta({}), { category: "", type: "" });
   });
 });
 
@@ -79,8 +120,8 @@ describe("answering", () => {
   });
 
   it("tracks progress one question at a time", () => {
-    assert.deepEqual(progressView({ question_count: 4, answered_count: 1 }), { answered: 1, total: 4, current: 2, percent: 25 });
-    assert.deepEqual(progressView({ question_count: 4, answered_count: 4 }).current, 4);
+    assert.deepEqual(progressView({ question_count: 10, answered_count: 1 }), { answered: 1, total: 10, current: 2, percent: 10 });
+    assert.deepEqual(progressView({ question_count: 10, answered_count: 10 }).current, 10);
     assert.equal(progressView(null).total, 0);
   });
 
@@ -94,25 +135,50 @@ describe("answering", () => {
 });
 
 describe("results", () => {
-  it("shows per-skill outcomes computed by the server", () => {
-    const [php, laravel, figma] = resultsView({
+  it("shows the attempt's outcome, its level and the unchanged verified level", () => {
+    const [php] = resultsView({
       results: [
         {
-          skill: { name: "PHP" },
+          skill: { id: 1, name: "PHP" },
           status: "passed",
           score: 90,
           reason: "passed",
+          level: "intermediate",
+          verified_level: "intermediate",
           counts_for_matching: true,
-          questions: [{ position: 1, prompt: "س", answered: true, awarded_points: 9, max_points: 10, feedback: "جيد", missing_concepts: [] }],
+          questions: [
+            { position: 1, category: "practical", prompt: "س", answered: true, awarded_points: 9, max_points: 10, feedback: "جيد", missing_concepts: [] },
+          ],
         },
-        { skill: { name: "Laravel" }, status: "failed", score: 50, reason: "below_threshold", next_attempt_at: "2026-10-13T10:00:00+00:00", questions: [] },
-        { skill: { name: "Figma" }, status: "passed", score: 80, needs_human_verification: true, counts_for_matching: false, questions: [] },
       ],
     });
     assert.equal(php.countsForMatching, true);
+    assert.equal(php.levelLabel, "متوسط");
+    assert.match(php.note, /مستواك المثبت في هذه المهارة الآن: متوسط/);
     assert.equal(php.questions[0].points, "9 من 10");
-    assert.match(laravel.note, /أقل من نسبة النجاح/);
-    assert.match(laravel.note, /إعادة التقييم بعد/);
+    assert.equal(php.questions[0].category, "سؤال عملي");
+
+    const [laravel] = resultsView({
+      results: [
+        {
+          skill: { name: "Laravel" },
+          status: "failed",
+          score: 50,
+          reason: "practical_below_threshold",
+          level: "advanced",
+          verified_level: "intermediate",
+          next_attempt_at: "2026-10-13T10:00:00+00:00",
+          questions: [],
+        },
+      ],
+    });
+    assert.match(laravel.note, /الأسئلة العملية/);
+    assert.match(laravel.note, /مستواك المثبت السابق \(متوسط\) لم يتغير/);
+    assert.match(laravel.note, /إعادة هذا المستوى بعد/);
+
+    const [figma] = resultsView({
+      results: [{ skill: { name: "Figma" }, status: "passed", score: 80, needs_human_verification: true, counts_for_matching: false, questions: [] }],
+    });
     assert.match(figma.note, /تحقق عملي/);
     assert.deepEqual(resultsView({ results: null }), []);
   });
@@ -125,10 +191,19 @@ describe("errors", () => {
     assert.equal(assessmentError({ status: 409, data: { code: "question_out_of_order", message: "هذا ليس السؤال الحالي. حدّث الصفحة لمتابعة التقييم." } }).reload, true);
     assert.equal(assessmentError({ status: 409, data: { code: "answering_closed", message: "انتهت مرحلة الإجابة في هذا التقييم." } }).expired, true);
     assert.equal(assessmentError({ status: 422, data: { code: "specialization_required", message: "اختر مسارك المهني أولًا ليُبنى التقييم عليه." } }).specialization, true);
-    assert.match(
-      assessmentError({ status: 409, data: { code: "retake_not_available", message: "x", skills: [{ skill: "Laravel", next_attempt_at: "2026-10-13T10:00:00+00:00" }] } }).message,
-      /Laravel/,
-    );
+    const retake = assessmentError({
+      status: 409,
+      data: { code: "retake_not_available", message: "x", skill: "Laravel", level: "intermediate", next_attempt_at: "2026-10-13T10:00:00+00:00" },
+    });
+    assert.match(retake.message, /Laravel بمستوى متوسط بعد/);
+    assert.equal(retake.retryable, false);
+    const limit = assessmentError({
+      status: 429,
+      data: { code: "attempt_limit_reached", message: "بلغت الحد الأقصى لعدد محاولات التقييم خلال 24 ساعة.", next_attempt_at: "2026-10-13T10:00:00+00:00" },
+    });
+    assert.match(limit.message, /أقرب موعد/);
+    assert.equal(limit.retryable, false);
+    assert.match(assessmentError({ status: 422, data: { errors: { level: ["اختر مستوى التقييم: مبتدئ أو متوسط أو متقدم."] } } }).message, /مستوى التقييم/);
     assert.match(assessmentError({ status: 422, data: { errors: { answer: ["اكتب إجابتك قبل الإرسال."] } } }).message, /اكتب إجابتك/);
     assert.equal(assessmentError({ status: 422, data: { errors: { answer: ["The answer field is required."] } } }).message, "تحقق من البيانات ثم أعد المحاولة.");
     assert.equal(assessmentError({ status: 404, data: { message: "Not Found" } }).notFound, true);

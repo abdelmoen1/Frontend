@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  applyRecommendedLevels,
   keyRequirements,
+  levelRequirements,
+  levelsPayload,
   matchingSummary,
   reviewState,
   staffingRoles,
@@ -20,7 +23,7 @@ const staffing = {
       responsibilities: "بناء التطبيق",
       rationale: "عرض المسارات للركاب",
       headcount: 1,
-      mandatory_skills: [{ id: 1, name: "Flutter" }, { id: null, name: "Kotlin" }],
+      mandatory_skills: [{ id: 1, name: "Flutter", recommended_level: "intermediate" }, { id: null, name: "Kotlin", recommended_level: null }, { id: 2, name: "Dart", recommended_level: null }],
       desirable_skills: [{ id: 3, name: "Git" }],
       matchable: true,
     },
@@ -81,6 +84,7 @@ describe("proposal presentation helpers", () => {
     assert.deepEqual(role.mandatory, [
       { name: "Flutter", matchable: true },
       { name: "Kotlin", matchable: false },
+      { name: "Dart", matchable: true },
     ]);
     assert.equal(role.categoryLabel, "مطوّر تطبيقات جوال");
     assert.deepEqual(role.untested, []);
@@ -137,5 +141,56 @@ describe("proposal presentation helpers", () => {
     assert.equal(summary.hasEligible, true);
     assert.deepEqual(summary.roles.map((role) => role.eligible), [2, 0]);
     assert.equal(matchingSummary({ roles: [] }).hasEligible, false);
+  });
+});
+
+describe("confirming skill levels before approval", () => {
+  it("lists every platform-mapped mandatory skill with the AI recommendation kept separate", () => {
+    const requirements = levelRequirements(staffing);
+    assert.deepEqual(
+      requirements.map((item) => [item.key, item.name, item.recommended]),
+      [
+        ["0:1", "Flutter", "intermediate"],
+        ["0:2", "Dart", null],
+      ],
+    );
+    // لا شيء مختار تلقائيًا: لا اعتماد قبل أن تحدد المؤسسة كل مستوى
+    assert.equal(levelsPayload(requirements, {}), null);
+    const withRecommendations = applyRecommendedLevels(requirements, { "0:2": "beginner" });
+    assert.deepEqual(withRecommendations, { "0:1": "intermediate", "0:2": "beginner" });
+    assert.deepEqual(applyRecommendedLevels(requirements, { "0:1": "advanced" })["0:1"], "advanced");
+    assert.deepEqual(levelsPayload(requirements, withRecommendations), [
+      { role: 0, skill_id: 1, level: "intermediate" },
+      { role: 0, skill_id: 2, level: "beginner" },
+    ]);
+    assert.equal(levelsPayload(requirements, { "0:1": "expert", "0:2": "beginner" }), null);
+  });
+
+  it("asks to confirm levels for a version published before levels existed", () => {
+    const state = reviewState({
+      proposal: { project_overview: {} },
+      status: "converted_to_opportunity",
+      staffing,
+      publication: { status: "published", version: 1, has_pending_changes: false, levels_confirmed: false },
+    });
+    assert.equal(state.mode, "needs_levels");
+    assert.equal(state.canApprove, true);
+  });
+
+  it("shows the confirmed level next to each mandatory skill in the publication summary", () => {
+    const summary = matchingSummary({
+      roles: [
+        {
+          title: "Backend",
+          eligible_students: 1,
+          mandatory_skills: ["Laravel", "REST API"],
+          mandatory_requirements: [
+            { name: "Laravel", min_level: "intermediate" },
+            { name: "REST API", min_level: null },
+          ],
+        },
+      ],
+    });
+    assert.deepEqual(summary.roles[0].requirements, ["Laravel (متوسط)", "REST API (أي مستوى مثبت)"]);
   });
 });

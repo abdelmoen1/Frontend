@@ -132,6 +132,45 @@
   accent-color: var(--asmt-blue);
 }
 
+/* بطاقة مستوى التقييم: نفس شكل بطاقة المهارة */
+.asmt-level {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--asmt-line);
+  border-radius: 10px;
+  background: var(--asmt-soft);
+  cursor: pointer;
+}
+
+.asmt-level:focus-within {
+  outline: 3px solid rgba(25, 155, 197, 0.45);
+  outline-offset: 2px;
+}
+
+.asmt-level input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--asmt-blue);
+}
+
+.asmt-level small {
+  color: var(--asmt-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.asmt-level-name {
+  direction: rtl;
+}
+
+/* نوع السؤال (عملي/كتابي) في صفحة المحاولة */
+.asmt-tone-practical {
+  background: var(--asmt-warning-bg);
+  color: var(--asmt-warning);
+}
+
 .asmt-skill-checked {
   border-color: var(--asmt-blue);
   background: var(--asmt-info-bg);

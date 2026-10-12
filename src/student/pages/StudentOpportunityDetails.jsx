@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, BadgeCheck, Clock3 } from "lucide-react";
+import { ArrowRight, Clock3 } from "lucide-react";
 
+import EligibilityBox from "../components/EligibilityBox";
 import { getOpportunity } from "../services/studentService";
 import { opportunityCard, opportunityLoadError } from "../utils/opportunities";
 import "../styles/Opportunities.css";
@@ -27,7 +28,7 @@ export default function StudentOpportunityDetails() {
   const [loading, setLoading] = useState(validId);
   const [error, setError] = useState(validId ? null : opportunityLoadError({ status: 404 }));
 
-  // الخادم يرفض الفرصة غير المنشورة أو غير المطابقة حتى عند فتح الرابط مباشرة
+  // الخادم يرفض الفرصة غير المنشورة حتى عند فتح الرابط مباشرة؛ عدم الأهلية لا يخفيها
   useEffect(() => {
     if (!validId) return undefined;
     let active = true;
@@ -71,19 +72,10 @@ export default function StudentOpportunityDetails() {
               </span>
             )}
             {card.summary && <p className="opp-summary">{card.summary}</p>}
-            <div className="opp-match">
-              <BadgeCheck size={16} aria-hidden="true" />
-              <div>
-                <p>
-                  <b>الدور المطابق: </b>
-                  {card.matchedRoles.join("، ")}
-                </p>
-                <p>
-                  <b>مهاراتك المتحقق منها: </b>
-                  {card.verifiedSkills.join("، ")}
-                </p>
-              </div>
-            </div>
+            <EligibilityBox
+              eligibility={card.eligibility}
+              roleTitle={card.eligibility.eligible ? card.eligibleRoles.join("، ") : card.closestRole}
+            />
             {card.duration && (
               <span className="opp-duration">
                 <Clock3 size={14} aria-hidden="true" /> المدة التقديرية: {card.duration}
@@ -98,24 +90,30 @@ export default function StudentOpportunityDetails() {
                 <article className={`opp-role ${role.matched ? "opp-role-matched" : ""}`} key={role.id}>
                   <span className="opp-role-title">
                     {role.title}
-                    {role.matched && <span className="opp-tag">يطابق مهاراتك</span>}
+                    <span className={`opp-tag opp-tone-${role.eligibility.tone}`}>{role.eligibility.label}</span>
                   </span>
                   {role.label && <span className="opp-muted">{role.label}</span>}
                   {role.responsibilities && <p>{role.responsibilities}</p>}
-                  <span className="opp-muted">مهارات إلزامية</span>
-                  <ul className="opp-skills opp-skills-mandatory">
-                    {role.mandatory.map((skill) => (
-                      <li key={skill}>{skill}</li>
+                  <span className="opp-muted">مهارات إلزامية والمستوى الأدنى المطلوب</span>
+                  <ul className="opp-requirements">
+                    {role.requirements.map((skill) => (
+                      <li key={skill.name} className={skill.met ? "opp-req-met" : ""}>
+                        <bdi>{skill.name}</bdi> · المطلوب: {skill.requiredLabel}
+                        {skill.verifiedLabel ? ` · مستواك: ${skill.verifiedLabel}` : " · غير مثبت لديك"}
+                      </li>
                     ))}
                   </ul>
-                  {!role.matched && !role.specializationCompatible && (
-                    <p className="opp-muted">لا يتوافق هذا الدور مع مسارك المهني.</p>
-                  )}
-                  {!role.matched && role.specializationCompatible && role.missing.length > 0 && (
-                    <p className="opp-muted">
-                      مهارات إلزامية غير متحقق منها لديك: {role.missing.join("، ")}.{" "}
-                      <Link to="/student/assessment">تقييم المهارات</Link>
-                    </p>
+                  {role.eligibility.eligible ? (
+                    <p className="opp-muted">{role.eligibility.message}</p>
+                  ) : (
+                    <ul className="opp-reasons" aria-label={`لماذا لا تستوفي دور ${role.title} بعد`}>
+                      {role.reasons.map((reason, index) => (
+                        <li key={index}>
+                          {reason.message}
+                          {reason.action && <Link to={reason.action.to}>{reason.action.label}</Link>}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                   {role.desirable.length > 0 && (
                     <>
@@ -172,8 +170,8 @@ export default function StudentOpportunityDetails() {
 
           {/* لا يوجد مسار تقديم أو تكوين فريق في التطبيق بعد؛ لا نعرض زرًا لا يعمل */}
           <p className="opp-note">
-            التقديم على المشاريع وتكوين الفرق غير متاحين في المنصة بعد. ظهور المشروع لك يعني أنك
-            تستوفي متطلبات أحد أدواره، ولا يعني اختيارك تلقائيًا.
+            التقديم على المشاريع وتكوين الفرق غير متاحين في المنصة بعد. حالة التوافق المعروضة لا تعني أنك قدّمت
+            على المشروع أو اخترت للفريق.
           </p>
         </>
       )}

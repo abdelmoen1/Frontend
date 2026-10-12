@@ -39,6 +39,8 @@ function App() {
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        {/* مسار بديل لنفس صفحة إكمال تسجيل الدخول عبر Google */}
+        <Route path="/auth/callback" element={<GoogleCallback />} />
 
         {/* Only guests */}
         <Route element={<GuestRoute />}>

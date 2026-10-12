@@ -57,9 +57,13 @@ export const submitDiscoveryAnswer = (id, answer) =>
   request(`${projectRequestsPath}/${id}/answer`, json("POST", answer), AI_TIMEOUT_MS);
 export const analyzeProjectRequest = (id) =>
   request(`${projectRequestsPath}/${id}/analyze`, { method: "POST" }, AI_TIMEOUT_MS);
-// الاعتماد ينشر المشروع للطلاب المؤهلين، ويتطلب تأكيد المؤسسة للأدوار والمهارات
-export const approveProposal = (id) =>
-  request(`${projectRequestsPath}/${id}/approve`, json("POST", { confirm_requirements: true }), AI_TIMEOUT_MS);
+// الاعتماد ينشر المشروع للطلاب، ويتطلب تأكيد المؤسسة للأدوار والمهارات والمستوى الأدنى لكل مهارة إلزامية
+export const approveProposal = (id, roleSkillLevels) =>
+  request(
+    `${projectRequestsPath}/${id}/approve`,
+    json("POST", { confirm_requirements: true, role_skill_levels: roleSkillLevels }),
+    AI_TIMEOUT_MS,
+  );
 export const requestRevision = (id, data) =>
   request(`${projectRequestsPath}/${id}/revision`, json("POST", data));
 

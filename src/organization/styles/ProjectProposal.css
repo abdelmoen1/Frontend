@@ -708,6 +708,59 @@
   margin: 0 0 12px;
 }
 
+/* تأكيد المستوى الأدنى لكل مهارة إلزامية قبل الاعتماد */
+.prp-levels {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+}
+
+.prp-levels legend {
+  padding: 0 4px;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.prp-levels-role h4 {
+  margin: 10px 0 4px;
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.prp-levels-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 4px 0;
+}
+
+.prp-levels-row label {
+  min-width: 120px;
+  font-weight: 600;
+}
+
+.prp-levels-row select {
+  min-height: 38px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.prp-levels-row select:focus-visible {
+  outline: 3px solid rgba(43, 151, 207, 0.4);
+  outline-offset: 1px;
+}
+
+.prp-levels .prp-btn {
+  margin-top: 10px;
+}
+
 .prp-confirm {
   display: flex;
   align-items: flex-start;

@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BadgeCheck, Briefcase, Clock3, RotateCcw } from "lucide-react";
+import { Briefcase, CircleAlert, Clock3, RotateCcw } from "lucide-react";
 
+import EligibilityBox from "../components/EligibilityBox";
 import { getOpportunities } from "../services/studentService";
+import { specializationNotice } from "../utils/assessments";
 import { emptyOpportunitiesMessage, opportunityCard, opportunityLoadError } from "../utils/opportunities";
 import "../styles/Opportunities.css";
-
-function SkillList({ skills, variant }) {
-  if (!skills.length) return null;
-  return (
-    <ul className={`opp-skills opp-skills-${variant}`}>
-      {skills.map((skill) => (
-        <li key={skill}>{skill}</li>
-      ))}
-    </ul>
-  );
-}
 
 function OpportunityCard({ item }) {
   const card = opportunityCard(item);
@@ -32,29 +23,27 @@ function OpportunityCard({ item }) {
       </header>
       {card.summary && <p className="opp-summary">{card.summary}</p>}
 
-      {/* سبب ظهور المشروع: أدوار طابقها الطالب بمهارات متحقق منها فقط */}
-      <div className="opp-match">
-        <BadgeCheck size={16} aria-hidden="true" />
-        <div>
-          <p>
-            <b>الدور المطابق: </b>
-            {card.matchedRoles.join("، ")}
-          </p>
-          <p>
-            <b>مهاراتك المتحقق منها: </b>
-            {card.verifiedSkills.join("، ")}
-          </p>
-        </div>
-      </div>
+      <EligibilityBox
+        eligibility={card.eligibility}
+        roleTitle={card.eligibility.eligible ? card.eligibleRoles.join("، ") : card.closestRole}
+      />
 
       <div className="opp-roles">
         {card.roles.map((role) => (
           <div className={`opp-role ${role.matched ? "opp-role-matched" : ""}`} key={role.id}>
             <span className="opp-role-title">
               {role.title}
-              {role.matched && <span className="opp-tag">يطابق مهاراتك</span>}
+              <span className={`opp-tag opp-tone-${role.eligibility.tone}`}>{role.eligibility.label}</span>
             </span>
-            <SkillList skills={role.mandatory} variant="mandatory" />
+            {role.requirements.length > 0 && (
+              <ul className="opp-requirements" aria-label="المهارات الإلزامية والمستوى المطلوب">
+                {role.requirements.map((skill) => (
+                  <li key={skill.name} className={skill.met ? "opp-req-met" : ""}>
+                    <bdi>{skill.name}</bdi> · {skill.requiredLabel}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
       </div>
@@ -102,7 +91,8 @@ export default function StudentOpportunities() {
   }, []);
 
   const opportunities = Array.isArray(data?.opportunities) ? data.opportunities : [];
-  const empty = emptyOpportunitiesMessage(data?.verified_skills, data?.specialization);
+  const empty = emptyOpportunitiesMessage(data?.specialization);
+  const notice = specializationNotice(data?.specialization);
 
   return (
     <div className="opp-page" dir="rtl">
@@ -111,8 +101,8 @@ export default function StudentOpportunities() {
           <Briefcase size={22} aria-hidden="true" /> فرص المشاريع
         </h1>
         <p>
-          مشاريع حقيقية من المؤسسات، تظهر لك عندما يتوافق مسارك المهني مع أحد أدوارها وتكون مهاراته الإلزامية متحققًا منها
-          لديك عبر تقييمات المنصة.
+          كل المشاريع المنشورة من المؤسسات، مع مدى توافقك مع كل دور: المسار المهني، والمهارات الإلزامية، والمستوى
+          المثبت المطلوب لكل مهارة، وما يمكنك فعله لتصبح مؤهلًا.
         </p>
       </header>
 
@@ -143,20 +133,33 @@ export default function StudentOpportunities() {
           <Link className="opp-btn" to="/student/assessment">
             {empty.action === "assessment" ? "تقييم المهارات" : "اختيار المسار المهني"}
           </Link>
-          <Link className="opp-btn opp-btn-light" to="/student/profile">
-            مراجعة مهاراتي
-          </Link>
         </div>
       ) : (
-        <div className="opp-grid">
-          {opportunities.map((item) => (
-            <OpportunityCard item={item} key={item.id} />
-          ))}
-        </div>
+        <>
+          {notice && (
+            <div className="opp-match opp-tone-warning" role="note">
+              <CircleAlert size={16} aria-hidden="true" />
+              <div>
+                <p>
+                  <b>{notice.title}</b>
+                </p>
+                <p>
+                  {notice.body} <Link to="/student/profile">تعديل الملف الشخصي</Link>
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="opp-grid">
+            {opportunities.map((item) => (
+              <OpportunityCard item={item} key={item.id} />
+            ))}
+          </div>
+        </>
       )}
 
       <p className="opp-note">
-        ظهور المشروع يعني أنك تستوفي متطلبات أحد أدواره، ولا يعني اختيارك تلقائيًا للفريق.
+        التقديم على المشاريع وتكوين الفرق غير متاحين في المنصة بعد. حالة التوافق لا تعني أنك قدّمت على المشروع أو اخترت
+        للفريق.
       </p>
     </div>
   );

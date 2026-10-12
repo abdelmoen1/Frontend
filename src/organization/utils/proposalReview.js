@@ -9,7 +9,7 @@ export const BASIS_LABELS = {
 };
 
 export const PUBLICATION_STATUS_LABELS = {
-  published: "منشور للطلاب المؤهلين",
+  published: "منشور للطلاب",
   suspended: "معلّق من إدارة المنصة",
   withdrawn: "مسحوب من إدارة المنصة",
 };
@@ -26,9 +26,19 @@ export function stripListNumbering(value) {
     .trim();
 }
 
+// مستويات الإتقان المطلوبة للمهارات الإلزامية (نفس مفاتيح الخادم)
+export const LEVEL_OPTIONS = [
+  { key: "beginner", label: "مبتدئ" },
+  { key: "intermediate", label: "متوسط" },
+  { key: "advanced", label: "متقدم" },
+];
+
+export const levelLabel = (key) => LEVEL_OPTIONS.find((item) => item.key === key)?.label || "";
+
 /**
  * حالة المراجعة والاعتماد لطلب المشروع.
- * mode: "draft" | "published" | "pending_changes" | "revising" | "closed"
+ * mode: "draft" | "published" | "pending_changes" | "needs_levels" | "revising" | "closed"
+ * needs_levels: نسخة منشورة قبل إضافة المستويات؛ يلزم إعادة اعتمادها بمستويات مؤكدة.
  */
 export function reviewState(record) {
   const proposal = record?.proposal && typeof record.proposal === "object" ? record.proposal : null;
@@ -40,9 +50,10 @@ export function reviewState(record) {
   if (status === "rejected") mode = "closed";
   else if (REVISION_IN_PROGRESS.includes(status)) mode = "revising";
   else if (publication && publication.has_pending_changes) mode = "pending_changes";
+  else if (publication && publication.levels_confirmed === false) mode = "needs_levels";
   else if (publication) mode = "published";
 
-  const approvable = Boolean(proposal) && ["draft", "pending_changes"].includes(mode);
+  const approvable = Boolean(proposal) && ["draft", "pending_changes", "needs_levels"].includes(mode);
   let blockedReason = "";
   if (approvable && !record?.staffing?.roles?.length) {
     blockedReason =
@@ -87,6 +98,50 @@ export function staffingRoles(staffing) {
     }));
 }
 
+/**
+ * المهارات الإلزامية المرتبطة بالمنصة التي يجب أن تؤكد المؤسسة مستواها الأدنى قبل الاعتماد.
+ * role هو ترتيب الدور كما أعاده الخادم في staffing.roles (يُرسل كما هو)؛ recommended توصية الذكاء الاصطناعي فقط.
+ */
+export function levelRequirements(staffing) {
+  if (!Array.isArray(staffing?.roles)) return [];
+  const items = [];
+  staffing.roles.forEach((role, index) => {
+    (Array.isArray(role?.mandatory_skills) ? role.mandatory_skills : []).forEach((skill) => {
+      if (!Number.isInteger(skill?.id)) return;
+      items.push({
+        key: `${index}:${skill.id}`,
+        role: index,
+        roleTitle: typeof role.title === "string" ? role.title : "",
+        skillId: skill.id,
+        name: skill.name,
+        recommended: levelLabel(skill.recommended_level) ? skill.recommended_level : null,
+      });
+    });
+  });
+  return items;
+}
+
+/** يملأ الحقول الفارغة فقط بتوصيات الذكاء الاصطناعي؛ لا يغيّر ما اختارته المؤسسة. */
+export function applyRecommendedLevels(requirements, values) {
+  const next = { ...(values || {}) };
+  for (const item of requirements) {
+    if (!next[item.key] && item.recommended) next[item.key] = item.recommended;
+  }
+  return next;
+}
+
+/** حمولة الاعتماد؛ null إذا بقيت مهارة إلزامية دون مستوى مؤكد (لا يُفترض مستوى ضمنيًا). */
+export function levelsPayload(requirements, values) {
+  if (!requirements.length) return null;
+  const payload = [];
+  for (const item of requirements) {
+    const level = values?.[item.key];
+    if (!levelLabel(level)) return null;
+    payload.push({ role: item.role, skill_id: item.skillId, level });
+  }
+  return payload;
+}
+
 /** المتطلبات الحرجة مع أساسها؛ أي أساس غير معروف لا يُعرض كحقيقة. */
 export function keyRequirements(proposal) {
   if (!Array.isArray(proposal?.key_requirements)) return [];
@@ -109,6 +164,10 @@ export function matchingSummary(publication) {
       title: role.title,
       eligible: Number(role.eligible_students) || 0,
       mandatory: Array.isArray(role.mandatory_skills) ? role.mandatory_skills : [],
+      // "Laravel (متوسط)"؛ نسخة قديمة بلا مستوى تُعرض "أي مستوى مثبت"
+      requirements: (Array.isArray(role.mandatory_requirements) ? role.mandatory_requirements : []).map(
+        (skill) => `${skill.name} (${levelLabel(skill.min_level) || "أي مستوى مثبت"})`,
+      ),
     })),
     hasEligible: total > 0,
   };

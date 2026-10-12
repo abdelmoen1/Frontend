@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { emptyOpportunitiesMessage, opportunityCard, opportunityLoadError } from "./opportunities.js";
+import { actionLink, eligibilityView, emptyOpportunitiesMessage, opportunityCard, opportunityLoadError } from "./opportunities.js";
 
 const apiItem = {
   id: 7,
@@ -9,63 +9,117 @@ const apiItem = {
   summary: "عرض المسارات والأجرة.",
   estimated_duration: "8-10 أسابيع",
   organization: { name: "بلدية", industry: "نقل" },
-  match: { roles: ["مطوّر الخدمات الخلفية"], verified_skills: ["Laravel", "REST API"] },
+  eligibility: {
+    status: "level_insufficient",
+    message: "مستواك المثبت في Laravel هو مبتدئ، بينما يتطلب هذا الدور مستوى متوسطًا.",
+    role_id: 2,
+    role_title: "مطوّر الخدمات الخلفية",
+    action: { type: "assessment", skill_id: 12, level: "intermediate", label: "ابدأ اختبار Laravel (متوسط)" },
+    eligible_roles: [],
+  },
+  match: { roles: [], verified_skills: [] },
   roles: [
-    { id: 1, title: "مطوّر تطبيق الجوال", category_label: "مطوّر تطبيقات جوال", mandatory_skills: ["Flutter"], desirable_skills: [], matched: false },
-    { id: 2, title: "مطوّر الخدمات الخلفية", category_label: "مطوّر الخدمات الخلفية (Backend)", mandatory_skills: ["Laravel", "REST API"], desirable_skills: ["MySQL"], matched: true },
+    {
+      id: 1,
+      title: "مطوّر تطبيق الجوال",
+      category_label: "مطوّر تطبيقات جوال",
+      mandatory_skills: ["Flutter"],
+      desirable_skills: [],
+      matched: false,
+      requirements: [{ id: 3, name: "Flutter", min_level: "beginner", verified_level: null, met: false }],
+      eligibility: {
+        status: "specialization_mismatch",
+        message: "هذا الدور (مطوّر تطبيقات جوال) لا يتوافق مع مسارك المهني الحالي (تطوير الخدمات الخلفية (Backend)).",
+        reasons: [{ code: "specialization_mismatch", message: "هذا الدور لا يتوافق مع مسارك.", action: null }],
+        action: null,
+      },
+    },
+    {
+      id: 2,
+      title: "مطوّر الخدمات الخلفية",
+      category_label: "مطوّر الخدمات الخلفية (Backend)",
+      mandatory_skills: ["Laravel", "REST API"],
+      desirable_skills: ["MySQL"],
+      matched: false,
+      requirements: [
+        { id: 12, name: "Laravel", min_level: "intermediate", verified_level: "beginner", met: false },
+        { id: 13, name: "REST API", min_level: null, verified_level: "beginner", met: true },
+      ],
+      eligibility: {
+        status: "level_insufficient",
+        message: "مستواك المثبت في Laravel هو مبتدئ، بينما يتطلب هذا الدور مستوى متوسطًا.",
+        reasons: [
+          {
+            code: "level_insufficient",
+            message: "مستواك المثبت في Laravel هو مبتدئ، بينما يتطلب هذا الدور مستوى متوسطًا.",
+            action: { type: "assessment", skill_id: 12, level: "intermediate", label: "ابدأ اختبار Laravel (متوسط)" },
+          },
+        ],
+        action: { type: "assessment", skill_id: 12, level: "intermediate", label: "ابدأ اختبار Laravel (متوسط)" },
+      },
+    },
   ],
 };
 
 describe("opportunityCard", () => {
-  it("explains why the project is shown using only verified data", () => {
+  it("shows the server's eligibility, its reason and the next step", () => {
     const card = opportunityCard(apiItem);
-    assert.deepEqual(card.matchedRoles, ["مطوّر الخدمات الخلفية"]);
-    assert.deepEqual(card.verifiedSkills, ["Laravel", "REST API"]);
-    assert.deepEqual(card.roles.map((role) => role.matched), [false, true]);
-    assert.deepEqual(card.roles[1].desirable, ["MySQL"]);
+    assert.equal(card.eligibility.status, "level_insufficient");
+    assert.equal(card.eligibility.eligible, false);
+    assert.match(card.eligibility.message, /مستواك المثبت في Laravel هو مبتدئ/);
+    assert.equal(card.closestRole, "مطوّر الخدمات الخلفية");
+    assert.deepEqual(card.eligibility.action, { to: "/student/assessment?skill=12&level=intermediate", label: "ابدأ اختبار Laravel (متوسط)" });
     assert.equal(card.organization, "بلدية");
   });
 
-  it("tolerates missing optional fields", () => {
+  it("lists each role's requirement levels and reasons", () => {
+    const [mobile, backend] = opportunityCard(apiItem).roles;
+    assert.equal(mobile.eligibility.label, "لا يتوافق مع مسارك");
+    assert.equal(mobile.eligibility.action, null);
+    assert.deepEqual(backend.requirements, [
+      { name: "Laravel", requiredLabel: "متوسط", verifiedLabel: "مبتدئ", met: false },
+      // نسخة قديمة بلا مستوى مؤكد
+      { name: "REST API", requiredLabel: "أي مستوى مثبت", verifiedLabel: "مبتدئ", met: true },
+    ]);
+    assert.equal(backend.reasons[0].action.to, "/student/assessment?skill=12&level=intermediate");
+    assert.deepEqual(backend.desirable, ["MySQL"]);
+  });
+
+  it("tolerates missing optional fields without claiming eligibility", () => {
     const card = opportunityCard({ id: 1, title: "x" });
     assert.deepEqual(card.roles, []);
-    assert.deepEqual(card.matchedRoles, []);
+    assert.equal(card.eligibility.eligible, false);
     assert.equal(card.duration, "");
   });
 });
 
+describe("eligibility helpers", () => {
+  it("maps stable status codes and ignores unknown or non-Arabic text", () => {
+    assert.equal(eligibilityView({ status: "eligible", message: "أنت تستوفي متطلبات المهارات والمستوى لهذا الدور." }).eligible, true);
+    assert.equal(eligibilityView({ status: "assessment_required" }).tone, "info");
+    assert.equal(eligibilityView({ status: "made_up" }).status, "requirements_unavailable");
+    assert.equal(eligibilityView({ status: "eligible", message: "<b>hi</b>" }).message, "");
+  });
+
+  it("builds safe navigation actions", () => {
+    assert.deepEqual(actionLink({ type: "profile", label: "تحديد المسار المهني" }), { to: "/student/profile", label: "تحديد المسار المهني" });
+    assert.equal(actionLink({ type: "assessment", skill_id: "1; drop", level: "expert" }).to, "/student/assessment");
+    assert.equal(actionLink({ type: "javascript:alert(1)" }), null);
+    assert.equal(actionLink(null), null);
+  });
+});
+
 describe("empty and error states", () => {
-  it("explains verification without blaming the student", () => {
-    const none = emptyOpportunitiesMessage([], { status: "compatible" });
-    assert.match(none.body, /تقييم/);
+  it("is empty only when nothing is published", () => {
+    const none = emptyOpportunitiesMessage({ status: "compatible" });
+    assert.match(none.title, /لا توجد فرص منشورة/);
     assert.equal(none.action, "assessment");
-    const some = emptyOpportunitiesMessage(["Laravel"], { status: "compatible" });
-    assert.match(some.body, /Laravel/);
-    assert.doesNotMatch(some.body, /خطأ/);
+    const missing = emptyOpportunitiesMessage({ status: "missing" });
+    assert.match(missing.body, /مسارك المهني/);
+    assert.equal(missing.action, "specialization");
   });
 
-  it("asks for a professional specialization before anything else", () => {
-    const message = emptyOpportunitiesMessage(["Flutter", "Dart"], { status: "missing" });
-    assert.match(message.title, /مسارك المهني/);
-    assert.equal(message.action, "specialization");
-    assert.equal(emptyOpportunitiesMessage([], { status: "unrecognized" }).action, "specialization");
-  });
-
-  it("lists the missing mandatory skills of roles the student does not match", () => {
-    const card = opportunityCard({
-      ...apiItem,
-      roles: [
-        { ...apiItem.roles[0], missing_skills: ["Flutter"], specialization_compatible: true },
-        { ...apiItem.roles[1], missing_skills: [], specialization_compatible: true },
-      ],
-    });
-    assert.deepEqual(card.roles[0].missing, ["Flutter"]);
-    assert.equal(card.roles[0].specializationCompatible, true);
-    assert.deepEqual(card.roles[1].missing, []);
-    assert.equal(opportunityCard({ id: 1, roles: [{ id: 2, title: "دور", specialization_compatible: false }] }).roles[0].specializationCompatible, false);
-  });
-
-  it("treats a stale or unauthorized opportunity as unavailable", () => {
+  it("treats an unpublished opportunity as unavailable", () => {
     assert.equal(opportunityLoadError({ status: 404 }).retryable, false);
     assert.match(opportunityLoadError({ status: 404 }).message, /غير متاحة/);
     assert.equal(opportunityLoadError({ status: 401 }).login, true);

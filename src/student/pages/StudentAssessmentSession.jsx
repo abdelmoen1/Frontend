@@ -14,6 +14,7 @@ import {
   formatClock,
   insertIndent,
   progressView,
+  questionMeta,
   remainingSeconds,
   resultsView,
 } from "../utils/assessments";
@@ -62,6 +63,7 @@ function QuestionForm({ sessionId, question, timeUp, onAnswered, onReload }) {
   const [indentMode, setIndentMode] = useState(true);
   const fieldRef = useRef(null);
   const isCode = question.format === "code";
+  const meta = questionMeta(question);
 
   useEffect(() => {
     fieldRef.current?.focus();
@@ -117,6 +119,12 @@ function QuestionForm({ sessionId, question, timeUp, onAnswered, onReload }) {
     <form className="asmt-question" onSubmit={submit} noValidate>
       <div className="asmt-question-meta">
         <span className="asmt-badge asmt-tone-info">{question.skill?.name}</span>
+        {meta.category && (
+          <span className={`asmt-badge ${question.category === "practical" ? "asmt-tone-practical" : "asmt-tone-neutral"}`}>
+            {meta.category}
+            {meta.type ? ` · ${meta.type}` : ""}
+          </span>
+        )}
         <span className="asmt-badge asmt-tone-neutral">{isCode ? "إجابة بالكود" : "إجابة مكتوبة"}</span>
       </div>
       <h2 id={`asmt-q-${question.id}`}>{question.prompt}</h2>
@@ -174,7 +182,6 @@ function QuestionForm({ sessionId, question, timeUp, onAnswered, onReload }) {
 function Results({ session }) {
   const results = resultsView(session);
   const headingRef = useRef(null);
-  const anyCounts = results.some((result) => result.countsForMatching);
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -189,7 +196,8 @@ function Results({ session }) {
           </h1>
           <span className="asmt-progress">
             {session.ended_by_timeout ? "انتهى الوقت قبل الإجابة عن كل الأسئلة. " : ""}
-            لكل مهارة نتيجة مستقلة حسبها الخادم من درجات التصحيح.
+            {session.requested_level_label ? `مستوى المحاولة: ${session.requested_level_label}. ` : ""}
+            النتيجة حسبها الخادم من درجات التصحيح، ولا تؤثر في مهاراتك الأخرى.
           </span>
         </div>
       </div>
@@ -197,7 +205,10 @@ function Results({ session }) {
         {results.map((result) => (
           <article className="asmt-result" key={result.skill}>
             <div className="asmt-result-head">
-              <h2>{result.skill}</h2>
+              <h2>
+                {result.skill}
+                {result.levelLabel ? ` · ${result.levelLabel}` : ""}
+              </h2>
               <span className={`asmt-badge asmt-tone-${result.tone}`}>
                 {result.status === "passed" ? <BadgeCheck size={13} aria-hidden="true" /> : null}
                 {result.status === "failed" ? <XCircle size={13} aria-hidden="true" /> : null}
@@ -211,6 +222,7 @@ function Results({ session }) {
                 <li key={question.position}>
                   <b>
                     السؤال {question.position}
+                    {question.category ? ` · ${question.category}` : ""}
                     {question.points ? ` · ${question.points}` : ""}
                     {!question.answered ? " · دون إجابة" : ""}
                   </b>
@@ -232,11 +244,9 @@ function Results({ session }) {
         <Link className="asmt-btn" to={ASSESSMENTS_PATH}>
           العودة إلى التقييمات
         </Link>
-        {anyCounts && (
-          <Link className="asmt-btn asmt-btn-light" to="/student/opportunities">
-            عرض فرص المشاريع
-          </Link>
-        )}
+        <Link className="asmt-btn asmt-btn-light" to="/student/opportunities">
+          مدى توافقك مع فرص المشاريع
+        </Link>
       </div>
     </>
   );
@@ -426,8 +436,9 @@ export default function StudentAssessmentSession() {
         <div>
           <h1>{session.title}</h1>
           <span className="asmt-progress">
-            السؤال {progress.current} من {progress.total} · المهارات:{" "}
-            {(session.skills || []).map((skill) => skill.name).join("، ")}
+            السؤال {progress.current} من {progress.total} · المهارة:{" "}
+            {session.skill?.name || (session.skills || []).map((skill) => skill.name).join("، ")}
+            {session.requested_level_label ? ` · المستوى: ${session.requested_level_label}` : ""}
           </span>
         </div>
         <span

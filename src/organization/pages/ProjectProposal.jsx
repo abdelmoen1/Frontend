@@ -24,8 +24,13 @@ import {
   getProjectRequest,
 } from "../services/organizationService";
 import {
+  LEVEL_OPTIONS,
   PUBLICATION_STATUS_LABELS,
+  applyRecommendedLevels,
   keyRequirements,
+  levelLabel,
+  levelRequirements,
+  levelsPayload,
   matchingSummary,
   reviewState,
   staffingRoles,
@@ -207,21 +212,84 @@ function KeyRequirementsBlock({ proposal }) {
   );
 }
 
-// الاعتماد: مراجعة صريحة للأدوار والمهارات ثم النشر للطلاب المؤهلين
-function ApprovalPanel({ state, onApprove, approving, approveError }) {
+// المستوى الأدنى لكل مهارة إلزامية: توصية الذكاء الاصطناعي تُعرض كتوصية، ولا تُعتمد إلا باختيار المؤسسة
+function LevelConfirmation({ requirements, values, onChange, disabled }) {
+  const hasRecommendations = requirements.some((item) => item.recommended && !values[item.key]);
+  const roles = [...new Set(requirements.map((item) => item.role))];
+
+  return (
+    <fieldset className="prp-levels" disabled={disabled}>
+      <legend>المستوى الأدنى المطلوب لكل مهارة إلزامية</legend>
+      <p className="prp-muted">
+        يُعرض المشروع لكل الطلاب، لكن لا يستوفي الدور إلا من أثبت كل مهارة إلزامية بهذا المستوى أو أعلى عبر تقييمات
+        المنصة. المستويات المقترحة توصية من الذكاء الاصطناعي وتحتاج تأكيدك.
+      </p>
+      {roles.map((role) => (
+        <div className="prp-levels-role" key={role}>
+          <h4>{requirements.find((item) => item.role === role)?.roleTitle}</h4>
+          {requirements
+            .filter((item) => item.role === role)
+            .map((item) => (
+              <div className="prp-levels-row" key={item.key}>
+                <label htmlFor={`prp-level-${item.key}`}>
+                  <bdi>{item.name}</bdi>
+                </label>
+                <select
+                  id={`prp-level-${item.key}`}
+                  value={values[item.key] || ""}
+                  onChange={(event) => onChange({ ...values, [item.key]: event.target.value })}
+                  aria-describedby={item.recommended ? `prp-level-hint-${item.key}` : undefined}
+                >
+                  <option value="">اختر المستوى</option>
+                  {LEVEL_OPTIONS.map((level) => (
+                    <option key={level.key} value={level.key}>
+                      {level.label}
+                    </option>
+                  ))}
+                </select>
+                {item.recommended && (
+                  <span className="prp-muted" id={`prp-level-hint-${item.key}`}>
+                    مقترح: {levelLabel(item.recommended)}
+                  </span>
+                )}
+              </div>
+            ))}
+        </div>
+      ))}
+      {hasRecommendations && (
+        <button
+          type="button"
+          className="prp-btn"
+          onClick={() => onChange(applyRecommendedLevels(requirements, values))}
+        >
+          تطبيق المستويات المقترحة على الحقول الفارغة
+        </button>
+      )}
+    </fieldset>
+  );
+}
+
+// الاعتماد: مراجعة صريحة للأدوار والمهارات ومستوياتها ثم النشر للطلاب
+function ApprovalPanel({ state, staffing, onApprove, approving, approveError }) {
   const [confirmed, setConfirmed] = useState(false);
+  const [levels, setLevels] = useState({});
+  const requirements = levelRequirements(staffing);
+  const payload = levelsPayload(requirements, levels);
   const pendingChanges = state.mode === "pending_changes";
+  const needsLevels = state.mode === "needs_levels";
 
   return (
     <section className="prp-card prp-approval" aria-labelledby="prp-approval-title">
       <h2 id="prp-approval-title">
         <BadgeCheck size={20} aria-hidden="true" />
-        {pendingChanges ? "اعتماد النسخة المعدلة" : "اعتماد المقترح ونشره"}
+        {pendingChanges ? "اعتماد النسخة المعدلة" : needsLevels ? "تأكيد مستويات المهارات" : "اعتماد المقترح ونشره"}
       </h2>
       <p>
         {pendingChanges
           ? `الطلاب يرون حاليًا النسخة المعتمدة رقم ${state.publication.version}. لن تُستبدل إلا بعد اعتمادك لهذه النسخة.`
-          : "بعد الاعتماد يُحفظ المقترح كنسخة معتمدة ويظهر المشروع للطلاب الذين يطابقون أحد الأدوار بمهارات متحقق منها."}
+          : needsLevels
+            ? "نُشرت هذه النسخة قبل تحديد مستويات المهارات، لذلك يستوفي الدور حاليًا أي طالب أثبت المهارة بأي مستوى. حدد المستويات وأعد الاعتماد لتطبيقها."
+            : "بعد الاعتماد يُحفظ المقترح كنسخة معتمدة ويظهر المشروع للطلاب، مع توضيح مدى استيفاء كل طالب لمتطلبات كل دور."}
       </p>
       {state.blockedReason ? (
         <p className="prp-warning" role="note">
@@ -229,6 +297,7 @@ function ApprovalPanel({ state, onApprove, approving, approveError }) {
         </p>
       ) : (
         <>
+          <LevelConfirmation requirements={requirements} values={levels} onChange={setLevels} disabled={approving} />
           <label className="prp-confirm">
             <input
               type="checkbox"
@@ -236,8 +305,13 @@ function ApprovalPanel({ state, onApprove, approving, approveError }) {
               onChange={(event) => setConfirmed(event.target.checked)}
               disabled={approving}
             />
-            <span>راجعت النطاق والأدوار والمهارات المطلوبة وأؤكد أنها تعبر عن احتياج المؤسسة.</span>
+            <span>راجعت النطاق والأدوار والمهارات ومستوياتها المطلوبة وأؤكد أنها تعبر عن احتياج المؤسسة.</span>
           </label>
+          {!payload && (
+            <p className="prp-muted" role="note">
+              اختر مستوى لكل مهارة إلزامية لتفعيل الاعتماد.
+            </p>
+          )}
           {approveError && (
             <p className="prp-error" role="alert">
               {approveError}
@@ -246,8 +320,8 @@ function ApprovalPanel({ state, onApprove, approving, approveError }) {
           <button
             type="button"
             className="prp-btn prp-btn-primary"
-            onClick={onApprove}
-            disabled={!confirmed || approving}
+            onClick={() => payload && onApprove(payload)}
+            disabled={!confirmed || !payload || approving}
             aria-busy={approving}
           >
             {approving ? (
@@ -255,7 +329,13 @@ function ApprovalPanel({ state, onApprove, approving, approveError }) {
             ) : (
               <Send size={16} aria-hidden="true" />
             )}
-            {approving ? "جارٍ الاعتماد..." : pendingChanges ? "اعتماد النسخة المعدلة" : "اعتماد المقترح ونشره"}
+            {approving
+              ? "جارٍ الاعتماد..."
+              : pendingChanges
+                ? "اعتماد النسخة المعدلة"
+                : needsLevels
+                  ? "اعتماد المستويات"
+                  : "اعتماد المقترح ونشره"}
           </button>
         </>
       )}
@@ -298,15 +378,15 @@ function PublicationPanel({ publication, justApproved }) {
             <thead>
               <tr>
                 <th scope="col">الدور</th>
-                <th scope="col">المهارات الإلزامية</th>
-                <th scope="col">طلاب مؤهلون حاليًا</th>
+                <th scope="col">المهارات الإلزامية (المستوى الأدنى)</th>
+                <th scope="col">طلاب يستوفون الدور حاليًا</th>
               </tr>
             </thead>
             <tbody>
               {summary.roles.map((role) => (
                 <tr key={role.title}>
                   <td>{role.title}</td>
-                  <td>{role.mandatory.join("، ") || "—"}</td>
+                  <td>{(role.requirements.length ? role.requirements : role.mandatory).join("، ") || "—"}</td>
                   <td>{role.eligible}</td>
                 </tr>
               ))}
@@ -316,8 +396,8 @@ function PublicationPanel({ publication, justApproved }) {
       )}
       {!summary.hasEligible && summary.roles.length > 0 && (
         <p className="prp-muted">
-          لا يوجد حاليًا طلاب يطابقون الأدوار بمهارات متحقق منها، لذلك لا يظهر المشروع لأي طالب بعد.
-          سيظهر تلقائيًا لكل طالب يستوفي متطلبات أحد الأدوار.
+          المشروع ظاهر لكل الطلاب، لكن لا يوجد حاليًا طالب أثبت مهارات أحد الأدوار بالمستوى المطلوب. يرى كل طالب ما
+          ينقصه ليستوفي الدور، ويتحدث هذا العدد تلقائيًا.
         </p>
       )}
     </section>
@@ -701,12 +781,12 @@ export default function ProjectProposal() {
   };
 
   // الخادم يقفل الطلب ويعيد نفس النسخة عند التكرار؛ الزر يُعطَّل أيضًا لمنع النقرات المتكررة
-  const approve = async () => {
+  const approve = async (roleSkillLevels) => {
     if (approving) return;
     setApproving(true);
     setApproveError("");
     try {
-      setRecord(await approveProposal(id));
+      setRecord(await approveProposal(id, roleSkillLevels));
       setJustApproved(true);
     } catch (approvalError) {
       setApproveError(
@@ -723,7 +803,7 @@ export default function ProjectProposal() {
   const chatLink = `/organization/requests/${id}/intake`;
   const projectName = text(proposal?.project_overview?.project_name) || record?.title;
   const generatedAt = formatDate(record?.proposal_generated_at);
-  const published = review.mode === "published";
+  const published = review.mode === "published" || review.mode === "needs_levels";
 
   return (
     <div className="prp" dir="rtl">
@@ -864,9 +944,12 @@ export default function ProjectProposal() {
             <PublicationPanel publication={review.publication} justApproved={justApproved && published} />
           )}
 
-          {(review.mode === "draft" || review.mode === "pending_changes") && (
+          {["draft", "pending_changes", "needs_levels"].includes(review.mode) && (
             <ApprovalPanel
+              // نموذج جديد لكل نسخة من المقترح حتى لا تبقى مستويات اختيرت لأدوار مختلفة
+              key={record.updated_at}
               state={review}
+              staffing={record.staffing}
               onApprove={approve}
               approving={approving}
               approveError={approveError}
