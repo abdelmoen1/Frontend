@@ -23,6 +23,7 @@ import {
   maxLengthFor,
   validateRevision,
 } from "../utils/discoveryAnswers";
+import { describeDiscoveryFailure } from "../utils/discoveryErrors";
 import "../styles/DynamicProjectDiscovery.css";
 
 const WAIT_LABELS = {
@@ -35,10 +36,28 @@ const NEAR_BOTTOM_PX = 80;
 const DEFAULT_COMPLETION =
   "شكرًا لك! أصبح لدينا ما يكفي لإعداد مسودة المقترح. المسودة أولية ويمكنك مراجعتها وتعديلها قبل الاعتماد.";
 
-// انتهاء الجلسة (401) يحتاج إعادة تسجيل الدخول؛ غير ذلك قابل لإعادة المحاولة
-const failureFor = (failure) => ({
-  message: failure?.message || "تعذر إكمال الطلب حاليًا.",
-  action: failure?.status === 401 ? "login" : "retry",
+// تفاصيل الفشل (الحالة، الرمز، معرّف الطلب، تشخيص الخادم في وضع debug) تظهر في وحدة التحكم
+// أثناء التطوير فقط؛ المؤسسة ترى رسالة عربية آمنة
+const describeFailure = (failure) => {
+  const info = describeDiscoveryFailure(failure);
+  if (import.meta.env.DEV) {
+    console.warn("[discovery] request failed", {
+      status: failure?.status,
+      kind: failure?.kind,
+      code: info.code,
+      requestId: info.requestId,
+      answerSaved: info.answerSaved,
+      debug: failure?.data?.debug,
+    });
+  }
+  return info;
+};
+
+const alertFrom = (info) => ({
+  message: info.message,
+  action: info.action,
+  persistent: info.persistent,
+  requestId: info.requestId,
 });
 
 const hasSelection = (selection) =>
@@ -161,6 +180,7 @@ function DynamicProjectDiscovery() {
   const [proposalError, setProposalError] = useState("");
   const [showFindings, setShowFindings] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
+  const [cooldown, setCooldown] = useState(0);
   const lockRef = useRef(false);
   const atBottomRef = useRef(true);
   const questionIdRef = useRef(null);
@@ -189,6 +209,18 @@ function DynamicProjectDiscovery() {
     setError(null);
   }, []);
 
+  // يعرض الفشل مع مهلة إعادة المحاولة التي يحددها الخادم (مثل حد الطلبات) إن وُجدت
+  const showFailure = useCallback((info) => {
+    setError(alertFrom(info));
+    setCooldown(info.retryAfter || 0);
+  }, []);
+
+  useEffect(() => {
+    if (cooldown <= 0) return undefined;
+    const timer = setTimeout(() => setCooldown((seconds) => seconds - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
   // قفل واحد يمنع أي طلبين متزامنين (إرسال/متابعة/إعداد المقترح)
   const runExclusive = useCallback(async (task) => {
     if (lockRef.current) return;
@@ -206,7 +238,17 @@ function DynamicProjectDiscovery() {
 
     getNextDiscoveryQuestion(projectId)
       .then((result) => active && applyState(result))
-      .catch((failure) => active && setLoadError(failureFor(failure)))
+      .catch((failure) => {
+        if (!active) return;
+        const info = describeFailure(failure);
+        // الخادم يرسل المحادثة المحفوظة مع الفشل، فنعرضها مع التنبيه بدل صفحة خطأ فارغة
+        if (info.snapshot) {
+          applyState(info.snapshot);
+          showFailure(info);
+        } else {
+          setLoadError(alertFrom(info));
+        }
+      })
       .finally(() => {
         lockRef.current = false;
         if (active) setLoading(false);
@@ -215,7 +257,7 @@ function DynamicProjectDiscovery() {
     return () => {
       active = false;
     };
-  }, [applyState, projectId]);
+  }, [applyState, projectId, showFailure]);
 
   // تلميح عند تأخر الرد، دون مؤشر لا ينتهي: الطلب نفسه له مهلة في طبقة الخدمة
   useEffect(() => {
@@ -268,8 +310,10 @@ function DynamicProjectDiscovery() {
         applyState(await getNextDiscoveryQuestion(projectId));
         setLoadError(null);
       } catch (failure) {
-        if (state) setError(failureFor(failure));
-        else setLoadError(failureFor(failure));
+        const info = describeFailure(failure);
+        if (info.snapshot) applyState(info.snapshot);
+        if (state || info.snapshot) showFailure(info);
+        else setLoadError(alertFrom(info));
       } finally {
         setWaiting(null);
       }
@@ -313,9 +357,16 @@ function DynamicProjectDiscovery() {
           }
           setError({ message: failure.message, action: null });
         } else {
-          // قد تكون الإجابة حُفظت قبل فشل السؤال التالي؛ إعادة إرسالها نفسها آمنة
-          setPending((current) => current && { ...current, status: "failed" });
-          setError(failureFor(failure));
+          const info = describeFailure(failure);
+          if (info.answerSaved && info.snapshot) {
+            // الإجابة محفوظة وتظهر في السجل؛ إعادة المحاولة تتابع المحادثة دون إرسالها مجددًا
+            applyState(info.snapshot);
+            setPending(null);
+          } else {
+            // لم يؤكد الخادم الحفظ: تبقى الرسالة هنا، وإعادة إرسالها نفسها آمنة ولا تكرر الحفظ
+            setPending((current) => current && { ...current, status: "failed" });
+          }
+          showFailure(info);
         }
       } finally {
         setWaiting(null);
@@ -356,9 +407,16 @@ function DynamicProjectDiscovery() {
           }
           setError({ message: failure.message, action: null });
         } else {
-          // إن حُفظ طلب التعديل نكتفي عند إعادة المحاولة بمتابعة المحادثة دون تكراره
-          setPending((current) => current && { ...current, status: "failed", posted: alreadyPosted });
-          setError(failureFor(failure));
+          const info = describeFailure(failure);
+          if (alreadyPosted && info.snapshot) {
+            // طلب التعديل محفوظ ويظهر في المحادثة؛ إعادة المحاولة تكمل معالجته فقط
+            applyState(info.snapshot);
+            setPending(null);
+          } else {
+            // إن حُفظ طلب التعديل نكتفي عند إعادة المحاولة بمتابعة المحادثة دون تكراره
+            setPending((current) => current && { ...current, status: "failed", posted: alreadyPosted });
+          }
+          showFailure(info);
         }
       } finally {
         setWaiting(null);
@@ -635,20 +693,30 @@ function DynamicProjectDiscovery() {
             </div>
 
             {error && (
-              <div className="dc-alert" role="alert">
-                <p>
+              <div className="dc-alert">
+                {/* الرسالة وحدها منطقة إعلان، حتى لا يُعاد إعلان العدّ التنازلي كل ثانية */}
+                <p role="alert">
                   {error.message}
                   {pending?.status === "failed" ? " رسالتك محفوظة هنا ويمكنك إعادة إرسالها." : ""}
                 </p>
-                {error.action === "retry" && (
-                  <button type="button" onClick={retryPending} disabled={busy}>
-                    <RotateCcw size={14} aria-hidden="true" /> إعادة المحاولة
-                  </button>
-                )}
-                {error.action === "login" && (
-                  <button type="button" onClick={relogin}>
-                    تسجيل الدخول مجددًا
-                  </button>
+                <div className="dc-alert-actions">
+                  {error.action === "retry" && (
+                    <button type="button" onClick={retryPending} disabled={busy || cooldown > 0}>
+                      <RotateCcw size={14} aria-hidden="true" />
+                      {cooldown > 0 ? `إعادة المحاولة بعد ${cooldown} ثانية` : "إعادة المحاولة"}
+                    </button>
+                  )}
+                  {error.action === "login" && (
+                    <button type="button" onClick={relogin}>
+                      تسجيل الدخول مجددًا
+                    </button>
+                  )}
+                  {error.persistent && <Link to="/organization/requests">العودة إلى طلباتي</Link>}
+                </div>
+                {error.persistent && error.requestId && (
+                  <p className="dc-alert-ref">
+                    رمز المتابعة للدعم: <bdi dir="ltr">{error.requestId}</bdi>
+                  </p>
                 )}
               </div>
             )}
