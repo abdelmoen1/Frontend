@@ -103,7 +103,7 @@ describe("eligibility helpers", () => {
 
   it("builds safe navigation actions", () => {
     assert.deepEqual(actionLink({ type: "profile", label: "تحديد المسار المهني" }), { to: "/student/profile", label: "تحديد المسار المهني" });
-    assert.equal(actionLink({ type: "assessment", skill_id: "1; drop", level: "expert" }).to, "/student/assessment");
+    assert.equal(actionLink({ type: "assessment", skill_id: "1; drop", level: "guru" }).to, "/student/assessment");
     assert.equal(actionLink({ type: "javascript:alert(1)" }), null);
     assert.equal(actionLink(null), null);
   });

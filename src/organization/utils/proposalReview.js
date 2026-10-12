@@ -31,6 +31,7 @@ export const LEVEL_OPTIONS = [
   { key: "beginner", label: "مبتدئ" },
   { key: "intermediate", label: "متوسط" },
   { key: "advanced", label: "متقدم" },
+  { key: "expert", label: "خبير" },
 ];
 
 export const levelLabel = (key) => LEVEL_OPTIONS.find((item) => item.key === key)?.label || "";

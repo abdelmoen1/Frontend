@@ -163,7 +163,7 @@ describe("confirming skill levels before approval", () => {
       { role: 0, skill_id: 1, level: "intermediate" },
       { role: 0, skill_id: 2, level: "beginner" },
     ]);
-    assert.equal(levelsPayload(requirements, { "0:1": "expert", "0:2": "beginner" }), null);
+    assert.equal(levelsPayload(requirements, { "0:1": "guru", "0:2": "beginner" }), null);
   });
 
   it("asks to confirm levels for a version published before levels existed", () => {

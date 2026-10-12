@@ -701,3 +701,488 @@
     animation: none;
   }
 }
+
+/* ===== شاشة ما قبل التقييم (مهاراتي): بطل داكن، بطاقات ملخص، تبويبات، صف لكل مهارة بمستوى ===== */
+.pre-page {
+  --pre-navy: #061528;
+  --pre-sky: #2399d0;
+  --pre-sky-soft: #e7f2fa;
+  --pre-card: #fff;
+  --pre-pill: #eef2f6;
+  --pre-danger: #c62828;
+
+  width: min(1240px, 100%);
+  padding-top: 8px;
+}
+
+.pre-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 250px;
+  padding: 32px 40px;
+  border-radius: 20px;
+  background: var(--pre-navy);
+  color: #fff;
+}
+
+.pre-hero-copy h1 {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.pre-hero-copy p {
+  max-width: 640px;
+  margin: 0 0 22px;
+  color: #d5deea;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.pre-hero-actions,
+.pre-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pre-hero-art {
+  flex-shrink: 0;
+  width: min(250px, 30%);
+  height: auto;
+}
+
+.pre-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 22px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pre-btn svg {
+  flex-shrink: 0;
+}
+
+.pre-btn-primary {
+  min-width: 170px;
+  background: var(--pre-sky);
+  color: #05233c;
+}
+
+.pre-btn-primary svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pre-btn-primary:hover:not(:disabled) {
+  background: #3aaee2;
+}
+
+.pre-btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pre-btn-ghost {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+
+.pre-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pre-btn-outline {
+  border-color: var(--asmt-line);
+  background: #fff;
+  color: var(--asmt-navy);
+}
+
+.pre-btn:focus-visible,
+.pre-tab:focus-visible,
+.pre-remove:focus-visible,
+.pre-restore:focus-visible,
+.pre-level:focus-within,
+.pre-confirm:focus-visible {
+  outline: 3px solid rgba(35, 153, 208, 0.45);
+  outline-offset: 2px;
+}
+
+/* بطاقات الملخص */
+.pre-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.pre-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 104px;
+  padding: 18px 20px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: var(--pre-card);
+  box-shadow: 0 2px 10px rgba(16, 37, 62, 0.05);
+}
+
+.pre-stat-featured {
+  border-color: var(--pre-sky);
+  background: var(--pre-navy);
+  color: #fff;
+}
+
+.pre-tile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--pre-sky-soft);
+  color: var(--pre-navy);
+}
+
+.pre-stat-featured .pre-tile {
+  background: var(--pre-sky);
+}
+
+.pre-stat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pre-stat-label {
+  color: var(--asmt-muted);
+  font-size: 13px;
+}
+
+.pre-stat-featured .pre-stat-label,
+.pre-stat-featured small {
+  color: #d5deea;
+}
+
+.pre-stat-value b {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.pre-stat-value small {
+  color: var(--asmt-muted);
+  font-size: 12px;
+}
+
+/* شريط معلومات التقييم */
+.pre-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding: 12px 16px;
+  border: 1px solid #bfe0f1;
+  border-radius: 12px;
+  background: var(--pre-sky-soft);
+  color: #0f4f6d;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.pre-info svg {
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.pre-info p {
+  margin: 0;
+}
+
+/* تبويبات التصفية */
+.pre-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pre-tab {
+  min-height: 38px;
+  padding: 6px 18px;
+  border: 1px solid var(--asmt-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--asmt-ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pre-tab[aria-pressed="true"] {
+  border-color: var(--pre-navy);
+  background: var(--pre-navy);
+  color: #45b8ec;
+  font-weight: 700;
+}
+
+/* صف المهارة */
+.pre-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pre-skill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  min-height: 76px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--pre-card);
+  box-shadow: 0 2px 10px rgba(16, 37, 62, 0.04);
+}
+
+.pre-skill-name {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.pre-skill-name bdi {
+  color: var(--asmt-navy);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pre-skill-name small {
+  color: var(--asmt-muted);
+  font-size: 13px;
+}
+
+.pre-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: #f1f4f7;
+  color: #46566b;
+  font-size: 12px;
+}
+
+.pre-chip-success {
+  background: var(--asmt-success-bg);
+  color: var(--asmt-success);
+}
+
+.pre-chip-warning {
+  background: var(--asmt-warning-bg);
+  color: var(--asmt-warning);
+}
+
+.pre-chip-info {
+  background: var(--pre-sky-soft);
+  color: var(--asmt-info);
+}
+
+/* مستوى التقييم: قائمة اختيار حقيقية داخل كبسولة مع مؤشر النقاط */
+.pre-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  padding: 2px 12px 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--pre-pill);
+}
+
+.pre-level-empty {
+  border-color: #f3c27a;
+  background: #fff8ec;
+}
+
+.pre-level select {
+  min-height: 34px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--asmt-navy);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pre-level select:focus {
+  outline: none;
+}
+
+.pre-dots {
+  display: inline-flex;
+  gap: 4px;
+  direction: ltr;
+}
+
+.pre-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c3ccd6;
+}
+
+.pre-dot-on {
+  background: var(--pre-navy);
+}
+
+.pre-remove,
+.pre-restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--pre-danger);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pre-remove:hover:not(:disabled) {
+  background: #fdecea;
+}
+
+.pre-remove:disabled,
+.pre-level select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pre-removed {
+  margin: 12px 0 0;
+  color: var(--asmt-muted);
+  font-size: 13px;
+}
+
+.pre-restore {
+  color: var(--asmt-info);
+  font-size: 13px;
+}
+
+/* التأكيد والبدء */
+.pre-confirm {
+  margin-top: 22px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: var(--pre-card);
+  box-shadow: 0 2px 10px rgba(16, 37, 62, 0.05);
+}
+
+.pre-confirm h2 {
+  margin: 0 0 4px;
+  color: var(--asmt-navy);
+  font-size: 18px;
+}
+
+.pre-confirm-summary {
+  margin: 0 0 12px;
+  color: var(--asmt-muted);
+  font-size: 14px;
+}
+
+.pre-missing {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--asmt-warning-bg);
+  color: var(--asmt-warning);
+  font-size: 14px;
+}
+
+.pre-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.9;
+  cursor: pointer;
+}
+
+.pre-check input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 5px;
+  accent-color: var(--pre-sky);
+}
+
+.pre-unavailable {
+  margin: 12px 0 0;
+  color: var(--asmt-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 1000px) {
+  .pre-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pre-hero {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 22px 18px;
+  }
+
+  .pre-hero-copy h1 {
+    font-size: 26px;
+  }
+
+  .pre-hero-art {
+    width: 150px;
+    align-self: center;
+  }
+
+  .pre-hero-actions .pre-btn,
+  .pre-confirm-actions .pre-btn {
+    width: 100%;
+  }
+
+  .pre-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .pre-level {
+    margin-inline-start: 0;
+  }
+}

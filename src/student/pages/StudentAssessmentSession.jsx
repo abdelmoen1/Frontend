@@ -15,7 +15,9 @@ import {
   insertIndent,
   progressView,
   questionMeta,
+  questionSkillsText,
   remainingSeconds,
+  requestedSkillsText,
   resultsView,
 } from "../utils/assessments";
 import "../styles/Assessments.css";
@@ -118,7 +120,9 @@ function QuestionForm({ sessionId, question, timeUp, onAnswered, onReload }) {
   return (
     <form className="asmt-question" onSubmit={submit} noValidate>
       <div className="asmt-question-meta">
-        <span className="asmt-badge asmt-tone-info">{question.skill?.name}</span>
+        <span className="asmt-badge asmt-tone-info">
+          <bdi>{questionSkillsText(question)}</bdi>
+        </span>
         {meta.category && (
           <span className={`asmt-badge ${question.category === "practical" ? "asmt-tone-practical" : "asmt-tone-neutral"}`}>
             {meta.category}
@@ -196,8 +200,7 @@ function Results({ session }) {
           </h1>
           <span className="asmt-progress">
             {session.ended_by_timeout ? "انتهى الوقت قبل الإجابة عن كل الأسئلة. " : ""}
-            {session.requested_level_label ? `مستوى المحاولة: ${session.requested_level_label}. ` : ""}
-            النتيجة حسبها الخادم من درجات التصحيح، ولا تؤثر في مهاراتك الأخرى.
+            لكل مهارة نتيجة مستقلة بمستواها المطلوب، حسبها الخادم من أسئلتها العملية ومعايير المقال الخاصة بها.
           </span>
         </div>
       </div>
@@ -436,9 +439,7 @@ export default function StudentAssessmentSession() {
         <div>
           <h1>{session.title}</h1>
           <span className="asmt-progress">
-            السؤال {progress.current} من {progress.total} · المهارة:{" "}
-            {session.skill?.name || (session.skills || []).map((skill) => skill.name).join("، ")}
-            {session.requested_level_label ? ` · المستوى: ${session.requested_level_label}` : ""}
+            السؤال {progress.current} من {progress.total} · <bdi>{requestedSkillsText(session)}</bdi>
           </span>
         </div>
         <span

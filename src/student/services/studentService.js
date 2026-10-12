@@ -221,13 +221,14 @@ export const getSpecializations = async () =>
 export const getAssessments = async () =>
   (await requestJson(`${BASE_URL}/student/assessments`, { headers: getAuthHeaders(false) })).data;
 
-// محاولة لمهارة واحدة بالمستوى المطلوب: يولد Gemini أسئلة جديدة أو يعيد المحاولة المفتوحة نفسها؛ قد يستغرق عدة ثوانٍ
-export const startAssessmentSession = async (skillId, level) =>
+// جلسة لحتى 3 مهارات بمستوى لكل مهارة: skills = [{skill_id, level}]. يولد Gemini أسئلة جديدة أو يعيد الجلسة
+// المفتوحة نفسها؛ قد يستغرق عدة ثوانٍ
+export const startAssessmentSession = async (skills) =>
   (
     await requestJson(`${BASE_URL}/student/assessment-sessions`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ skill_id: skillId, level }),
+      body: JSON.stringify({ skills }),
     })
   ).data;
 

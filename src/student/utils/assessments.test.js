@@ -4,10 +4,19 @@ import { describe, it } from "node:test";
 import {
   ASSESSMENTS_PATH,
   LEVELS,
+  TARGET_LEVELS,
+  assessmentSettings,
+  defaultExcluded,
+  questionSkillsText,
+  requestedSkillsText,
   answerError,
+  levelRank,
+  preAssessmentSkills,
+  preAssessmentState,
+  setSkillLevel,
+  skillCategory,
   assessmentError,
   assessmentLink,
-  attemptSummary,
   formatClock,
   groupSkills,
   insertIndent,
@@ -57,6 +66,7 @@ describe("choosing what to assess", () => {
         ["beginner", "passed", false],
         ["intermediate", "failed", true],
         ["advanced", "not_assessed", true],
+        ["expert", "not_assessed", true],
       ],
     );
     // إعادة مهارة ناجحة مسموحة (بمستوى أعلى)
@@ -65,7 +75,7 @@ describe("choosing what to assess", () => {
     assert.match(levelNote(skillView(skill({ verified_level: "intermediate" })), "beginner"), /لن تخفض/);
     assert.equal(levelNote(view, "advanced"), "");
     assert.match(skillView(skill({ name: "Figma", practical: true, status: "passed" })).note, /تحققًا من إدارة المنصة/);
-    assert.equal(skillView(skill({ status: "weird", verified_level: "expert" })).verifiedLevel, null);
+    assert.equal(skillView(skill({ status: "weird", verified_level: "guru" })).verifiedLevel, null);
   });
 
   it("puts the specialization skills first using real ids", () => {
@@ -79,14 +89,10 @@ describe("choosing what to assess", () => {
 
   it("reads a preselected skill and level from the link and summarizes the attempt", () => {
     assert.deepEqual(parseAssessmentQuery("?skill=12&level=intermediate"), { skillId: 12, level: "intermediate" });
-    assert.deepEqual(parseAssessmentQuery("?skill=abc&level=expert"), { skillId: null, level: null });
+    assert.deepEqual(parseAssessmentQuery("?skill=abc&level=guru"), { skillId: null, level: null });
     assert.equal(assessmentLink(12, "advanced"), "/student/assessment?skill=12&level=advanced");
     assert.equal(assessmentLink(undefined, undefined), "/student/assessment");
-    assert.deepEqual(
-      attemptSummary({ questions: { practical: 7, written: 3 }, time_limit_minutes: { beginner: 35, intermediate: 45 } }, "intermediate"),
-      { practical: 7, written: 3, total: 10, minutes: 45 },
-    );
-    assert.deepEqual(LEVELS.map((level) => level.label), ["مبتدئ", "متوسط", "متقدم"]);
+    assert.deepEqual(LEVELS.map((level) => level.label), ["مبتدئ", "متوسط", "متقدم", "خبير"]);
   });
 
   it("asks for a professional specialization when it is missing or unknown", () => {
@@ -193,9 +199,9 @@ describe("errors", () => {
     assert.equal(assessmentError({ status: 422, data: { code: "specialization_required", message: "اختر مسارك المهني أولًا ليُبنى التقييم عليه." } }).specialization, true);
     const retake = assessmentError({
       status: 409,
-      data: { code: "retake_not_available", message: "x", skill: "Laravel", level: "intermediate", next_attempt_at: "2026-10-13T10:00:00+00:00" },
+      data: { code: "retake_not_available", message: "x", skills: [{ skill: "Laravel", level: "intermediate", next_attempt_at: "2026-10-13T10:00:00+00:00" }] },
     });
-    assert.match(retake.message, /Laravel بمستوى متوسط بعد/);
+    assert.match(retake.message, /Laravel \(متوسط\) بعد/);
     assert.equal(retake.retryable, false);
     const limit = assessmentError({
       status: 429,
@@ -209,6 +215,147 @@ describe("errors", () => {
     assert.equal(assessmentError({ status: 404, data: { message: "Not Found" } }).notFound, true);
     assert.equal(assessmentError({ status: 401 }).login, true);
     assert.equal(assessmentError({ kind: "network", status: 0 }).retryable, true);
+  });
+});
+
+describe("pre-assessment screen", () => {
+  const apiSkills = [
+    skill({ id: 1, name: "PHP", selected: true, programming: true, verified_level: "beginner" }),
+    skill({ id: 2, name: "Laravel", selected: true, programming: true }),
+    skill({ id: 3, name: "Figma", selected: true, programming: false, practical: true }),
+    skill({ id: 4, name: "Manual Testing", selected: false, programming: false }),
+    skill({ id: 5, name: "MySQL", selected: false }),
+  ];
+
+  it("displays the session rules the server returns, with four ordered levels", () => {
+    const serverSettings = {
+      questions: { practical: 9, written: 1, total: 10 },
+      time_limit_minutes: 30,
+      max_skills_per_session: 3,
+      min_practical_per_skill: 3,
+    };
+    assert.deepEqual(assessmentSettings(serverSettings), {
+      questions: 10,
+      practical: 9,
+      written: 1,
+      minutes: 30,
+      maxSkills: 3,
+      minPracticalPerSkill: 3,
+    });
+    // لا قيم مخترعة إن لم تصل الإعدادات
+    assert.deepEqual(Object.values(assessmentSettings(undefined)), [null, null, null, null, null, null]);
+    assert.deepEqual(TARGET_LEVELS.map((level) => level.label), ["مبتدئ", "متوسط", "متقدم", "خبير"]);
+    assert.deepEqual(["beginner", "intermediate", "advanced", "expert", "x"].map(levelRank), [1, 2, 3, 4, 0]);
+  });
+
+  it("lists the profile's selected skills (plus a linked skill) with real categories", () => {
+    const skills = preAssessmentSkills(apiSkills);
+    assert.deepEqual(skills.map((item) => item.name), ["PHP", "Laravel", "Figma"]);
+    assert.deepEqual(skills.map((item) => item.category), ["programming", "programming", "design"]);
+    assert.match(skills[0].chip.text, /مستوى مثبت: مبتدئ/);
+    assert.equal(skillCategory({ programming: false }), "applied");
+    // مهارة من رابط فرصة تُعرض حتى لو لم تكن في الملف
+    const linked = preAssessmentSkills(apiSkills, 4);
+    assert.equal(linked.at(-1).name, "Manual Testing");
+    assert.match(linked.at(-1).chip.text, /ستُضاف/);
+    assert.deepEqual(preAssessmentSkills(null), []);
+  });
+
+  it("keeps an independent level per skill", () => {
+    let levels = setSkillLevel({}, 1, "advanced");
+    levels = setSkillLevel(levels, 2, "beginner");
+    levels = setSkillLevel(levels, 1, "expert");
+    assert.deepEqual(levels, { 1: "expert", 2: "beginner" });
+    assert.deepEqual(setSkillLevel(levels, 2, ""), { 1: "expert" });
+    assert.deepEqual(setSkillLevel(levels, 2, "guru"), { 1: "expert" });
+  });
+
+  it("requires a level for every included skill and the confirmation before starting", () => {
+    const skills = preAssessmentSkills(apiSkills);
+    const partial = preAssessmentState({ skills, levels: { 1: "advanced" }, excluded: [], confirmed: true });
+    assert.deepEqual(partial.missing, ["Laravel", "Figma"]);
+    assert.equal(partial.ready, false);
+    assert.equal(partial.payload, null);
+
+    const complete = { 1: "advanced", 2: "intermediate", 3: "beginner" };
+    const unconfirmed = preAssessmentState({ skills, levels: complete, excluded: [], confirmed: false });
+    assert.equal(unconfirmed.selectionsComplete, true);
+    assert.equal(unconfirmed.ready, false);
+
+    const ready = preAssessmentState({ skills, levels: complete, excluded: [], confirmed: true });
+    assert.equal(ready.ready, true);
+    assert.deepEqual(ready.payload, [
+      { skill_id: 1, level: "advanced" },
+      { skill_id: 2, level: "intermediate" },
+      { skill_id: 3, level: "beginner" },
+    ]);
+    assert.equal(ready.canStart, true);
+  });
+
+  it("limits a session to the server's maximum and preselects at most that many skills", () => {
+    const skills = preAssessmentSkills([...apiSkills, skill({ id: 6, name: "Docker", selected: true })]);
+    const levels = { 1: "advanced", 2: "intermediate", 3: "beginner", 6: "expert" };
+    const tooMany = preAssessmentState({ skills, levels, excluded: [], confirmed: true, maxSkills: 3 });
+    assert.equal(tooMany.tooMany, true);
+    assert.equal(tooMany.canStart, false);
+    assert.equal(tooMany.payload, null);
+
+    // الزائد يُستبعد مبدئيًا، ومهارة الرابط تُقدَّم
+    assert.deepEqual(defaultExcluded(skills, 3), [6]);
+    assert.deepEqual(defaultExcluded(skills, 3, 6), [3]);
+    assert.deepEqual(defaultExcluded(skills.slice(0, 2), 3), []);
+    const within = preAssessmentState({ skills, levels, excluded: defaultExcluded(skills, 3), confirmed: true, maxSkills: 3 });
+    assert.equal(within.canStart, true);
+    assert.deepEqual(within.payload.map((item) => item.skill_id), [1, 2, 3]);
+  });
+
+  it("describes each question's skill and level, and the session's skills", () => {
+    assert.equal(questionSkillsText({ skill: { name: "Laravel", level: "expert" } }), "Laravel · خبير");
+    assert.equal(questionSkillsText({ skill: null, skills: [{ name: "PHP" }, { name: "MySQL" }] }), "يغطي: PHP، MySQL");
+    assert.equal(
+      requestedSkillsText({ requested_skills: [{ name: "PHP", level: "intermediate" }, { name: "Laravel", level: "advanced" }] }),
+      "PHP (متوسط)، Laravel (متقدم)",
+    );
+    // جلسات سابقة لمهارة واحدة
+    assert.equal(requestedSkillsText({ skill: { name: "PHP" }, requested_level: "beginner" }), "PHP (مبتدئ)");
+    assert.equal(requestedSkillsText({ title: "تقييم قديم" }), "تقييم قديم");
+    assert.deepEqual(questionMeta({ category: "written", type: "essay" }), { category: "سؤال كتابي", type: "مقال" });
+  });
+
+  it("explains per-skill retake waits returned by the server", () => {
+    const error = assessmentError({
+      status: 409,
+      data: {
+        code: "retake_not_available",
+        message: "x",
+        skills: [{ skill: "PHP", level: "beginner", next_attempt_at: "2026-10-13T10:00:00+00:00" }],
+      },
+    });
+    assert.match(error.message, /PHP \(مبتدئ\) بعد/);
+    assert.match(resultsView({ results: [{ status: "failed", reason: "insufficient_evidence", questions: [] }] })[0].note, /أسئلة عملية كافية/);
+  });
+
+  it("drops removed skills from validation and blocks an empty assessment", () => {
+    const skills = preAssessmentSkills(apiSkills);
+    const removed = preAssessmentState({ skills, levels: { 1: "advanced", 2: "beginner" }, excluded: [3], confirmed: true });
+    assert.deepEqual(removed.included.map((item) => item.name), ["PHP", "Laravel"]);
+    assert.equal(removed.ready, true);
+    const empty = preAssessmentState({ skills, levels: {}, excluded: [1, 2, 3], confirmed: true });
+    assert.equal(empty.ready, false);
+    assert.equal(preAssessmentState({ skills: [], levels: {}, excluded: [], confirmed: true }).ready, false);
+  });
+
+  it("uses real select controls and never shows the old 15-question values", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
+    assert.match(page, /<select/);
+    assert.match(page, /type="checkbox"/);
+    assert.doesNotMatch(page, /15\s*(?:سؤال|أسئلة|دقيقة)/);
+    // القيم من إعدادات الخادم، والبدء يرسل الخريطة الكاملة للمهارات ومستوياتها
+    assert.match(page, /rules\.questions/);
+    assert.match(page, /rules\.minutes/);
+    assert.match(page, /startAssessmentSession\(state\.payload\)/);
+    assert.doesNotMatch(page, /\b10 أسئلة|\b30 دقيقة/);
   });
 });
 

@@ -16,14 +16,110 @@ export function assessmentLink(skillId, level) {
   return query ? `${ASSESSMENTS_PATH}?${query}` : ASSESSMENTS_PATH;
 }
 
-// المستوى الذي يختاره الطالب طلب لصعوبة الأسئلة وليس إثباتًا؛ المثبت فقط ما ينجح فيه
+// مستويات الخادم بالترتيب (مبتدئ < متوسط < متقدم < خبير). المستوى الذي يختاره الطالب طلب لصعوبة الأسئلة وليس
+// إثباتًا؛ المثبت فقط ما ينجح فيه
 export const LEVELS = [
   { key: "beginner", label: "مبتدئ", hint: "أساسيات المهارة ومهام قصيرة بمفهوم واحد." },
   { key: "intermediate", label: "متوسط", hint: "ميزات واقعية صغيرة تجمع عدة مفاهيم، وتصحيح أخطاء في كود متوسط." },
   { key: "advanced", label: "متقدم", hint: "قرارات تصميم وأداء وأمان وحالات حدية معقدة." },
+  { key: "expert", label: "خبير", hint: "مشكلات مفتوحة على مستوى الإنتاج تتطلب خبرة عميقة." },
 ];
 
-export const levelLabel = (key) => LEVELS.find((item) => item.key === key)?.label || "";
+// المستويات المعروضة في اختيار صعوبة كل مهارة (هي مستويات الخادم نفسها)
+export const TARGET_LEVELS = LEVELS;
+
+/**
+ * قواعد الجلسة كما يعيدها الخادم (GET /student/assessments → settings)، فما يُعرض هو ما يُفرض فعلًا. لا قيم
+ * افتراضية: قيمة مفقودة تبقى null وتُعرض "—".
+ */
+export function assessmentSettings(settings) {
+  const number = (value) => (Number.isInteger(value) && value > 0 ? value : null);
+  return {
+    questions: number(settings?.questions?.total),
+    practical: number(settings?.questions?.practical),
+    written: number(settings?.questions?.written),
+    minutes: number(settings?.time_limit_minutes),
+    maxSkills: number(settings?.max_skills_per_session),
+    minPracticalPerSkill: number(settings?.min_practical_per_skill),
+  };
+}
+
+export const levelLabel = (key) => TARGET_LEVELS.find((item) => item.key === key)?.label || "";
+
+/** ترتيب المستوى (1 مبتدئ … 4 خبير)؛ 0 لقيمة غير معروفة. يُستخدم لمؤشر النقاط. */
+export const levelRank = (key) => TARGET_LEVELS.findIndex((item) => item.key === key) + 1;
+
+export const SKILL_CATEGORIES = {
+  programming: "برمجة وتطوير",
+  design: "تصميم وتجربة مستخدم",
+  applied: "مهارات تطبيقية",
+};
+
+/** فئة المهارة من بيانات الخادم: عملية (أدوات التصميم)، أو غير برمجية، أو برمجية. */
+export function skillCategory(skill) {
+  if (skill?.practical) return "design";
+  return skill?.programming === false ? "applied" : "programming";
+}
+
+/**
+ * مهارات التقييم: المهارات المختارة في ملف الطالب، ومعها مهارة محددة من رابط (مثل سبب عدم الأهلية في فرصة)
+ * حتى لو لم تكن في الملف بعد.
+ */
+export function preAssessmentSkills(skills, presetSkillId = null) {
+  return (Array.isArray(skills) ? skills : [])
+    .filter((skill) => skill && skill.id && (skill.selected === true || skill.id === presetSkillId))
+    .map((skill) => {
+      const view = skillView(skill);
+      let chip = { tone: "neutral", text: "لم تُقيَّم بعد" };
+      if (view.verifiedLevel) chip = { tone: "success", text: `مستوى مثبت: ${view.verifiedLevelLabel}` };
+      else if (view.practical && view.status === "passed") chip = { tone: "warning", text: "تحتاج تحققًا عمليًا من إدارة المنصة" };
+      else if (view.status === "failed") chip = { tone: "neutral", text: "لم تجتز تقييمها بعد" };
+      if (skill.selected !== true) chip = { tone: "info", text: "ستُضاف إلى مهارات ملفك" };
+      const category = skillCategory(skill);
+      return { ...view, category, categoryLabel: SKILL_CATEGORIES[category], chip };
+    });
+}
+
+/** يغيّر مستوى مهارة واحدة فقط؛ قيمة غير معروفة تُلغي اختيار تلك المهارة وحدها. */
+export function setSkillLevel(levels, skillId, level) {
+  const next = { ...(levels || {}) };
+  if (levelRank(level) > 0) next[skillId] = level;
+  else delete next[skillId];
+  return next;
+}
+
+/**
+ * المهارات المستبعدة مبدئيًا عندما يزيد عدد مهارات الملف عن حد الجلسة: تبقى أول maxSkills (مع تقديم مهارة
+ * الرابط إن وُجدت)، ويستطيع الطالب تبديلها من قائمة "المحذوفة من هذا التقييم".
+ */
+export function defaultExcluded(skills, maxSkills, presetSkillId = null) {
+  const list = Array.isArray(skills) ? skills : [];
+  if (!maxSkills || list.length <= maxSkills) return [];
+  const ordered = [...list.filter((skill) => skill.id === presetSkillId), ...list.filter((skill) => skill.id !== presetSkillId)];
+  return ordered.slice(maxSkills).map((skill) => skill.id);
+}
+
+/**
+ * جاهزية البدء: من مهارة واحدة إلى maxSkills، ومستوى لكل مهارة مشمولة، وتأكيد القراءة. الخادم يعيد التحقق من
+ * كل ذلك. payload هو ما يُرسل للخادم بترتيب العرض: [{skill_id, level}].
+ */
+export function preAssessmentState({ skills, levels, excluded, confirmed, maxSkills }) {
+  const removed = new Set(Array.isArray(excluded) ? excluded : []);
+  const included = (Array.isArray(skills) ? skills : []).filter((skill) => !removed.has(skill.id));
+  const missing = included.filter((skill) => levelRank(levels?.[skill.id]) === 0).map((skill) => skill.name);
+  const tooMany = Boolean(maxSkills) && included.length > maxSkills;
+  const selectionsComplete = included.length > 0 && missing.length === 0 && !tooMany;
+  const ready = selectionsComplete && confirmed === true;
+  return {
+    included,
+    missing,
+    tooMany,
+    selectionsComplete,
+    ready,
+    canStart: ready,
+    payload: selectionsComplete ? included.map((skill) => ({ skill_id: skill.id, level: levels[skill.id] })) : null,
+  };
+}
 
 export const SKILL_STATUSES = {
   not_assessed: { label: "لم تُقيَّم بعد", tone: "neutral" },
@@ -43,6 +139,7 @@ export const QUESTION_TYPES = {
   scenario: "سيناريو عملي",
   design_task: "مهمة تصميم",
   case_study: "دراسة حالة",
+  essay: "مقال",
   explanation: "شرح",
   reasoning: "تبرير واستدلال",
   technical_analysis: "تحليل تقني",
@@ -51,9 +148,10 @@ export const QUESTION_TYPES = {
 export const RESULT_REASONS = {
   passed: "بلغت إجاباتك نسبة النجاح المطلوبة.",
   below_threshold: "مجموع نقاطك في هذه المحاولة أقل من نسبة النجاح المطلوبة.",
-  practical_below_threshold: "مجموعك جيد، لكن نتيجة الأسئلة العملية وحدها أقل من الحد المطلوب لها.",
-  weak_answer: "عدد الإجابات الضعيفة جدًا تجاوز الحد المسموح في المحاولة.",
-  unanswered_questions: "بقيت أسئلة دون إجابة عند انتهاء الوقت أكثر من المسموح.",
+  practical_below_threshold: "مجموعك جيد، لكن نتيجة الأسئلة العملية لهذه المهارة وحدها أقل من الحد المطلوب لها؛ المقال لا يعوّضها.",
+  weak_answer: "عدد الإجابات العملية الضعيفة جدًا لهذه المهارة تجاوز الحد المسموح.",
+  unanswered_questions: "بقيت أسئلة عملية لهذه المهارة دون إجابة عند انتهاء الوقت أكثر من المسموح.",
+  insufficient_evidence: "لم تتوفر أسئلة عملية كافية لهذه المهارة للحكم عليها، فلا تُحتسب ناجحة.",
   grading_unavailable: "تعذر تصحيح إحدى إجاباتك آليًا بعد عدة محاولات. لا يُحتسب ذلك رسوبًا، ويمكنك إعادة التقييم مباشرة.",
 };
 
@@ -70,7 +168,8 @@ export function formatDateTime(value) {
 /** حالة مهارة كما أعادها الخادم: أعلى مستوى مثبت، وحالة كل مستوى وهل يمكن بدء محاولة له الآن. */
 export function skillView(skill) {
   const status = SKILL_STATUSES[skill?.status] ? skill.status : "not_assessed";
-  const verifiedLevel = levelLabel(skill?.verified_level) ? skill.verified_level : null;
+  // المستوى المثبت يأتي من الخادم ولا يكون إلا أحد مستوياته (LEVELS)
+  const verifiedLevel = LEVELS.some((item) => item.key === skill?.verified_level) ? skill.verified_level : null;
   const levels = LEVELS.map((level) => {
     const item = skill?.levels?.[level.key] || {};
     const levelStatus = SKILL_STATUSES[item.status] ? item.status : "not_assessed";
@@ -150,14 +249,6 @@ export function parseAssessmentQuery(search) {
   };
 }
 
-/** ملخص المحاولة قبل البدء: عدد الأسئلة وتركيبتها ومدتها للمستوى المختار. */
-export function attemptSummary(settings, level) {
-  const practical = Number(settings?.questions?.practical) || 7;
-  const written = Number(settings?.questions?.written) || 3;
-  const minutes = Number(settings?.time_limit_minutes?.[level]) || 0;
-  return { practical, written, total: practical + written, minutes };
-}
-
 /** رسالة عند غياب مسار مهني صالح؛ null إذا كان المسار متوافقًا. */
 export function specializationNotice(specialization) {
   const status = specialization?.status;
@@ -172,6 +263,31 @@ export function specializationNotice(specialization) {
     title: "اختر مسارك المهني",
     body: "تُبنى أسئلة التقييم ومطابقة أدوار المشاريع على مسارك المهني (مثل تطوير الخدمات الخلفية أو تطبيقات الجوال). اختره أولًا.",
   };
+}
+
+/** مهارات الجلسة بمستوياتها كما خزنها الخادم: "PHP (متوسط)، Laravel (متقدم)"؛ الجلسات القديمة: اسم المهارة أو العنوان. */
+export function requestedSkillsText(session) {
+  const skills = Array.isArray(session?.requested_skills) ? session.requested_skills : [];
+  const text = skills
+    .filter((skill) => skill && typeof skill.name === "string")
+    .map((skill) => (levelLabel(skill.level) ? `${skill.name} (${levelLabel(skill.level)})` : skill.name))
+    .join("، ");
+  if (text) return text;
+  if (session?.skill?.name) {
+    return levelLabel(session.requested_level) ? `${session.skill.name} (${levelLabel(session.requested_level)})` : session.skill.name;
+  }
+  return session?.title || "";
+}
+
+/** مهارة السؤال الحالي ومستواه المطلوب، أو مهارات المقال: "Laravel · متقدم" أو "يغطي: PHP، Laravel". */
+export function questionSkillsText(question) {
+  if (question?.skill?.name) {
+    return levelLabel(question.skill.level) ? `${question.skill.name} · ${levelLabel(question.skill.level)}` : question.skill.name;
+  }
+  const names = (Array.isArray(question?.skills) ? question.skills : [])
+    .map((skill) => skill?.name)
+    .filter((name) => typeof name === "string" && name);
+  return names.length ? `يغطي: ${names.join("، ")}` : "";
 }
 
 /** وصف نوع السؤال للطالب (عملي/كتابي ونوعه)؛ الأسئلة القديمة بلا نوع تعرض فارغة. */
@@ -279,13 +395,15 @@ export function assessmentError(error) {
   const message = serverMessage(error);
 
   if (code === "retake_not_available") {
-    const when = formatDateTime(error.data.next_attempt_at);
-    const level = levelLabel(error.data.level);
-    const details =
-      error.data.skill && when
-        ? `يمكنك إعادة تقييم ${error.data.skill}${level ? ` بمستوى ${level}` : ""} بعد ${when}، أو اختيار مستوى آخر.`
-        : "";
-    return { message: details || message, retryable: false };
+    // الخادم يعيد كل مهارة ومستوى في فترة الانتظار
+    const details = (Array.isArray(error.data.skills) ? error.data.skills : [])
+      .filter((item) => item && typeof item.skill === "string" && formatDateTime(item.next_attempt_at))
+      .map((item) => `${item.skill}${levelLabel(item.level) ? ` (${levelLabel(item.level)})` : ""} بعد ${formatDateTime(item.next_attempt_at)}`)
+      .join("، ");
+    return {
+      message: details ? `لا يمكن إعادة تقييم: ${details}. اختر مستوى آخر لها أو احذفها من هذا التقييم.` : message,
+      retryable: false,
+    };
   }
   if (code === "attempt_limit_reached") {
     const when = formatDateTime(error.data.next_attempt_at);
