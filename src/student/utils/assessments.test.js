@@ -15,6 +15,7 @@ import {
   preAssessmentState,
   setSkillLevel,
   skillCategory,
+  skillIconKey,
   assessmentError,
   assessmentLink,
   formatClock,
@@ -363,6 +364,31 @@ describe("pre-assessment screen", () => {
     assert.match(page, /rules\.minutes/);
     assert.match(page, /startAssessmentSession\(state\.payload\)/);
     assert.doesNotMatch(page, /\b10 أسئلة|\b30 دقيقة/);
+  });
+});
+
+describe("skill icons", () => {
+  it("picks an icon from the skill's name, falling back to its category", () => {
+    assert.equal(skillIconKey("MySQL", "programming"), "database");
+    assert.equal(skillIconKey(" github ", "programming"), "git");
+    assert.equal(skillIconKey("Figma", "design"), "design");
+    assert.equal(skillIconKey("Manual Testing", "applied"), "bug");
+    assert.equal(skillIconKey("Power BI", "applied"), "chart");
+    assert.equal(skillIconKey("Rust", "programming"), "terminal");
+    assert.equal(skillIconKey("Copywriting", "applied"), "research");
+    assert.equal(preAssessmentSkills([skill({ id: 9, name: "Docker" })])[0].icon, "container");
+  });
+
+  it("has a page icon for every key", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
+    const utils = await readFile(new URL("./assessments.js", import.meta.url), "utf8");
+    const groups = utils.slice(utils.indexOf("SKILL_ICON_GROUPS = {"), utils.indexOf("};", utils.indexOf("SKILL_ICON_GROUPS = {")));
+    const keys = [...groups.matchAll(/^\s+(\w+): \[/gm)].map((match) => match[1]);
+    assert.ok(keys.length > 10);
+    for (const key of [...keys, "terminal", "design", "research"]) {
+      assert.match(page, new RegExp(`\\n  ${key}: [A-Z]\\w+,`), key);
+    }
   });
 });
 

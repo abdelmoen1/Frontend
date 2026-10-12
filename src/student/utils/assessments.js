@@ -55,6 +55,45 @@ export const SKILL_CATEGORIES = {
   applied: "مهارات تطبيقية",
 };
 
+// أيقونة كل مهارة حسب اسمها في كتالوج المنصة (SkillSeeder)؛ مفاتيح تربطها الصفحة بأيقونات lucide
+const SKILL_ICON_GROUPS = {
+  database: ["MySQL", "PostgreSQL", "MongoDB", "Redis", "SQL"],
+  firebase: ["Firebase"],
+  markup: ["HTML"],
+  styling: ["CSS", "Sass", "Tailwind CSS", "Bootstrap"],
+  responsive: ["Responsive Design"],
+  script: ["JavaScript", "TypeScript"],
+  frontend: ["React", "Vue.js", "Angular", "Next.js", "Redux"],
+  language: ["PHP", "Python", "Java", "C#", "C++"],
+  server: ["Laravel", "Django", "Flask", "Spring Boot", "ASP.NET Core", "Node.js", "Express.js"],
+  api: ["REST API", "GraphQL"],
+  apiTesting: ["API Testing", "Postman"],
+  git: ["Git", "GitHub"],
+  container: ["Docker"],
+  mobile: ["Flutter", "Dart", "Kotlin", "Swift", "React Native"],
+  design: ["Figma", "Adobe XD", "UI/UX Design", "Prototyping"],
+  wireframe: ["Wireframing"],
+  designSystem: ["Design Systems"],
+  research: ["User Research", "Usability Testing"],
+  bug: ["Manual Testing"],
+  testing: ["Test Automation", "Selenium", "Cypress", "Jest"],
+  table: ["Pandas", "NumPy"],
+  chart: ["Data Visualization", "Power BI"],
+  ai: ["Machine Learning", "Deep Learning", "Scikit-learn", "TensorFlow", "PyTorch"],
+};
+
+const SKILL_ICON_BY_NAME = Object.fromEntries(
+  Object.entries(SKILL_ICON_GROUPS).flatMap(([key, names]) => names.map((name) => [name.toLowerCase(), key])),
+);
+
+// أيقونة احتياطية لمهارة غير معروفة حسب فئتها
+const CATEGORY_ICON = { programming: "terminal", design: "design", applied: "research" };
+
+/** مفتاح أيقونة المهارة: من اسمها، وإلا من فئتها. */
+export function skillIconKey(name, category) {
+  return SKILL_ICON_BY_NAME[String(name || "").trim().toLowerCase()] || CATEGORY_ICON[category] || "terminal";
+}
+
 /** فئة المهارة من بيانات الخادم: عملية (أدوات التصميم)، أو غير برمجية، أو برمجية. */
 export function skillCategory(skill) {
   if (skill?.practical) return "design";
@@ -76,7 +115,7 @@ export function preAssessmentSkills(skills, presetSkillId = null) {
       else if (view.status === "failed") chip = { tone: "neutral", text: "لم تجتز تقييمها بعد" };
       if (skill.selected !== true) chip = { tone: "info", text: "ستُضاف إلى مهارات ملفك" };
       const category = skillCategory(skill);
-      return { ...view, category, categoryLabel: SKILL_CATEGORIES[category], chip };
+      return { ...view, category, categoryLabel: SKILL_CATEGORIES[category], icon: skillIconKey(view.name, category), chip };
     });
 }
 

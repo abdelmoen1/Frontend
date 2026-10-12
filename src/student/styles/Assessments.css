@@ -15,6 +15,9 @@
   --asmt-info: #0f6f91;
   --asmt-info-bg: #e6f5fb;
 
+  /* مرجع للعناصر المخفية بصريًا (position: absolute): بدونه تُحسب نسبة للمستند كله فتطيل جسم الصفحة خارج منطقة
+     التمرير (.app-content) ويظهر جزء أبيض فارغ أسفل الصفحة */
+  position: relative;
   box-sizing: border-box;
   width: min(1100px, 100%);
   margin-inline: auto;
@@ -669,8 +672,12 @@
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
   white-space: nowrap;
 }
 
@@ -1104,15 +1111,15 @@
   accent-color: var(--pre-sky);
 }
 
-/* نافذة التعليمات قبل البدء (<dialog>)؛ الخلفية #071528 بشفافية 20% */
+/* نافذة ما قبل الاختبار (<dialog>)؛ الخلفية #071528 بشفافية 20% */
 .pre-dialog {
-  width: min(640px, calc(100vw - 32px));
+  width: min(800px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   padding: 0;
   overflow: auto;
   border: 0;
-  border-radius: 20px;
-  background: var(--pre-card);
+  border-radius: 14px;
+  background: #fff;
   color: var(--asmt-ink);
   box-shadow: 0 24px 60px rgba(7, 21, 40, 0.25);
 }
@@ -1122,118 +1129,122 @@
 }
 
 .pre-dialog-body {
-  position: relative;
-  padding: 26px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 26px 26px;
   text-align: right;
-}
-
-.pre-dialog-close {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--pre-pill);
-  color: var(--asmt-navy);
-  cursor: pointer;
-}
-
-.pre-dialog-close:focus-visible {
-  outline: 3px solid rgba(35, 153, 208, 0.45);
-  outline-offset: 2px;
 }
 
 .pre-dialog-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  padding-left: 44px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .pre-dialog-head h2 {
   margin: 0;
   color: var(--asmt-navy);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
 }
 
-.pre-dialog-head p {
-  margin: 2px 0 0;
-  color: var(--asmt-muted);
-  font-size: 14px;
+.pre-dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--asmt-navy);
+  cursor: pointer;
 }
 
-.pre-dialog-warning {
+.pre-dialog-close:hover:not(:disabled) {
+  background: var(--pre-pill);
+}
+
+.pre-dialog-close:focus-visible,
+.pre-dialog-confirm .pre-btn:focus-visible {
+  outline: 3px solid rgba(35, 153, 208, 0.45);
+  outline-offset: 2px;
+}
+
+/* البانر: صورة المكتب تظهر في الجهة اليسرى وتتلاشى نحو الكحلي حيث النص */
+.pre-dialog-banner {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border: 1px solid #f3c27a;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 132px;
+  padding: 22px 24px;
   border-radius: 12px;
-  background: #fff8ec;
-  color: #7a4500;
-  font-size: 14px;
+  background:
+    linear-gradient(to left, #061a46 0%, #061a46 45%, rgba(6, 26, 70, 0.55) 75%, rgba(6, 26, 70, 0.35) 100%),
+    var(--pre-banner-img) left center / cover no-repeat,
+    #061a46;
+  color: #fff;
+}
+
+.pre-dialog-banner b {
+  max-width: 60%;
+  color: #45b8ec;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.pre-dialog-banner p {
+  max-width: 60%;
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 13px;
   line-height: 1.9;
 }
 
-.pre-dialog-warning svg {
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.pre-dialog-warning ul {
-  margin: 4px 0 0;
-  padding-inline-start: 18px;
-}
-
-.pre-dialog-stats {
+.pre-dialog-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0 0 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.pre-dialog-stats li {
+.pre-dialog-card {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #edf1f5;
   border-radius: 12px;
-  background: var(--pre-sky-soft);
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(16, 37, 62, 0.05);
 }
 
-.pre-dialog-stats svg {
-  color: var(--pre-navy);
+.pre-dialog-card .pre-tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
 }
 
-.pre-dialog-stats span {
+.pre-dialog-card small {
+  display: block;
   color: var(--asmt-muted);
   font-size: 12px;
 }
 
-.pre-dialog-stats b {
+.pre-dialog-card b {
   color: var(--asmt-navy);
   font-size: 20px;
   font-weight: 800;
 }
 
-.pre-dialog-stats small {
-  color: var(--asmt-muted);
-  font-size: 12px;
-  font-weight: 400;
-}
-
 .pre-dialog-skills h3 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   color: var(--asmt-navy);
   font-size: 15px;
 }
@@ -1266,18 +1277,30 @@
   color: var(--asmt-muted);
 }
 
-.pre-dialog-skills p {
-  margin: 10px 0 16px;
-  color: var(--asmt-muted);
-  font-size: 13px;
-  line-height: 1.8;
-}
-
-.pre-dialog-actions {
+/* بطاقة التأكيد: مربع الموافقة يمينًا وزر البدء يسارًا */
+.pre-dialog-confirm {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #edf1f5;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(16, 37, 62, 0.05);
+}
+
+.pre-dialog-confirm .pre-check {
+  flex: 1 1 280px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.pre-dialog-confirm .pre-btn-primary:disabled {
+  background: #9aa6bd;
+  color: #fff;
+  opacity: 1;
 }
 
 @media (max-width: 1000px) {
@@ -1303,16 +1326,29 @@
   }
 
   .pre-hero-actions .pre-btn,
-  .pre-dialog-actions .pre-btn {
+  .pre-dialog-confirm .pre-btn {
     width: 100%;
   }
 
   .pre-dialog-body {
-    padding: 20px 16px;
+    padding: 18px 16px 20px;
   }
 
-  .pre-dialog-stats {
+  .pre-dialog-cards {
     grid-template-columns: 1fr;
+  }
+
+  /* على الجوال الصورة خلفية كاملة تحت طبقة كحلية حتى يبقى النص مقروءًا */
+  .pre-dialog-banner {
+    background:
+      linear-gradient(rgba(6, 26, 70, 0.85), rgba(6, 26, 70, 0.85)),
+      var(--pre-banner-img) center / cover no-repeat,
+      #061a46;
+  }
+
+  .pre-dialog-banner b,
+  .pre-dialog-banner p {
+    max-width: none;
   }
 
   .pre-stats {

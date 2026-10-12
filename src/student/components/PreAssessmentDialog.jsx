@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
-import { ClipboardCheck, Clock3, ListChecks, RotateCcw, Target, TriangleAlert, X } from "lucide-react";
-import { IoMdArrowDropleft } from "react-icons/io";
+import { Clock3, FileText, RotateCcw, X } from "lucide-react";
+import { IoMdArrowRoundBack } from "react-icons/io";
 
+import bannerImg from "../../organization/assets/organization_register.jpg";
 import { levelLabel } from "../utils/assessments";
 
-// قيمة من إعدادات الخادم أو "—" إن لم تصل
-const shown = (value) => value ?? "—";
+// تمييز العدد بالعربية: 3-10 جمع (أسئلة/دقائق)، وما فوقها مفرد منصوب (سؤالًا/دقيقة)
+const counted = (value, few, many) => (value == null ? "—" : `${value} ${value >= 3 && value <= 10 ? few : many}`);
 
 /**
- * نافذة التعليمات قبل بدء التقييم: تحذير، ملخص الجلسة كما يعيده الخادم، المهارات ومستوياتها، وتأكيد القراءة.
+ * نافذة ما قبل الاختبار: تنبيه، الوقت وعدد الأسئلة كما يعيدهما الخادم، المهارات ومستوياتها، وتأكيد القراءة.
  * <dialog> أصلي: يحبس التركيز، ويُغلق بـ Esc أو بالنقر على الخلفية، إلا أثناء إعداد الأسئلة.
  */
 export default function PreAssessmentDialog({
@@ -42,7 +43,7 @@ export default function PreAssessmentDialog({
       ref={dialogRef}
       className="pre-dialog"
       aria-labelledby="pre-dialog-title"
-      aria-describedby="pre-dialog-warning"
+      aria-describedby="pre-dialog-alert"
       // Esc: نغلق عبر الحالة حتى تبقى متزامنة، ولا إغلاق أثناء إعداد الأسئلة
       onCancel={(event) => {
         event.preventDefault();
@@ -55,51 +56,36 @@ export default function PreAssessmentDialog({
     >
       {open && (
         <div className="pre-dialog-body" dir="rtl">
-          <button type="button" className="pre-dialog-close" onClick={requestClose} disabled={starting} aria-label="إغلاق">
-            <X size={20} aria-hidden="true" />
-          </button>
-
           <header className="pre-dialog-head">
-            <span className="pre-tile" aria-hidden="true">
-              <ClipboardCheck size={24} />
-            </span>
-            <div>
-              <h2 id="pre-dialog-title">تعليمات التقييم</h2>
-              <p>اقرأ التعليمات بعناية قبل البدء.</p>
-            </div>
+            <h2 id="pre-dialog-title">اختبار المهارات</h2>
+            <button type="button" className="pre-dialog-close" onClick={requestClose} disabled={starting} aria-label="إغلاق">
+              <X size={18} aria-hidden="true" />
+            </button>
           </header>
 
-          <div className="pre-dialog-warning" id="pre-dialog-warning" role="note">
-            <TriangleAlert size={20} aria-hidden="true" />
-            <div>
-              <b>تنبيه قبل البدء</b>
-              <ul>
-                <li>يبدأ المؤقت فور إعداد الأسئلة ولا يمكن إيقافه، ومدة التقييم {shown(rules.minutes)} دقيقة.</li>
-                <li>تظهر الأسئلة واحدًا تلو الآخر، ولا يمكن الرجوع إلى سؤال سابق أو تعديل إجابة بعد إرسالها.</li>
-                <li>إذا انتهى الوقت تُصحَّح الإجابات المحفوظة فقط، وتُحتسب الأسئلة دون إجابة ضعيفة.</li>
-              </ul>
-            </div>
+          <div className="pre-dialog-banner" id="pre-dialog-alert" style={{ "--pre-banner-img": `url(${bannerImg})` }}>
+            <b>تنبيه هام: يبدأ المؤقت فور بدء الاختبار ولا يمكن إيقافه.</b>
+            <p>تظهر الأسئلة واحدًا تلو الآخر، ولا يمكن الرجوع إلى سؤال سابق أو تعديل إجابتك بعد إرسالها.</p>
           </div>
 
-          <ul className="pre-dialog-stats" aria-label="ملخص التقييم">
-            <li>
-              <ListChecks size={20} aria-hidden="true" />
-              <span>عدد الأسئلة</span>
-              <b>{shown(rules.questions)}</b>
+          <ul className="pre-dialog-cards" aria-label="ملخص الاختبار">
+            <li className="pre-dialog-card">
+              <span className="pre-tile" aria-hidden="true">
+                <Clock3 size={20} />
+              </span>
+              <span>
+                <small>الوقت المخصص</small>
+                <b>{counted(rules.minutes, "دقائق", "دقيقة")}</b>
+              </span>
             </li>
-            <li>
-              <Clock3 size={20} aria-hidden="true" />
-              <span>المدة</span>
-              <b>
-                {shown(rules.minutes)} <small>دقيقة</small>
-              </b>
-            </li>
-            <li>
-              <Target size={20} aria-hidden="true" />
-              <span>التوزيع</span>
-              <b>
-                {shown(rules.practical)} + {shown(rules.written)} <small>عملي + مقال</small>
-              </b>
+            <li className="pre-dialog-card">
+              <span className="pre-tile" aria-hidden="true">
+                <FileText size={20} />
+              </span>
+              <span>
+                <small>أسئلة الاختبار</small>
+                <b>{counted(rules.questions, "أسئلة", "سؤالًا")}</b>
+              </span>
             </li>
           </ul>
 
@@ -113,26 +99,34 @@ export default function PreAssessmentDialog({
                 </li>
               ))}
             </ul>
-            <p>
-              الأسئلة العملية كتابة كود للمهارات البرمجية، ومهام أو سيناريوهات تطبيقية لغيرها. المستوى الذي اخترته يحدد
-              صعوبة أسئلة كل مهارة فقط، ولا يُعد إثباتًا لمستواك.
-            </p>
           </section>
 
-          <label className="pre-check">
-            <input
-              type="checkbox"
-              checked={confirmed}
-              onChange={(event) => onConfirm(event.target.checked)}
-              disabled={starting}
-            />
-            <span>قرأت تعليمات التقييم وفهمتها، وأنا مستعد للبدء الآن.</span>
-          </label>
+          <div className="pre-dialog-confirm">
+            <label className="pre-check">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(event) => onConfirm(event.target.checked)}
+                disabled={starting}
+              />
+              <span>أؤكد أنني قرأت وفهمت وأوافق على قواعد الاختبار.</span>
+            </label>
+            <button
+              type="button"
+              className="pre-btn pre-btn-primary"
+              onClick={onStart}
+              disabled={!canStart || starting}
+              aria-busy={starting}
+            >
+              {starting ? "جارٍ إعداد الأسئلة..." : "ابدأ الاختبار الآن"}
+              <IoMdArrowRoundBack aria-hidden="true" />
+            </button>
+          </div>
 
           {starting && (
             <div className="asmt-working" role="status" aria-live="polite">
               <span className="asmt-spinner" aria-hidden="true" />
-              <span>يُعد الذكاء الاصطناعي أسئلة جديدة لمهاراتك ومستوياتها ويتحقق منها. قد يستغرق ذلك حتى دقيقة.</span>
+              <span>يُعد الذكاء الاصطناعي أسئلة جديدة لمهاراتك ومستوياتها. قد يستغرق ذلك حتى دقيقة.</span>
             </div>
           )}
           {error && (
@@ -145,22 +139,6 @@ export default function PreAssessmentDialog({
               )}
             </div>
           )}
-
-          <div className="pre-dialog-actions">
-            <button
-              type="button"
-              className="pre-btn pre-btn-primary"
-              onClick={onStart}
-              disabled={!canStart || starting}
-              aria-busy={starting}
-            >
-              {starting ? "جارٍ إعداد الأسئلة..." : "ابدأ التقييم"}
-              <IoMdArrowDropleft aria-hidden="true" />
-            </button>
-            <button type="button" className="pre-btn pre-btn-outline" onClick={requestClose} disabled={starting}>
-              إلغاء
-            </button>
-          </div>
         </div>
       )}
     </dialog>

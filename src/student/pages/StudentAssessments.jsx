@@ -1,21 +1,42 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
+  Atom,
   Award,
   BadgeCheck,
+  Braces,
+  BrainCircuit,
+  Bug,
+  ChartColumn,
   CircleDashed,
   CirclePlus,
   Clock3,
+  Container,
+  Database,
+  FileCode2,
+  Flame,
+  GitBranch,
   History,
   Info,
+  LayoutGrid,
+  LayoutTemplate,
   ListChecks,
+  MonitorSmartphone,
+  Network,
+  Palette,
   PenTool,
   PlayCircle,
   RotateCcw,
   ScanSearch,
+  Server,
+  Smartphone,
+  SquareCode,
   SquareTerminal,
+  Table2,
   Target,
+  TestTube,
   Trash2,
+  Webhook,
 } from "lucide-react";
 import { IoMdArrowDropleft } from "react-icons/io";
 
@@ -41,7 +62,33 @@ import {
 } from "../utils/assessments";
 import "../styles/Assessments.css";
 
-const CATEGORY_ICONS = { programming: SquareTerminal, design: PenTool, applied: ScanSearch };
+// مفاتيح skillIconKey → أيقونات lucide
+const SKILL_ICONS = {
+  database: Database,
+  firebase: Flame,
+  markup: FileCode2,
+  styling: Palette,
+  responsive: MonitorSmartphone,
+  script: Braces,
+  frontend: Atom,
+  language: SquareCode,
+  server: Server,
+  api: Webhook,
+  apiTesting: Network,
+  git: GitBranch,
+  container: Container,
+  mobile: Smartphone,
+  design: PenTool,
+  wireframe: LayoutTemplate,
+  designSystem: LayoutGrid,
+  research: ScanSearch,
+  bug: Bug,
+  testing: TestTube,
+  table: Table2,
+  chart: ChartColumn,
+  ai: BrainCircuit,
+  terminal: SquareTerminal,
+};
 const CHIP_ICONS = { success: BadgeCheck, warning: Info, info: CirclePlus, neutral: CircleDashed };
 
 // مؤشر المستوى: نقطة مملوءة لكل درجة (مبتدئ 1 … خبير 4)
@@ -57,7 +104,7 @@ function LevelDots({ level }) {
 }
 
 function SkillRow({ skill, level, onLevel, onRemove, disabled }) {
-  const Icon = CATEGORY_ICONS[skill.category] || SquareTerminal;
+  const Icon = SKILL_ICONS[skill.icon] || SquareTerminal;
   const ChipIcon = CHIP_ICONS[skill.chip.tone] || CircleDashed;
   const selectId = `pre-level-${skill.id}`;
 
