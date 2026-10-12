@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  BadgeCheck,
   CalendarClock,
   ClipboardList,
   FileText,
+  ListChecks,
   LoaderCircle,
   MessageSquare,
   PencilLine,
   RotateCcw,
+  Send,
   Users,
   Wallet,
 } from "lucide-react";
@@ -17,20 +20,33 @@ import { Skeleton, SkeletonGroup } from "../components/Skeleton";
 import { PROJECT_REQUEST_STATUS_LABELS } from "../constants/projectRequestOptions";
 import {
   analyzeProjectRequest,
+  approveProposal,
   getProjectRequest,
 } from "../services/organizationService";
+import {
+  PUBLICATION_STATUS_LABELS,
+  keyRequirements,
+  matchingSummary,
+  reviewState,
+  staffingRoles,
+  stripListNumbering,
+} from "../utils/proposalReview";
 import "../styles/ProjectProposal.css";
 
 // أدوات قراءة آمنة: نعرض فقط ما ولّده المقترح فعلًا
 const text = (value) => (typeof value === "string" ? value.trim() : "");
-const strings = (value) => (Array.isArray(value) ? value.map(text).filter(Boolean) : []);
+// عناصر القوائم تُعرض دون الترقيم اليدوي الذي يكتبه النموذج أحيانًا
+const strings = (value) =>
+  Array.isArray(value) ? value.map(stripListNumbering).filter(Boolean) : [];
 const rows = (value, keys) =>
   Array.isArray(value)
     ? value.filter((row) => row && keys.some((key) => text(row[key])))
     : [];
 
-// حالات مغلقة لا يقبل الخادم فيها تعديلًا أو متابعة للمحادثة
-const CLOSED_STATUSES = ["approved", "rejected", "converted_to_opportunity"];
+const formatDate = (value) =>
+  value
+    ? new Date(value).toLocaleDateString("ar", { year: "numeric", month: "long", day: "numeric" })
+    : "";
 
 const LOAD_ERRORS = {
   403: "لا تملك صلاحية عرض هذا الطلب.",
@@ -97,7 +113,218 @@ function DataTable({ columns, data }) {
   );
 }
 
-function ProposalContent({ proposal }) {
+function SkillChips({ skills, kind }) {
+  if (!skills.length) return null;
+  return (
+    <ul className={`prp-chips prp-chips-${kind}`}>
+      {skills.map((skill) => (
+        <li
+          key={skill.name}
+          className={skill.matchable ? "" : "prp-chip-unmapped"}
+          title={skill.matchable ? undefined : "ليست ضمن قائمة مهارات المنصة؛ لن تُستخدم في مطابقة الطلاب"}
+        >
+          {skill.name}
+          {!skill.matchable && <span className="prp-visually-hidden"> (لن تُستخدم في المطابقة)</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// الأدوار المنظمة هي ما يُعتمد ويُستخدم في مطابقة الطلاب
+function StaffingBlock({ staffing }) {
+  const roles = staffingRoles(staffing);
+  if (!roles.length) return null;
+  const unmapped = Array.isArray(staffing?.unmapped_skills) ? staffing.unmapped_skills : [];
+
+  return (
+    <Block title="الأدوار والمهارات المطلوبة" wide>
+      <div className="prp-roles">
+        {roles.map((role, index) => (
+          <article className="prp-role" key={`${role.title}-${index}`}>
+            <header className="prp-role-head">
+              <h4>{role.title}</h4>
+              <span className="prp-pill">
+                {role.categoryLabel}
+                {role.headcount > 1 ? ` · ${role.headcount} طلاب` : ""}
+              </span>
+            </header>
+            {role.responsibilities && <p>{role.responsibilities}</p>}
+            {role.rationale && (
+              <p className="prp-muted">
+                <b>لماذا هذا الدور: </b>
+                {role.rationale}
+              </p>
+            )}
+            <div className="prp-role-skills">
+              <span>مهارات إلزامية</span>
+              <SkillChips skills={role.mandatory} kind="mandatory" />
+            </div>
+            {role.desirable.length > 0 && (
+              <div className="prp-role-skills">
+                <span>مهارات مرغوبة</span>
+                <SkillChips skills={role.desirable} kind="desirable" />
+              </div>
+            )}
+            {!role.matchable && (
+              <p className="prp-warning">لا يمكن مطابقة الطلاب مع هذا الدور لأن مهاراته الإلزامية ليست ضمن قائمة المنصة.</p>
+            )}
+            {role.matchable && role.untested.length > 0 && (
+              <p className="prp-warning">
+                مهارات عملية لا يكفي التقييم المكتوب لإثباتها: {role.untested.join("، ")}. لن يستوفي طالب هذا الدور إلا
+                بعد تحقق عملي تسجله إدارة المنصة (مثل مراجعة أعمال سابقة).
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
+      {unmapped.length > 0 && (
+        <p className="prp-muted">
+          المهارات ذات الإطار المتقطع ليست ضمن قائمة مهارات المنصة ولن تُستخدم في المطابقة: {unmapped.join("، ")}.
+        </p>
+      )}
+    </Block>
+  );
+}
+
+function KeyRequirementsBlock({ proposal }) {
+  const items = keyRequirements(proposal);
+  if (!items.length) return null;
+  return (
+    <Block title="أساس المتطلبات الرئيسية" wide>
+      <ul className="prp-basis-list">
+        {items.map((item, index) => (
+          <li key={index}>
+            <span className={`prp-basis prp-basis-${item.basis}`}>{item.basisLabel}</span>
+            <span>
+              {item.requirement}
+              {item.note && <span className="prp-muted"> — {item.note}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Block>
+  );
+}
+
+// الاعتماد: مراجعة صريحة للأدوار والمهارات ثم النشر للطلاب المؤهلين
+function ApprovalPanel({ state, onApprove, approving, approveError }) {
+  const [confirmed, setConfirmed] = useState(false);
+  const pendingChanges = state.mode === "pending_changes";
+
+  return (
+    <section className="prp-card prp-approval" aria-labelledby="prp-approval-title">
+      <h2 id="prp-approval-title">
+        <BadgeCheck size={20} aria-hidden="true" />
+        {pendingChanges ? "اعتماد النسخة المعدلة" : "اعتماد المقترح ونشره"}
+      </h2>
+      <p>
+        {pendingChanges
+          ? `الطلاب يرون حاليًا النسخة المعتمدة رقم ${state.publication.version}. لن تُستبدل إلا بعد اعتمادك لهذه النسخة.`
+          : "بعد الاعتماد يُحفظ المقترح كنسخة معتمدة ويظهر المشروع للطلاب الذين يطابقون أحد الأدوار بمهارات متحقق منها."}
+      </p>
+      {state.blockedReason ? (
+        <p className="prp-warning" role="note">
+          {state.blockedReason}
+        </p>
+      ) : (
+        <>
+          <label className="prp-confirm">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+              disabled={approving}
+            />
+            <span>راجعت النطاق والأدوار والمهارات المطلوبة وأؤكد أنها تعبر عن احتياج المؤسسة.</span>
+          </label>
+          {approveError && (
+            <p className="prp-error" role="alert">
+              {approveError}
+            </p>
+          )}
+          <button
+            type="button"
+            className="prp-btn prp-btn-primary"
+            onClick={onApprove}
+            disabled={!confirmed || approving}
+            aria-busy={approving}
+          >
+            {approving ? (
+              <LoaderCircle className="prp-spin" size={16} aria-hidden="true" />
+            ) : (
+              <Send size={16} aria-hidden="true" />
+            )}
+            {approving ? "جارٍ الاعتماد..." : pendingChanges ? "اعتماد النسخة المعدلة" : "اعتماد المقترح ونشره"}
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+
+function PublicationPanel({ publication, justApproved }) {
+  const summary = matchingSummary(publication);
+  return (
+    <section className="prp-card prp-publication" aria-labelledby="prp-publication-title">
+      <h2 id="prp-publication-title">
+        <ListChecks size={20} aria-hidden="true" />
+        حالة النشر
+      </h2>
+      {justApproved && (
+        <p className="prp-success" role="status">
+          تم اعتماد المقترح ونشره للطلاب المؤهلين.
+        </p>
+      )}
+      <dl className="prp-specs">
+        <div>
+          <dt>الحالة</dt>
+          <dd>{PUBLICATION_STATUS_LABELS[publication.status] || publication.status}</dd>
+        </div>
+        <div>
+          <dt>النسخة المعتمدة</dt>
+          <dd>رقم {publication.version}</dd>
+        </div>
+        {publication.published_at && (
+          <div>
+            <dt>تاريخ النشر</dt>
+            <dd>{formatDate(publication.published_at)}</dd>
+          </div>
+        )}
+      </dl>
+      {summary.roles.length > 0 && (
+        <div className="prp-table-wrap">
+          <table className="prp-table">
+            <thead>
+              <tr>
+                <th scope="col">الدور</th>
+                <th scope="col">المهارات الإلزامية</th>
+                <th scope="col">طلاب مؤهلون حاليًا</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.roles.map((role) => (
+                <tr key={role.title}>
+                  <td>{role.title}</td>
+                  <td>{role.mandatory.join("، ") || "—"}</td>
+                  <td>{role.eligible}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {!summary.hasEligible && summary.roles.length > 0 && (
+        <p className="prp-muted">
+          لا يوجد حاليًا طلاب يطابقون الأدوار بمهارات متحقق منها، لذلك لا يظهر المشروع لأي طالب بعد.
+          سيظهر تلقائيًا لكل طالب يستوفي متطلبات أحد الأدوار.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function ProposalContent({ proposal, staffing }) {
   const overview = proposal.project_overview || {};
   const problem = proposal.business_problem || {};
   const tech = proposal.technical_recommendation || {};
@@ -148,7 +375,8 @@ function ProposalContent({ proposal }) {
     scopeGroups.length || functional.length || nonFunctional.length || outOfScope.length ||
     assumptions.length || needsConfirmation.length || risks.length || techRows.length ||
     integrations.length;
-  const hasTeam = team.length || skills.length || operational.length;
+  const hasStaffing = staffingRoles(staffing).length > 0;
+  const hasTeam = hasStaffing || team.length || skills.length || operational.length;
 
   return (
     <>
@@ -274,8 +502,9 @@ function ProposalContent({ proposal }) {
                 <BulletList items={risks} />
               </Block>
             )}
+            <KeyRequirementsBlock proposal={proposal} />
             {(techRows.length > 0 || integrations.length > 0 || rationale) && (
-              <Block title="التوصية التقنية" wide>
+              <Block title="التوصية التقنية (مبدئية بانتظار التأكيد)" wide>
                 {techRows.length > 0 && (
                   <dl className="prp-specs">
                     {techRows.map(([label, value]) => (
@@ -359,7 +588,8 @@ function ProposalContent({ proposal }) {
       {hasTeam ? (
         <Section id="team" icon={Users} title="الفريق والتكاليف التشغيلية">
           <div className="prp-grid">
-            {team.length > 0 && (
+            <StaffingBlock staffing={staffing} />
+            {!hasStaffing && team.length > 0 && (
               <Block title="الأدوار المطلوبة" wide>
                 <DataTable
                   columns={[
@@ -370,7 +600,7 @@ function ProposalContent({ proposal }) {
                 />
               </Block>
             )}
-            {skills.length > 0 && (
+            {!hasStaffing && skills.length > 0 && (
               <Block title="المهارات المطلوبة" wide>
                 <ul className="prp-chips">
                   {skills.map((skill, index) => (
@@ -408,6 +638,9 @@ export default function ProjectProposal() {
   const [error, setError] = useState(validId ? null : { message: "رقم الطلب غير صالح." });
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
+  const [approving, setApproving] = useState(false);
+  const [approveError, setApproveError] = useState("");
+  const [justApproved, setJustApproved] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -467,21 +700,34 @@ export default function ProjectProposal() {
     }
   };
 
+  // الخادم يقفل الطلب ويعيد نفس النسخة عند التكرار؛ الزر يُعطَّل أيضًا لمنع النقرات المتكررة
+  const approve = async () => {
+    if (approving) return;
+    setApproving(true);
+    setApproveError("");
+    try {
+      setRecord(await approveProposal(id));
+      setJustApproved(true);
+    } catch (approvalError) {
+      setApproveError(
+        approvalError.message || "تعذر اعتماد المقترح حاليًا. لم يُنشر أي شيء، ويمكنك المحاولة مرة أخرى.",
+      );
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const proposal =
     record?.proposal && typeof record.proposal === "object" ? record.proposal : null;
+  const review = reviewState(record);
   const chatLink = `/organization/requests/${id}/intake`;
   const projectName = text(proposal?.project_overview?.project_name) || record?.title;
-  const generatedAt = record?.proposal_generated_at
-    ? new Date(record.proposal_generated_at).toLocaleDateString("ar", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "";
+  const generatedAt = formatDate(record?.proposal_generated_at);
+  const published = review.mode === "published";
 
   return (
     <div className="prp" dir="rtl">
-      <ProjectFlowStepper current={2} />
+      <ProjectFlowStepper current={published ? 3 : 2} />
 
       {loading ? (
         <SkeletonGroup label="نحمّل مسودة المقترح">
@@ -570,7 +816,9 @@ export default function ProjectProposal() {
         <>
           <header className="prp-card prp-hero">
             <div>
-              <span className="prp-eyebrow">مسودة مقترح المشروع</span>
+              <span className="prp-eyebrow">
+                {published ? "المقترح المعتمد" : "مسودة مقترح المشروع"}
+              </span>
               <h1>{projectName}</h1>
               {text(record.intake_data?.short_title) && (
                 <p className="prp-subtitle">{text(record.intake_data.short_title)}</p>
@@ -583,8 +831,8 @@ export default function ProjectProposal() {
               </p>
             </div>
             <div className="prp-hero-actions">
-              {/* التعديل يكمل نفس المحادثة المرتبطة بهذا الطلب ولا ينشئ طلبًا جديدًا */}
-              {!CLOSED_STATUSES.includes(record.status) && (
+              {/* التعديل يكمل نفس المحادثة المرتبطة بهذا الطلب، والنسخة المنشورة تبقى حتى إعادة الاعتماد */}
+              {review.canEdit && review.mode !== "revising" && (
                 <Link className="prp-btn prp-btn-primary" to={`${chatLink}?revise=1`}>
                   <PencilLine size={16} aria-hidden="true" /> تعديل أو توضيح المقترح
                 </Link>
@@ -595,18 +843,35 @@ export default function ProjectProposal() {
             </div>
           </header>
 
-          {record.status !== "proposal_ready" && !CLOSED_STATUSES.includes(record.status) && (
+          {review.mode === "revising" && (
             <p className="prp-revision" role="status">
               <b>التعديلات قيد المعالجة: </b>
-              هذه هي النسخة السابقة من المقترح. أكمل المحادثة ثم حدّث المقترح لتظهر التغييرات.{" "}
+              هذه هي النسخة السابقة من المقترح. أكمل المحادثة ثم حدّث المقترح لتظهر التغييرات.
+              {review.publication
+                ? ` يرى الطلاب حتى ذلك الحين النسخة المعتمدة رقم ${review.publication.version}.`
+                : ""}{" "}
               <Link to={chatLink}>متابعة المحادثة</Link>
             </p>
           )}
 
           <p className="prp-notice">
-            هذه مسودة أولية أعدّها المساعد من إجاباتك، وكل المدد والتكاليف فيها تقديرية
-            وتحتاج إلى مراجعتك.
+            {published
+              ? "هذه النسخة المعتمدة والمنشورة. المدد والتكاليف تقديرية، ويمكنك طلب تعديل في أي وقت دون أن يتغير ما يراه الطلاب قبل اعتمادك للنسخة الجديدة."
+              : "هذه مسودة أولية أعدّها المساعد من إجاباتك، وكل المدد والتكاليف فيها تقديرية وتحتاج إلى مراجعتك قبل الاعتماد."}
           </p>
+
+          {review.publication && (
+            <PublicationPanel publication={review.publication} justApproved={justApproved && published} />
+          )}
+
+          {(review.mode === "draft" || review.mode === "pending_changes") && (
+            <ApprovalPanel
+              state={review}
+              onApprove={approve}
+              approving={approving}
+              approveError={approveError}
+            />
+          )}
 
           {text(record.revision_note) && (
             <p className="prp-revision">
@@ -615,7 +880,7 @@ export default function ProjectProposal() {
             </p>
           )}
 
-          <ProposalContent proposal={proposal} />
+          <ProposalContent proposal={proposal} staffing={record.staffing} />
         </>
       )}
     </div>

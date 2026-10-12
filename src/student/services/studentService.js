@@ -1,3 +1,5 @@
+import { requestJson } from "../../shared/utils/apiErrors";
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const getAuthHeaders = (json = true) => {
@@ -209,4 +211,51 @@ export const completeStudentOnboarding = async () => {
   }
 
   return result.data;
+};
+
+// فرص المشاريع: الخادم يعيد فقط المشاريع المنشورة التي يطابق الطالب أحد أدوارها.
+// الأخطاء تحمل status (مثل 404 لفرصة لم تعد متاحة) لعرض الحالة المناسبة.
+export const getOpportunities = async () =>
+  (await requestJson(`${BASE_URL}/student/opportunities`, { headers: getAuthHeaders(false) })).data;
+
+export const getOpportunity = async (id) =>
+  (await requestJson(`${BASE_URL}/student/opportunities/${id}`, { headers: getAuthHeaders(false) })).data;
+
+// تقييم المهارات بأسئلة مفتوحة: الطالب يرسل نص إجابته فقط، والخادم يولد الأسئلة ويصحح ويسجل النتائج.
+export const getSpecializations = async () =>
+  (await requestJson(`${BASE_URL}/student/specializations`, { headers: getAuthHeaders(false) })).data;
+
+export const getAssessments = async () =>
+  (await requestJson(`${BASE_URL}/student/assessments`, { headers: getAuthHeaders(false) })).data;
+
+// يولد Gemini الأسئلة أو يعيد الجلسة المفتوحة نفسها؛ قد يستغرق عدة ثوانٍ
+export const startAssessmentSession = async (skillIds) =>
+  (
+    await requestJson(`${BASE_URL}/student/assessment-sessions`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ skill_ids: skillIds }),
+    })
+  ).data;
+
+export const getAssessmentSession = async (sessionId) =>
+  (await requestJson(`${BASE_URL}/student/assessment-sessions/${sessionId}`, { headers: getAuthHeaders(false) })).data;
+
+// الإجابة تُرسل كما كتبها الطالب دون قص المسافات
+export const submitAssessmentAnswer = async (sessionId, questionId, answer) =>
+  (
+    await requestJson(`${BASE_URL}/student/assessment-sessions/${sessionId}/answers`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ question_id: questionId, answer }),
+    })
+  ).data;
+
+// يصحح الإجابات المعلقة؛ grading_error يصف فشل التصحيح في هذا الطلب دون خسارة الإجابات
+export const finalizeAssessmentSession = async (sessionId) => {
+  const result = await requestJson(`${BASE_URL}/student/assessment-sessions/${sessionId}/finalize`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  return { session: result.data, gradingError: result.grading_error || null };
 };

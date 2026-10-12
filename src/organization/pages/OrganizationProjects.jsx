@@ -17,7 +17,7 @@ const STATUS = {
   revision_requested: "تعديل مطلوب",
   approved: "معتمد",
   rejected: "مرفوض",
-  converted_to_opportunity: "محوّل إلى فرصة",
+  converted_to_opportunity: "معتمد ومنشور",
 };
 
 // مؤشر مرحلة الطلب، وليس نسبة إنجاز تنفيذ المشروع.
@@ -195,7 +195,8 @@ export default function OrganizationProjects() {
                     <Link className="od-link" to={action.path}>
                       {action.label} <ArrowLeft size={15} aria-hidden="true" />
                     </Link>
-                    {request.status !== "converted_to_opportunity" && (
+                    {/* المشروع المنشور (ولو كان قيد التعديل) لا يُحذف؛ الخادم يرفض ذلك أيضًا */}
+                    {request.status !== "converted_to_opportunity" && !request.publication && (
                       <button
                         className="op-delete"
                         type="button"

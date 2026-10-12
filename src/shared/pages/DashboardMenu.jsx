@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { FaSignOutAlt, FaSearch, FaBell, FaUserCircle } from "react-icons/fa";
-import { Building2, LayoutDashboard, Plus, UserRound } from "lucide-react";
+import { Briefcase, Building2, ClipboardCheck, LayoutDashboard, Plus, UserRound } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { showAlert, Swal } from "../utils/alerts";
 import logo from "../assets/logo.svg";
@@ -91,6 +91,32 @@ function DashboardMenu() {
                 <FaUserCircle />
               </span>
               <span>الملف الشخصي</span>
+            </NavLink>
+          )}
+          {user?.role === "student" && (
+            <NavLink
+              to="/student/assessment"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <ClipboardCheck size={18} aria-hidden="true" />
+              </span>
+              <span>تقييم المهارات</span>
+            </NavLink>
+          )}
+          {user?.role === "student" && (
+            <NavLink
+              to="/student/opportunities"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <Briefcase size={18} aria-hidden="true" />
+              </span>
+              <span>فرص المشاريع</span>
             </NavLink>
           )}
           {user?.role === "organization" && (

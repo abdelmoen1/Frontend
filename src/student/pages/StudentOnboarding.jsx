@@ -3,13 +3,14 @@ import {
   updateStudentOnboarding,
   addStudentSkill,
   completeStudentOnboarding,
+  getSpecializations,
 } from "../services/studentService";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../shared/auth/useAuth";
 
 import { CiLock, CiUser } from "react-icons/ci";
-import { FaUniversity, FaGraduationCap, FaCalendarAlt } from "react-icons/fa";
+import { FaUniversity, FaGraduationCap, FaCalendarAlt, FaBriefcase } from "react-icons/fa";
 
 import HeroAuthForm from "../../shared/components/HeroAuthForm";
 import InputFileds from "../../shared/components/InputFileds";
@@ -56,12 +57,15 @@ function StudentOnboarding() {
     name: "",
     university: "",
     academic_major: "",
+    professional_specialization: "",
     graduation_year: "",
     phone: "",
     phone_code: "+970",
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
+  // قائمة المسارات المهنية يديرها الخادم
+  const [specializations, setSpecializations] = useState([]);
   const [errorMsg, setErrorMsg] = useState({});
 
   useEffect(() => {
@@ -76,6 +80,7 @@ function StudentOnboarding() {
           name: data.name || "",
           university: data.university || "",
           academic_major: data.academic_major || "",
+          professional_specialization: data.professional_specialization || "",
           graduation_year: data.graduation_year || "",
           phone_code,
           phone,
@@ -100,6 +105,9 @@ function StudentOnboarding() {
     };
 
     fetchProfile();
+    getSpecializations()
+      .then((list) => setSpecializations(Array.isArray(list) ? list : []))
+      .catch(() => setSpecializations([]));
   }, []);
 
   const handleChange = (e) => {
@@ -158,6 +166,10 @@ function StudentOnboarding() {
       newErrors.university = "الجامعة/الكلية مطلوبة";
     } else if (!formData.academic_major) {
       newErrors.academic_major = "التخصص الجامعي مطلوب";
+    } else if (!formData.professional_specialization) {
+      newErrors.professional_specialization = specializations.length
+        ? "المسار المهني مطلوب"
+        : "تعذر تحميل قائمة المسارات المهنية. حدّث الصفحة وحاول مرة أخرى.";
     } else if (!formData.graduation_year) {
       newErrors.graduation_year = "سنة التخرج مطلوبة";
     } else if (formData.phone && !/^\d{7,9}$/.test(formData.phone)) {
@@ -179,6 +191,7 @@ function StudentOnboarding() {
       await updateStudentOnboarding({
         university: formData.university,
         academic_major: formData.academic_major,
+        professional_specialization: formData.professional_specialization,
         graduation_year: formData.graduation_year,
         phone: formData.phone
           ? `${formData.phone_code}${formData.phone}`
@@ -294,6 +307,17 @@ function StudentOnboarding() {
                     options={ACADEMIC_MAJORS}
                     error={errorMsg.academic_major}
                     placeholder="اختر تخصصك الجامعي"
+                  />
+
+                  <SelectField
+                    label="المسار المهني"
+                    icon={<FaBriefcase className="input-icon" />}
+                    name="professional_specialization"
+                    value={formData.professional_specialization}
+                    onChange={handleChange}
+                    options={specializations.map((item) => ({ value: item.key, label: item.label }))}
+                    error={errorMsg.professional_specialization}
+                    placeholder="اختر المجال الذي تريد العمل فيه"
                   />
 
                   <SelectField

@@ -1,0 +1,299 @@
+/* صفحات فرص المشاريع للطالب؛ نفس ألوان لوحة الطالب */
+.opp-page {
+  --opp-navy: #071426;
+  --opp-blue: #199bc5;
+  --opp-ink: #10253e;
+  --opp-muted: #73849a;
+  --opp-line: #e2e8f0;
+
+  box-sizing: border-box;
+  width: min(1100px, 100%);
+  margin-inline: auto;
+  padding: 0 26px 32px;
+  color: var(--opp-ink);
+  direction: rtl;
+  text-align: right;
+}
+
+.opp-page *,
+.opp-page *::before,
+.opp-page *::after {
+  box-sizing: border-box;
+}
+
+.opp-page-head h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  color: var(--opp-navy);
+  font-size: 24px;
+}
+
+.opp-page-head p {
+  margin: 0 0 18px;
+  color: var(--opp-muted);
+}
+
+.opp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+
+.opp-card {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--opp-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.opp-grid .opp-card {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.opp-card h2 {
+  margin: 0 0 10px;
+  color: var(--opp-navy);
+  font-size: 18px;
+}
+
+.opp-card h3 {
+  margin: 14px 0 6px;
+  color: var(--opp-blue);
+  font-size: 15px;
+}
+
+.opp-card-skeleton {
+  min-height: 220px;
+  background: linear-gradient(90deg, #eef4f8 25%, #f7fafc 50%, #eef4f8 75%);
+  background-size: 200% 100%;
+  animation: opp-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes opp-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.opp-card-head h2 {
+  margin-bottom: 2px;
+}
+
+.opp-org,
+.opp-muted {
+  color: var(--opp-muted);
+  font-size: 13.5px;
+}
+
+.opp-summary {
+  margin: 10px 0;
+  line-height: 1.8;
+}
+
+.opp-match {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #166534;
+  font-size: 14px;
+}
+
+.opp-match svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.opp-match p {
+  margin: 0;
+}
+
+.opp-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opp-roles-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+.opp-role {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--opp-line);
+  border-radius: 10px;
+}
+
+.opp-role p {
+  margin: 0;
+}
+
+.opp-role-matched {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.opp-role-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.opp-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.opp-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opp-skills li {
+  padding: 2px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 13px;
+}
+
+.opp-skills-desirable li {
+  border-color: var(--opp-line);
+  background: #f8fafc;
+  color: #334155;
+}
+
+.opp-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+.opp-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--opp-muted);
+  font-size: 13.5px;
+}
+
+.opp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--opp-navy);
+  border-radius: 999px;
+  background: var(--opp-navy);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.opp-btn:hover {
+  background: var(--opp-blue);
+  border-color: var(--opp-blue);
+}
+
+.opp-btn-light {
+  background: #fff;
+  color: var(--opp-navy);
+}
+
+.opp-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 22px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.opp-state h2 {
+  margin: 0;
+  color: var(--opp-navy);
+  font-size: 18px;
+}
+
+.opp-state p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.opp-note {
+  margin-top: 16px;
+  color: var(--opp-muted);
+  font-size: 13.5px;
+}
+
+.opp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 12px;
+  color: var(--opp-blue);
+  text-decoration: none;
+}
+
+.opp-detail-head h1 {
+  margin: 0 0 4px;
+  color: var(--opp-navy);
+  font-size: 22px;
+}
+
+.opp-bullets,
+.opp-milestones {
+  margin: 0;
+  padding-inline-start: 20px;
+  line-height: 1.8;
+}
+
+.opp-milestones li {
+  margin-bottom: 8px;
+}
+
+.opp-milestones p {
+  margin: 2px 0 0;
+}
+
+@media (max-width: 640px) {
+  .opp-page {
+    padding-inline: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opp-card-skeleton {
+    animation: none;
+  }
+}

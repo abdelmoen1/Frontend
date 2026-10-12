@@ -22,12 +22,14 @@ import {
   addStudentSkill,
   deleteStudentSkill,
   getAvailableSkills,
+  getSpecializations,
   getStudentProfile,
   getStudentSkills,
   updateStudentProfile,
   updateStudentSkill,
 } from "../services/studentService";
 import { resolveMediaUrl } from "../../shared/utils/resolveMediaUrl";
+import { ACADEMIC_MAJORS } from "../constants/academicOptions";
 import "../styles/UpdateStudentProfile.css";
 
 const EMPTY_PROFILE = {
@@ -37,6 +39,8 @@ const EMPTY_PROFILE = {
   phone: "",
   university: "",
   academic_major: "",
+  professional_specialization: "",
+  professional_specialization_label: "",
   graduation_year: "",
   linkedin_url: "",
   github_url: "",
@@ -58,6 +62,8 @@ const normalizeProfile = (profile = {}) => {
     "phone",
     "university",
     "academic_major",
+    "professional_specialization",
+    "professional_specialization_label",
     "linkedin_url",
     "github_url",
     "email",
@@ -88,6 +94,18 @@ const normalizeProfile = (profile = {}) => {
 
   return normalized;
 };
+
+// التخصص الجامعي يُختار من قائمة المنصة (مطابقة المشاريع تعتمد على المسار المهني لا عليه). قيمة قديمة
+// مكتوبة نصًا حرًا تبقى ظاهرة كخيار مستقل حتى لا تُفقد عند الحفظ، مع توضيح أنها خارج القائمة.
+function majorOptions(current) {
+  const options = ACADEMIC_MAJORS.map((major) => major.trim());
+  const value = (current || "").trim();
+  if (!value || options.includes(value)) return options.map((major) => ({ value: major, label: major }));
+  return [
+    ...options.map((major) => ({ value: major, label: major })),
+    { value, label: `${value} (غير موجود في القائمة)` },
+  ];
+}
 
 const PROFICIENCY_LABELS = {
   beginner: "مبتدئ",
@@ -388,6 +406,10 @@ function StudentProfileView({ profile, skills }) {
                 <dd>{profile.academic_major || "غير محدد"}</dd>
               </div>
               <div>
+                <dt>المسار المهني</dt>
+                <dd>{profile.professional_specialization_label || "غير محدد"}</dd>
+              </div>
+              <div>
                 <dt>سنة التخرج</dt>
                 <dd>{profile.graduation_year || "غير محددة"}</dd>
               </div>
@@ -445,6 +467,8 @@ export default function UpdateStudentProfile() {
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [skills, setSkills] = useState([]);
   const [availableSkills, setAvailableSkills] = useState([]);
+  // المسارات المهنية من الخادم؛ عليها تُبنى التقييمات ومطابقة المشاريع
+  const [specializations, setSpecializations] = useState([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState([]);
   const [skillSearch, setSkillSearch] = useState("");
   const [skillSearchOpen, setSkillSearchOpen] = useState(false);
@@ -498,6 +522,10 @@ export default function UpdateStudentProfile() {
       .finally(() => {
         if (isMounted) setLoading(false);
       });
+
+    getSpecializations()
+      .then((list) => isMounted && setSpecializations(Array.isArray(list) ? list : []))
+      .catch(() => isMounted && setSpecializations([]));
 
     return () => {
       isMounted = false;
@@ -562,6 +590,7 @@ export default function UpdateStudentProfile() {
         phone: profile.phone || null,
         university: profile.university || null,
         academic_major: profile.academic_major || null,
+        professional_specialization: profile.professional_specialization || null,
         graduation_year: profile.graduation_year || null,
         linkedin_url: profile.linkedin_url || null,
         github_url: profile.github_url || null,
@@ -985,6 +1014,7 @@ export default function UpdateStudentProfile() {
               {[
                 ["university", "الجامعة / الكلية"],
                 ["academic_major", "التخصص الجامعي"],
+                ["professional_specialization", "المسار المهني"],
                 ["graduation_year", "سنة التخرج"],
                 ["phone", "رقم الهاتف"],
                 ["linkedin_url", "رابط LinkedIn"],
@@ -992,17 +1022,46 @@ export default function UpdateStudentProfile() {
               ].map(([name, label]) => (
                 <label className="student-edit-field" key={name}>
                   <span>{label}</span>
-                  <input
-                    name={name}
-                    type={
-                      name === "linkedin_url" || name === "github_url"
-                        ? "url"
-                        : "text"
-                    }
-                    value={profile[name]}
-                    onChange={setField}
-                    maxLength={name.endsWith("_url") ? 2048 : 255}
-                  />
+                  {name === "professional_specialization" ? (
+                    <>
+                      <select name={name} value={profile[name] || ""} onChange={setField}>
+                        <option value="">اختر مسارك المهني</option>
+                        {specializations.map((item) => (
+                          <option key={item.key} value={item.key}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                      <small>تُبنى عليه أسئلة تقييم المهارات ومطابقة أدوار المشاريع.</small>
+                    </>
+                  ) : name === "academic_major" ? (
+                    <>
+                      <select
+                        name={name}
+                        value={(profile[name] || "").trim()}
+                        onChange={setField}
+                      >
+                        <option value="">اختر تخصصك</option>
+                        {majorOptions(profile[name]).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <input
+                      name={name}
+                      type={
+                        name === "linkedin_url" || name === "github_url"
+                          ? "url"
+                          : "text"
+                      }
+                      value={profile[name]}
+                      onChange={setField}
+                      maxLength={name.endsWith("_url") ? 2048 : 255}
+                    />
+                  )}
                 </label>
               ))}
               <label className="student-edit-field full">

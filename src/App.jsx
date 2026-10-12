@@ -9,6 +9,10 @@ import OrganizationDashboard from "./organization/pages/OrganizationDashboard";
 import ProjectDiscovery from "./organization/pages/ProjectIntro";
 import StudentDashboard from "./student/pages/StudentDashboard";
 import UpdateStudentProfile from "./student/pages/UpdateStudentProfile";
+import StudentOpportunities from "./student/pages/StudentOpportunities";
+import StudentOpportunityDetails from "./student/pages/StudentOpportunityDetails";
+import StudentAssessments from "./student/pages/StudentAssessments";
+import StudentAssessmentSession from "./student/pages/StudentAssessmentSession";
 import LoadingScreen from "./shared/pages/LoadingScreen";
 import LandingPage from "./shared/components/LandingPage";
 import StudentOnboarding from "./student/pages/StudentOnboarding";
@@ -53,6 +57,16 @@ function App() {
           <Route element={<StudentDashboardRoute />}>
             <Route element={<DashboardMenu />}>
               <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/student/assessment" element={<StudentAssessments />} />
+              <Route
+                path="/student/assessment/sessions/:sessionId"
+                element={<StudentAssessmentSession />}
+              />
+              <Route path="/student/opportunities" element={<StudentOpportunities />} />
+              <Route
+                path="/student/opportunities/:id"
+                element={<StudentOpportunityDetails />}
+              />
               <Route
                 path="/student/profile"
                 element={<UpdateStudentProfile />}

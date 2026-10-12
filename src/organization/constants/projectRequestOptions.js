@@ -6,7 +6,7 @@ export const PROJECT_REQUEST_STATUS_LABELS = {
   revision_requested: "طُلب تعديل المقترح",
   approved: "تم اعتماد المقترح",
   rejected: "مرفوض",
-  converted_to_opportunity: "تحول إلى فرصة",
+  converted_to_opportunity: "معتمد ومنشور للطلاب",
 };
 
 export const CURRENT_PROCESS_OPTIONS = [
