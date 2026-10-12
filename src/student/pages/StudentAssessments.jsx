@@ -355,15 +355,6 @@ export default function StudentAssessments() {
             ))}
           </ul>
 
-          <div className="pre-info" role="note">
-            <Info size={18} aria-hidden="true" />
-            <p>
-              يتكون التقييم من {shown(rules.questions)} أسئلة لكل المهارات المختارة معًا خلال {shown(rules.minutes)}{" "}
-              دقيقة: {shown(rules.practical)} أسئلة عملية (كتابة كود للمهارات البرمجية، ومهام أو سيناريوهات تطبيقية
-              لغيرها) وسؤال كتابي واحد. المستوى الذي تختاره لكل مهارة يحدد صعوبة أسئلتها فقط، ولا يُعد إثباتًا لمستواك.
-            </p>
-          </div>
-
           {skills.length === 0 ? (
             <div className="asmt-state">
               <h2>لا توجد مهارات في ملفك بعد</h2>

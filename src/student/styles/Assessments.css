@@ -825,7 +825,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin: 24px 0 18px;
+  margin: 24px 0;
   padding: 0;
   list-style: none;
 }
@@ -890,30 +890,6 @@
 .pre-stat-value small {
   color: var(--asmt-muted);
   font-size: 12px;
-}
-
-/* شريط معلومات التقييم */
-.pre-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 22px;
-  padding: 12px 16px;
-  border: 1px solid #bfe0f1;
-  border-radius: 12px;
-  background: var(--pre-sky-soft);
-  color: #0f4f6d;
-  font-size: 14px;
-  line-height: 1.9;
-}
-
-.pre-info svg {
-  flex-shrink: 0;
-  margin-top: 5px;
-}
-
-.pre-info p {
-  margin: 0;
 }
 
 /* تبويبات التصفية */
