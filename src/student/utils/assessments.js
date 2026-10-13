@@ -473,7 +473,8 @@ export function assessmentError(error) {
   if (typeof code === "string" && code.startsWith("ai_")) {
     return { message: message || "خدمة الذكاء الاصطناعي غير متاحة الآن. حاول بعد قليل.", retryable: error.data.retryable !== false, ai: true };
   }
-  if (code && message) return { message, retryable: false };
+  // مثل assessment_storage_failed (يمكن إعادته) أو assessment_unavailable (لا يفيد تكراره الآن)
+  if (code && message) return { message, retryable: error.data.retryable === true };
   if (status === 422) {
     const errors = error?.data?.errors && typeof error.data.errors === "object" ? Object.values(error.data.errors).flat() : [];
     const first = errors.find((item) => typeof item === "string" && ARABIC.test(item));
@@ -483,5 +484,7 @@ export function assessmentError(error) {
   if (status === 403) return { message: message || "هذه الصفحة مخصصة للطلاب.", retryable: false };
   if (status === 401) return { message: "انتهت جلستك. سجّل الدخول مرة أخرى.", retryable: false, login: true };
   if (status === 429) return { message: "محاولات كثيرة. انتظر دقيقة ثم أعد المحاولة.", retryable: true };
-  return { message: "تعذر الاتصال بالخادم. إجابتك ما زالت في الصفحة؛ أعد المحاولة.", retryable: true };
+  // خطأ خادم بلا رمز (استثناء غير متوقع): لا نعرض نص الخادم، وتفاصيله في سجلاته
+  if (status >= 500) return { message: "حدث خطأ في الخادم. أعد المحاولة بعد قليل.", retryable: true, server: true };
+  return { message: "تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت ثم أعد المحاولة.", retryable: true };
 }

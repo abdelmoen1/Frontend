@@ -180,6 +180,7 @@ export default function StudentAssessments() {
   const [savingSpecialization, setSavingSpecialization] = useState(false);
   const [specializationError, setSpecializationError] = useState("");
   const statusRef = useRef(null);
+  const startingRef = useRef(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -265,7 +266,9 @@ export default function StudentAssessments() {
 
   // يُرسل المهارات ومستوياتها فقط؛ الخادم يعيد التحقق ويقرأ الأسماء من قاعدة البيانات. لا انتقال قبل تأكيد الخادم
   const start = async () => {
-    if (!state.canStart || !state.payload || starting || locked) return;
+    // المرجع يمنع طلبين من نقرتين سريعتين قبل أن يعطّل إعادة الرسم الزر
+    if (!state.canStart || !state.payload || starting || locked || startingRef.current) return;
+    startingRef.current = true;
     setStarting(true);
     setStartError(null);
     try {
@@ -273,10 +276,21 @@ export default function StudentAssessments() {
       navigate(sessionPath(session.id), { state: sessionState(session) });
     } catch (failure) {
       const mapped = assessmentError(failure);
+      if (mapped.retryable) {
+        // ربما حفظ الخادم الجلسة وضاع الرد: نتابع الجلسة المفتوحة نفسها بدل إنشاء أخرى
+        const committed = await getAssessments()
+          .then((overview) => overview?.active_session)
+          .catch(() => null);
+        if (committed?.id) {
+          navigate(sessionPath(committed.id));
+          return;
+        }
+      }
       setStartError(mapped);
       // مثل مهلة إعادة أو حد يومي: نحدّث حالة المهارات من الخادم (الاختيارات في الصفحة تبقى)
       if (!mapped.retryable) load();
     } finally {
+      startingRef.current = false;
       setStarting(false);
     }
   };

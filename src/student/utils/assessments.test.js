@@ -217,6 +217,29 @@ describe("errors", () => {
     assert.equal(assessmentError({ status: 404, data: { message: "Not Found" } }).notFound, true);
     assert.equal(assessmentError({ status: 401 }).login, true);
     assert.equal(assessmentError({ kind: "network", status: 0 }).retryable, true);
+    assert.match(assessmentError({ kind: "network", status: 0 }).message, /اتصالك بالإنترنت/);
+  });
+
+  it("never shows server internals for an uncoded 500 and honours the server's retry hint", () => {
+    const crash = assessmentError({
+      status: 500,
+      data: { message: "SQLSTATE[42S22]: Column not found: 1054 Unknown column 'skill_levels'", exception: "QueryException" },
+    });
+    assert.equal(crash.message, "حدث خطأ في الخادم. أعد المحاولة بعد قليل.");
+    assert.equal(crash.retryable, true);
+    assert.equal(crash.server, true);
+
+    const storage = assessmentError({
+      status: 503,
+      data: { code: "assessment_storage_failed", message: "تعذر حفظ التقييم بسبب خطأ في الخادم.", retryable: true },
+    });
+    assert.equal(storage.retryable, true);
+    const unavailable = assessmentError({
+      status: 503,
+      data: { code: "assessment_unavailable", message: "التقييم غير متاح مؤقتًا بسبب تحديث في الخادم.", retryable: false },
+    });
+    assert.equal(unavailable.retryable, false);
+    assert.match(unavailable.message, /غير متاح مؤقتًا/);
   });
 });
 
@@ -390,6 +413,27 @@ describe("skill icons", () => {
     for (const key of [...keys, "terminal", "design", "research"]) {
       assert.match(page, new RegExp(`\\n  ${key}: [A-Z]\\w+,`), key);
     }
+  });
+});
+
+describe("assessment routes survive a refresh", () => {
+  it("serves index.html for nested SPA routes on Vercel and the router owns the session path", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const vercel = JSON.parse(await readFile(new URL("../../../vercel.json", import.meta.url), "utf8"));
+    assert.deepEqual(vercel.rewrites, [{ source: "/(.*)", destination: "/index.html" }]);
+
+    const app = await readFile(new URL("../../App.jsx", import.meta.url), "utf8");
+    assert.match(app, /path="\/student\/assessment"/);
+    assert.match(app, /path="\/student\/assessment\/sessions\/:sessionId"/);
+    assert.equal(sessionPath(42), "/student/assessment/sessions/42");
+    assert.equal(ASSESSMENTS_PATH, "/student/assessment");
+  });
+
+  it("guards the start button against double submits and resumes a session the server already saved", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
+    assert.match(page, /startingRef\.current\) return;/);
+    assert.match(page, /overview\?\.active_session/);
   });
 });
 
