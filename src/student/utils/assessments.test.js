@@ -31,6 +31,9 @@ import {
   sessionPath,
   skillView,
   specializationNotice,
+  startOrRecover,
+  taskView,
+  unassessableProfileSkills,
 } from "./assessments.js";
 
 const skill = (overrides = {}) => ({
@@ -108,8 +111,9 @@ describe("choosing what to assess", () => {
     assert.equal(sessionPath(7), "/student/assessment/sessions/7");
   });
 
-  it("labels practical and written questions", () => {
-    assert.deepEqual(questionMeta({ category: "practical", type: "debugging" }), { category: "سؤال عملي", type: "إصلاح خطأ" });
+  it("labels coding tasks (and written questions of older sessions)", () => {
+    assert.deepEqual(questionMeta({ category: "practical", type: "coding" }), { category: "مهمة برمجية", type: "كتابة كود" });
+    assert.deepEqual(questionMeta({ category: "practical", type: "debugging" }), { category: "مهمة برمجية", type: "إصلاح خطأ" });
     assert.deepEqual(questionMeta({ category: "written", type: "reasoning" }), { category: "سؤال كتابي", type: "تبرير واستدلال" });
     assert.deepEqual(questionMeta({}), { category: "", type: "" });
   });
@@ -164,7 +168,7 @@ describe("results", () => {
     assert.equal(php.levelLabel, "متوسط");
     assert.match(php.note, /مستواك المثبت في هذه المهارة الآن: متوسط/);
     assert.equal(php.questions[0].points, "9 من 10");
-    assert.equal(php.questions[0].category, "سؤال عملي");
+    assert.equal(php.questions[0].category, "مهمة برمجية");
 
     const [laravel] = resultsView({
       results: [
@@ -180,7 +184,7 @@ describe("results", () => {
         },
       ],
     });
-    assert.match(laravel.note, /الأسئلة العملية/);
+    assert.match(laravel.note, /المهام العملية/);
     assert.match(laravel.note, /مستواك المثبت السابق \(متوسط\) لم يتغير/);
     assert.match(laravel.note, /إعادة هذا المستوى بعد/);
 
@@ -189,6 +193,88 @@ describe("results", () => {
     });
     assert.match(figma.note, /تحقق عملي/);
     assert.deepEqual(resultsView({ results: null }), []);
+  });
+
+  it("shows each coding task's verdict and the grader's issues, never private grading data", () => {
+    const [mysql] = resultsView({
+      results: [
+        {
+          skill: { id: 3, name: "MySQL" },
+          status: "failed",
+          score: 50,
+          reason: "below_threshold",
+          level: "intermediate",
+          questions: [
+            {
+              position: 1,
+              title: "مجموع الطلبات",
+              category: "practical",
+              answered: true,
+              awarded_points: 5,
+              max_points: 10,
+              verdict: "partially_correct",
+              issues: ["لا يعالج القيم الفارغة.", "", 7],
+              missing_concepts: ["قديم"],
+              feedback: "جيد جزئيًا.",
+            },
+            { position: 2, category: "practical", answered: false, verdict: "no_solution", issues: [] },
+            { position: 3, category: "practical", answered: true, verdict: "hacked", missing_concepts: ["ترتيب النتائج"] },
+          ],
+        },
+      ],
+    });
+    const [first, second, legacy] = mysql.questions;
+    assert.deepEqual([first.title, first.verdict, first.verdictTone, first.points], ["مجموع الطلبات", "صحيح جزئيًا", "warning", "5 من 10"]);
+    assert.deepEqual(first.missing, ["لا يعالج القيم الفارغة."]);
+    assert.equal(second.verdict, "لا يوجد حل");
+    // حكم غير معروف لا يُعرض، والجلسات القديمة تعرض missing_concepts
+    assert.deepEqual([legacy.verdict, legacy.missing], ["", ["ترتيب النتائج"]]);
+    for (const question of mysql.questions) {
+      assert.equal("rubric" in question || "reasoning" in question || "reference_solution" in question, false);
+    }
+  });
+});
+
+describe("coding task view", () => {
+  it("shows the title, requirements, examples and starter code the server returns", () => {
+    const task = taskView({
+      title: " مجموع العناصر ",
+      prompt: "اكتب الدالة total لتعيد مجموع عناصر المصفوفة.",
+      language: "php",
+      starter_code: "function total(array $items): int\n{\n}",
+      code_context: "",
+      requirements: ["تعيد 0 للمصفوفة الفارغة.", " ", null],
+      examples: [{ input: "[1, 2, 3]", output: "6" }, { input: 5 }, "x", { output: "0" }],
+    });
+    assert.deepEqual(task, {
+      title: "مجموع العناصر",
+      prompt: "اكتب الدالة total لتعيد مجموع عناصر المصفوفة.",
+      language: "php",
+      requirements: ["تعيد 0 للمصفوفة الفارغة."],
+      examples: [
+        { input: "[1, 2, 3]", output: "6" },
+        { input: "", output: "0" },
+      ],
+      starterCode: "function total(array $items): int\n{\n}",
+    });
+    // جلسة قديمة: نص السؤال فقط، وكودها (code_context) لا يُملأ في المحرر
+    assert.deepEqual(taskView({ prompt: "س", code_context: "SELECT 1;" }), {
+      title: "",
+      prompt: "س",
+      language: "",
+      requirements: [],
+      examples: [],
+      starterCode: "",
+    });
+    assert.equal(taskView(null).prompt, "");
+  });
+
+  it("prefills the editor with the starter code only when there is no saved draft", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile(new URL("../pages/StudentAssessmentSession.jsx", import.meta.url), "utf8");
+    assert.match(page, /readDraft\(key\) \|\| \(isCode \? task\.starterCode : ""\)/);
+    assert.match(page, /task\.requirements\.map/);
+    assert.match(page, /task\.examples\.map/);
   });
 });
 
@@ -247,7 +333,9 @@ describe("pre-assessment screen", () => {
   const apiSkills = [
     skill({ id: 1, name: "PHP", selected: true, programming: true, verified_level: "beginner" }),
     skill({ id: 2, name: "Laravel", selected: true, programming: true }),
-    skill({ id: 3, name: "Figma", selected: true, programming: false, practical: true }),
+    skill({ id: 3, name: "JavaScript", selected: true, programming: true, assessable: true }),
+    // في الملف لكنها لا تُقيَّم بمهام برمجية: لا تُعرض للاختيار ويرفضها الخادم
+    skill({ id: 8, name: "Figma", selected: true, programming: false, practical: true, assessable: false }),
     skill({ id: 4, name: "Manual Testing", selected: false, programming: false }),
     skill({ id: 5, name: "MySQL", selected: false }),
   ];
@@ -273,17 +361,23 @@ describe("pre-assessment screen", () => {
     assert.deepEqual(["beginner", "intermediate", "advanced", "expert", "x"].map(levelRank), [1, 2, 3, 4, 0]);
   });
 
-  it("lists the profile's selected skills (plus a linked skill) with real categories", () => {
+  it("lists every assessable profile skill and only those", () => {
     const skills = preAssessmentSkills(apiSkills);
-    assert.deepEqual(skills.map((item) => item.name), ["PHP", "Laravel", "Figma"]);
-    assert.deepEqual(skills.map((item) => item.category), ["programming", "programming", "design"]);
+    assert.deepEqual(skills.map((item) => item.name), ["PHP", "Laravel", "JavaScript"]);
+    assert.deepEqual(skills.map((item) => item.category), ["programming", "programming", "programming"]);
     assert.match(skills[0].chip.text, /مستوى مثبت: مبتدئ/);
     assert.equal(skillCategory({ programming: false }), "applied");
-    // مهارة من رابط فرصة تُعرض حتى لو لم تكن في الملف
-    const linked = preAssessmentSkills(apiSkills, 4);
-    assert.equal(linked.at(-1).name, "Manual Testing");
-    assert.match(linked.at(-1).chip.text, /ستُضاف/);
+    assert.deepEqual(unassessableProfileSkills(apiSkills), ["Figma"]);
+    // مهارة رابط خارج الملف لا تُعرض (الخادم يرفضها)، ومهارة رابط في الملف تُقدَّم
+    assert.deepEqual(preAssessmentSkills(apiSkills, 4).map((item) => item.id), [1, 2, 3]);
+    assert.deepEqual(preAssessmentSkills(apiSkills, 3).map((item) => item.id), [3, 1, 2]);
+    assert.equal(skills.some((item) => /ستُضاف/.test(item.chip.text)), false);
+    // assessable من الخادم هو المرجع؛ الخوادم الأقدم بلا الحقل: programming
+    assert.deepEqual(preAssessmentSkills([skill({ id: 9, assessable: false })]), []);
+    assert.equal(preAssessmentSkills([skill({ id: 9, programming: false })]).length, 0);
+    assert.equal(preAssessmentSkills([skill({ id: 9 })]).length, 1);
     assert.deepEqual(preAssessmentSkills(null), []);
+    assert.deepEqual(unassessableProfileSkills(undefined), []);
   });
 
   it("keeps an independent level per skill", () => {
@@ -298,7 +392,7 @@ describe("pre-assessment screen", () => {
   it("requires a level for every included skill and the confirmation before starting", () => {
     const skills = preAssessmentSkills(apiSkills);
     const partial = preAssessmentState({ skills, levels: { 1: "advanced" }, excluded: [], confirmed: true });
-    assert.deepEqual(partial.missing, ["Laravel", "Figma"]);
+    assert.deepEqual(partial.missing, ["Laravel", "JavaScript"]);
     assert.equal(partial.ready, false);
     assert.equal(partial.payload, null);
 
@@ -357,7 +451,7 @@ describe("pre-assessment screen", () => {
       },
     });
     assert.match(error.message, /PHP \(مبتدئ\) بعد/);
-    assert.match(resultsView({ results: [{ status: "failed", reason: "insufficient_evidence", questions: [] }] })[0].note, /أسئلة عملية كافية/);
+    assert.match(resultsView({ results: [{ status: "failed", reason: "insufficient_evidence", questions: [] }] })[0].note, /مهام كافية/);
   });
 
   it("drops removed skills from validation and blocks an empty assessment", () => {
@@ -388,6 +482,8 @@ describe("pre-assessment screen", () => {
     assert.match(page, /rules\.minutes/);
     assert.match(page, /startAssessmentSession\(state\.payload\)/);
     assert.doesNotMatch(page, /\b10 أسئلة|\b30 دقيقة/);
+    // كل المهام برمجية: لا "سؤال كتابي" في ملخص التقييم
+    assert.doesNotMatch(page, /سؤال كتابي|rules\.written/);
   });
 });
 
@@ -429,11 +525,76 @@ describe("assessment routes survive a refresh", () => {
     assert.equal(ASSESSMENTS_PATH, "/student/assessment");
   });
 
-  it("guards the start button against double submits and resumes a session the server already saved", async () => {
+  it("guards the start button against double submits and starts through startOrRecover", async () => {
     const { readFile } = await import("node:fs/promises");
     const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
     assert.match(page, /startingRef\.current\) return;/);
-    assert.match(page, /overview\?\.active_session/);
+    assert.match(page, /startOrRecover\(\(\) => startAssessmentSession\(state\.payload\), getAssessments\)/);
+  });
+});
+
+describe("startOrRecover", () => {
+  const calls = () => ({ start: 0, overview: 0 });
+
+  it("returns the created session after one request and never asks for the overview", async () => {
+    const log = calls();
+    const outcome = await startOrRecover(
+      async () => (log.start++, { id: 7, status: "in_progress" }),
+      async () => (log.overview++, { active_session: null }),
+    );
+    assert.deepEqual(outcome, { session: { id: 7, status: "in_progress" } });
+    assert.deepEqual(log, { start: 1, overview: 0 });
+  });
+
+  it("resumes the session the server committed when the response was lost (500, network drop, no id)", async () => {
+    for (const failure of [
+      { status: 500, data: { message: "Server Error" } },
+      { kind: "network", status: 0 },
+      { status: 409, data: { code: "session_starting", message: "يجري إعداد تقييمك الآن.", retryable: true } },
+    ]) {
+      const log = calls();
+      const outcome = await startOrRecover(
+        async () => {
+          log.start++;
+          throw failure;
+        },
+        async () => (log.overview++, { active_session: { id: 42 } }),
+      );
+      assert.deepEqual(outcome, { resumedId: 42 });
+      assert.deepEqual(log, { start: 1, overview: 1 }, "the start request is never repeated");
+    }
+
+    const lost = await startOrRecover(async () => ({}), async () => ({ active_session: { id: 43 } }));
+    assert.deepEqual(lost, { resumedId: 43 });
+  });
+
+  it("shows a safe retryable error when nothing was saved, even if the overview also fails", async () => {
+    const crash = { status: 500, data: { message: "SQLSTATE[42S22]: Column not found", exception: "QueryException" } };
+    for (const overview of [async () => ({ active_session: null }), async () => Promise.reject(new Error("offline"))]) {
+      const outcome = await startOrRecover(async () => Promise.reject(crash), overview);
+      assert.equal(outcome.error.retryable, true);
+      assert.equal(outcome.error.message, "حدث خطأ في الخادم. أعد المحاولة بعد قليل.");
+      assert.equal(outcome.session, undefined);
+      assert.equal(outcome.resumedId, undefined);
+    }
+  });
+
+  it("does not look for a session after a non-retryable refusal", async () => {
+    for (const failure of [
+      { status: 503, data: { code: "assessment_unavailable", message: "التقييم غير متاح مؤقتًا بسبب تحديث في الخادم.", retryable: false } },
+      { status: 422, data: { code: "specialization_required", message: "اختر مسارك المهني أولًا." } },
+    ]) {
+      const log = calls();
+      const outcome = await startOrRecover(
+        async () => {
+          throw failure;
+        },
+        async () => (log.overview++, { active_session: { id: 1 } }),
+      );
+      assert.equal(outcome.error.retryable, false);
+      assert.equal(outcome.error.message, failure.data.message);
+      assert.equal(log.overview, 0);
+    }
   });
 });
 

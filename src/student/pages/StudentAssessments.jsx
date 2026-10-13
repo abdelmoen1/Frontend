@@ -59,6 +59,8 @@ import {
   sessionPath,
   setSkillLevel,
   specializationNotice,
+  startOrRecover,
+  unassessableProfileSkills,
 } from "../utils/assessments";
 import "../styles/Assessments.css";
 
@@ -228,6 +230,7 @@ export default function StudentAssessments() {
   const activeSession = data?.active_session || null;
   const rules = assessmentSettings(data?.settings);
   const skills = preAssessmentSkills(data?.skills, preset.skillId);
+  const unassessable = unassessableProfileSkills(data?.skills);
   const effectiveExcluded = excluded ?? defaultExcluded(skills, rules.maxSkills, preset.skillId);
   const state = preAssessmentState({ skills, levels, excluded: effectiveExcluded, confirmed, maxSkills: rules.maxSkills });
   const removedSkills = skills.filter((skill) => effectiveExcluded.includes(skill.id));
@@ -272,23 +275,17 @@ export default function StudentAssessments() {
     setStarting(true);
     setStartError(null);
     try {
-      const session = await startAssessmentSession(state.payload);
-      navigate(sessionPath(session.id), { state: sessionState(session) });
-    } catch (failure) {
-      const mapped = assessmentError(failure);
-      if (mapped.retryable) {
-        // ربما حفظ الخادم الجلسة وضاع الرد: نتابع الجلسة المفتوحة نفسها بدل إنشاء أخرى
-        const committed = await getAssessments()
-          .then((overview) => overview?.active_session)
-          .catch(() => null);
-        if (committed?.id) {
-          navigate(sessionPath(committed.id));
-          return;
-        }
+      // ربما حفظ الخادم الجلسة وضاع الرد: startOrRecover يتابع الجلسة المفتوحة نفسها بدل إنشاء أخرى
+      const outcome = await startOrRecover(() => startAssessmentSession(state.payload), getAssessments);
+      if (outcome.session) {
+        navigate(sessionPath(outcome.session.id), { state: sessionState(outcome.session) });
+      } else if (outcome.resumedId) {
+        navigate(sessionPath(outcome.resumedId));
+      } else {
+        setStartError(outcome.error);
+        // مثل مهلة إعادة أو حد يومي: نحدّث حالة المهارات من الخادم (الاختيارات في الصفحة تبقى)
+        if (!outcome.error.retryable) load();
       }
-      setStartError(mapped);
-      // مثل مهلة إعادة أو حد يومي: نحدّث حالة المهارات من الخادم (الاختيارات في الصفحة تبقى)
-      if (!mapped.retryable) load();
     } finally {
       startingRef.current = false;
       setStarting(false);
@@ -303,13 +300,13 @@ export default function StudentAssessments() {
       caption: `${verifiedCount} مهارات مثبتة`,
       featured: true,
     },
-    { icon: ListChecks, label: "عدد الأسئلة", value: shown(rules.questions), caption: "لكل المهارات معًا" },
+    { icon: ListChecks, label: "عدد المهام", value: shown(rules.questions), caption: "مهام برمجية لكل المهارات معًا" },
     { icon: Clock3, label: "مدة التقييم", value: shown(rules.minutes), caption: "دقيقة" },
     {
       icon: Target,
-      label: "توزيع الأسئلة",
-      value: `${shown(rules.practical)} + ${shown(rules.written)}`,
-      caption: "عملية + سؤال كتابي",
+      label: "الحد الأدنى لكل مهارة",
+      value: shown(rules.minPracticalPerSkill),
+      caption: "مهام برمجية",
     },
   ];
 
@@ -418,8 +415,16 @@ export default function StudentAssessments() {
 
           {skills.length === 0 ? (
             <div className="asmt-state">
-              <h2>لا توجد مهارات في ملفك بعد</h2>
-              <p>أضف المهارات التي تريد تقييمها إلى ملفك الشخصي أولًا، ثم عد لاختيار مستوى كل منها.</p>
+              <h2>لا توجد في ملفك مهارات يمكن تقييمها بعد</h2>
+              <p>
+                التقييم مهام برمجية لمهارات ملفك فقط. أضف مهارة برمجية (مثل PHP أو JavaScript) إلى ملفك الشخصي، ثم عد
+                لاختيار مستوى كل منها.
+              </p>
+              {unassessable.length > 0 && (
+                <p className="asmt-muted">
+                  لا تُقيَّم بمهام برمجية حاليًا: <bdi>{unassessable.join("، ")}</bdi>
+                </p>
+              )}
               <Link className="asmt-btn" to="/student/profile">
                 تحديث مهاراتي
               </Link>
@@ -480,6 +485,11 @@ export default function StudentAssessments() {
               </ul>
               {state.included.length === 0 && (
                 <p className="asmt-muted">حذفت كل المهارات من هذا التقييم. أعد إحداها أدناه للمتابعة.</p>
+              )}
+              {unassessable.length > 0 && (
+                <p className="asmt-muted">
+                  مهارات في ملفك لا تُقيَّم بمهام برمجية حاليًا: <bdi>{unassessable.join("، ")}</bdi>
+                </p>
               )}
               {removedSkills.length > 0 && (
                 <p className="pre-removed">
