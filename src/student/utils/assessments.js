@@ -380,6 +380,17 @@ export function progressView(session) {
   };
 }
 
+/** حالة كل سؤال في قائمة الأسئلة: مُجاب أو الحالي أو لم يُجب بعد. الأسئلة تُعرض بالترتيب فلا تنقّل بينها. */
+export function questionSteps(session) {
+  const { answered, total } = progressView(session);
+  const current = session?.status === "in_progress" && answered < total ? answered + 1 : null;
+  return Array.from({ length: total }, (_, index) => {
+    const position = index + 1;
+    const status = position <= answered ? "answered" : position === current ? "current" : "upcoming";
+    return { position, status };
+  });
+}
+
 /** نتيجة المحاولة كما حسبها الخادم، مع مستوى المحاولة والمستوى المثبت حاليًا. */
 export function resultsView(session) {
   const results = Array.isArray(session?.results) ? session.results : [];

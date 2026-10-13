@@ -1,6 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { ArrowRight, BadgeCheck, Clock3, RotateCcw, Send, TriangleAlert, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  Lock,
+  RotateCcw,
+  Send,
+  TriangleAlert,
+  WifiOff,
+  XCircle,
+} from "lucide-react";
 
 import {
   finalizeAssessmentSession,
@@ -16,6 +27,7 @@ import {
   progressView,
   questionMeta,
   questionSkillsText,
+  questionSteps,
   remainingSeconds,
   requestedSkillsText,
   resultsView,
@@ -57,7 +69,92 @@ function BackLink() {
   );
 }
 
-function QuestionForm({ sessionId, question, timeUp, onAnswered, onReload }) {
+const subscribeOnline = (notify) => {
+  window.addEventListener("online", notify);
+  window.addEventListener("offline", notify);
+  return () => {
+    window.removeEventListener("online", notify);
+    window.removeEventListener("offline", notify);
+  };
+};
+
+// حالة الاتصال من المتصفح؛ تُستخدم للتنبيه فقط، فالإرسال يبقى متاحًا ويعالج الخادم الخطأ
+function useOnline() {
+  return useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
+  );
+}
+
+const STEP_LABELS = { answered: "تمت الإجابة", current: "السؤال الحالي", upcoming: "لم يُجب بعد" };
+
+function StepIcon({ status }) {
+  return (
+    <span className={`qs-step-icon qs-step-icon-${status}`} aria-hidden="true">
+      {status === "answered" && <Check size={11} strokeWidth={3.5} />}
+    </span>
+  );
+}
+
+// قائمة للعرض فقط: الأسئلة تظهر بالترتيب ولا يمكن الرجوع إلى سؤال سابق
+function QuestionNav({ steps }) {
+  return (
+    <nav className="qs-nav" aria-labelledby="qs-nav-title">
+      <h2 id="qs-nav-title">الأسئلة</h2>
+      <ol>
+        {steps.map((step) => (
+          <li
+            key={step.position}
+            className={`qs-step qs-step-${step.status}`}
+            aria-current={step.status === "current" ? "step" : undefined}
+          >
+            <span className="qs-step-text">
+              <span className="qs-step-num">{step.position}</span>
+              <span className="qs-step-label">. {STEP_LABELS[step.status]}</span>
+            </span>
+            <StepIcon status={step.status} />
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+function SessionSkeleton() {
+  return (
+    <section className="qs-shell qs-skeleton" aria-busy="true">
+      <span className="asmt-visually-hidden" role="status">
+        جارٍ تحميل الاختبار...
+      </span>
+      <div className="qs-head" aria-hidden="true">
+        <span className="qs-bone qs-bone-dark" style={{ width: 120 }} />
+        <span className="qs-bone qs-bone-dark qs-bone-pill" />
+        <span className="qs-bone qs-bone-dark" style={{ width: 220 }} />
+      </div>
+      <div className="qs-body" aria-hidden="true">
+        <div className="qs-main">
+          <span className="qs-bone" style={{ width: "62%", height: 20 }} />
+          <span className="qs-bone" style={{ width: "88%" }} />
+          <span className="qs-bone qs-bone-block" style={{ height: 150 }} />
+          <span className="qs-bone qs-bone-block" style={{ height: 190 }} />
+        </div>
+        <div className="qs-nav">
+          <span className="qs-bone" style={{ width: 70 }} />
+          {[0, 1, 2, 3, 4, 5].map((item) => (
+            <span key={item} className="qs-bone qs-bone-step" />
+          ))}
+        </div>
+      </div>
+      <div className="qs-foot" aria-hidden="true">
+        <span className="qs-bone" style={{ width: 240 }} />
+        <span className="qs-bone qs-bone-pill" style={{ width: 190, height: 40 }} />
+      </div>
+    </section>
+  );
+}
+
+function QuestionForm({ sessionId, question, steps, isLast, timeUp, online, onAnswered, onReload }) {
   const key = draftKey(sessionId, question.id);
   const [answer, setAnswer] = useState(() => readDraft(key));
   const [error, setError] = useState(null);
@@ -118,66 +215,103 @@ function QuestionForm({ sessionId, question, timeUp, onAnswered, onReload }) {
   };
 
   return (
-    <form className="asmt-question" onSubmit={submit} noValidate>
-      <div className="asmt-question-meta">
-        <span className="asmt-badge asmt-tone-info">
-          <bdi>{questionSkillsText(question)}</bdi>
-        </span>
-        {meta.category && (
-          <span className={`asmt-badge ${question.category === "practical" ? "asmt-tone-practical" : "asmt-tone-neutral"}`}>
-            {meta.category}
-            {meta.type ? ` · ${meta.type}` : ""}
-          </span>
-        )}
-        <span className="asmt-badge asmt-tone-neutral">{isCode ? "إجابة بالكود" : "إجابة مكتوبة"}</span>
-      </div>
-      <h2 id={`asmt-q-${question.id}`}>{question.prompt}</h2>
-      {question.code_context && (
-        <pre className="asmt-code" aria-label="كود السؤال">
-          <code>{question.code_context}</code>
-        </pre>
-      )}
+    <form className="qs-form" onSubmit={submit} noValidate aria-busy={submitting}>
+      <div className="qs-body">
+        <div className="qs-main">
+          <h2 className="qs-prompt" id={`asmt-q-${question.id}`}>
+            <span className="qs-prompt-num">السؤال {question.position}:</span> <bdi>{question.prompt}</bdi>
+          </h2>
+          <div className="qs-meta">
+            <span className="qs-tag qs-tag-skill">
+              <bdi>{questionSkillsText(question)}</bdi>
+            </span>
+            {meta.category && (
+              <span className="qs-tag">
+                {meta.category}
+                {meta.type ? ` · ${meta.type}` : ""}
+              </span>
+            )}
+            <span className="qs-tag">{isCode ? "إجابة بالكود" : "إجابة مكتوبة"}</span>
+          </div>
 
-      <div className="asmt-answer">
-        <label htmlFor={`asmt-answer-${question.id}`}>
-          {isCode ? `اكتب الكود${question.language ? ` (${question.language})` : ""}` : "اكتب إجابتك بالعربية أو الإنجليزية"}
-        </label>
-        <textarea
-          id={`asmt-answer-${question.id}`}
-          ref={fieldRef}
-          className={isCode ? "asmt-answer-code" : ""}
-          value={answer}
-          onChange={(event) => change(event.target.value)}
-          onKeyDown={keyDown}
-          onBlur={() => setIndentMode(true)}
-          dir={isCode ? "ltr" : "auto"}
-          spellCheck={!isCode}
-          autoComplete="off"
-          aria-describedby={`asmt-q-${question.id} asmt-answer-help-${question.id}`}
-          aria-invalid={error?.validation || Boolean(error && !error.retryable) ? "true" : undefined}
-          disabled={submitting}
-        />
-        <div className="asmt-answer-meta" id={`asmt-answer-help-${question.id}`}>
-          <span>
-            {isCode
-              ? "تُحفظ المسافات والأسطر كما تكتبها. Tab يضيف مسافة بادئة، واضغط Esc ثم Tab للانتقال خارج الحقل."
-              : "اشرح بكلماتك؛ لا يهم أسلوب الكتابة بقدر صحة الفكرة."}
-          </span>
-          <span>{answer.length} / 8000</span>
+          {question.code_context && (
+            <pre className="qs-code" aria-label="كود السؤال">
+              <code>{question.code_context}</code>
+            </pre>
+          )}
+
+          {!online && (
+            <div className="qs-alert qs-alert-warn" role="status">
+              <WifiOff size={16} aria-hidden="true" />
+              <p>انقطع الاتصال بالإنترنت. تابع الكتابة، فإجابتك محفوظة على هذا الجهاز، وأرسلها عند عودة الاتصال. المؤقت لا يتوقف.</p>
+            </div>
+          )}
+          {timeUp && (
+            <div className="qs-alert qs-alert-danger" role="alert">
+              <TriangleAlert size={16} aria-hidden="true" />
+              <p>انتهى الوقت. أرسل إجابتك الآن قبل إغلاق الاختبار.</p>
+            </div>
+          )}
+
+          <div className="qs-answer">
+            <label htmlFor={`asmt-answer-${question.id}`}>
+              {isCode ? `اكتب الكود${question.language ? ` (${question.language})` : ""}` : "اكتب إجابتك بالعربية أو الإنجليزية"}
+            </label>
+            <textarea
+              id={`asmt-answer-${question.id}`}
+              ref={fieldRef}
+              className={isCode ? "qs-answer-code" : ""}
+              value={answer}
+              onChange={(event) => change(event.target.value)}
+              onKeyDown={keyDown}
+              onBlur={() => setIndentMode(true)}
+              dir={isCode ? "ltr" : "auto"}
+              spellCheck={!isCode}
+              autoComplete="off"
+              aria-describedby={`asmt-q-${question.id} asmt-answer-help-${question.id}`}
+              aria-invalid={error?.validation || Boolean(error && !error.retryable) ? "true" : undefined}
+              disabled={submitting}
+            />
+            <div className="qs-answer-meta" id={`asmt-answer-help-${question.id}`}>
+              <span>
+                {isCode
+                  ? "تُحفظ المسافات والأسطر كما تكتبها. Tab يضيف مسافة بادئة، واضغط Esc ثم Tab للانتقال خارج الحقل."
+                  : "اشرح بكلماتك؛ لا يهم أسلوب الكتابة بقدر صحة الفكرة."}
+              </span>
+              <span dir="ltr">{answer.length} / 8000</span>
+            </div>
+          </div>
+
+          {error && (
+            <div className="qs-alert qs-alert-danger" role="alert">
+              <TriangleAlert size={16} aria-hidden="true" />
+              <p>
+                {error.message}
+                {error.retryable ? " إجابتك محفوظة كمسودة؛ أعد الإرسال." : ""}
+              </p>
+            </div>
+          )}
         </div>
+
+        <QuestionNav steps={steps} />
       </div>
 
-      <div className="asmt-submit">
-        <button type="submit" className="asmt-btn" disabled={submitting}>
-          <Send size={15} aria-hidden="true" /> {submitting ? "جارٍ الحفظ..." : "إرسال الإجابة والمتابعة"}
+      <div className="qs-foot">
+        <p className="qs-foot-note">
+          <Lock size={14} aria-hidden="true" /> لا يمكن الرجوع إلى سؤال سابق أو تعديل الإجابة بعد إرسالها.
+        </p>
+        <button type="submit" className="qs-next" disabled={submitting}>
+          {submitting ? (
+            <>
+              <span className="qs-btn-spinner" aria-hidden="true" /> جارٍ الإرسال...
+            </>
+          ) : (
+            <>
+              {isLast ? "إرسال وإنهاء الاختبار" : "إرسال والانتقال للسؤال التالي"}
+              {isLast ? <Send size={15} aria-hidden="true" /> : <ArrowLeft size={16} aria-hidden="true" />}
+            </>
+          )}
         </button>
-        <span className="asmt-muted">لا يمكن تعديل الإجابة بعد إرسالها.</span>
-        {timeUp && <span className="asmt-error">انتهى الوقت؛ أرسل إجابتك الآن قبل إغلاق التقييم.</span>}
-        {error && (
-          <p className="asmt-error" role="alert">
-            {error.message}
-          </p>
-        )}
       </div>
     </form>
   );
@@ -269,6 +403,7 @@ export default function StudentAssessmentSession() {
   const [gradingError, setGradingError] = useState(null);
   const [gradingRound, setGradingRound] = useState(0);
   const grading = useRef(false);
+  const online = useOnline();
 
   const applySession = useCallback((next) => {
     setSession(next);
@@ -355,9 +490,9 @@ export default function StudentAssessmentSession() {
 
   if (loading) {
     return (
-      <div className="asmt-page" dir="rtl">
+      <div className="asmt-page qs-page" dir="rtl">
         <BackLink />
-        <div className="asmt-skeleton" aria-busy="true" aria-label="جارٍ تحميل التقييم" />
+        <SessionSkeleton />
       </div>
     );
   }
@@ -429,58 +564,67 @@ export default function StudentAssessmentSession() {
   }
 
   const progress = progressView(session);
+  const steps = questionSteps(session);
   const question = session.current_question;
   const low = remaining <= 120;
 
   return (
-    <div className="asmt-page" dir="rtl">
+    <div className="asmt-page qs-page" dir="rtl">
       <BackLink />
-      <div className="asmt-bar">
-        <div>
-          <h1>{session.title}</h1>
-          <span className="asmt-progress">
-            السؤال {progress.current} من {progress.total} · <bdi>{requestedSkillsText(session)}</bdi>
-          </span>
-        </div>
-        <span
-          className={`asmt-timer ${low ? "asmt-timer-low" : ""}`}
-          role="timer"
-          aria-label={`الوقت المتبقي ${formatClock(remaining)}`}
-        >
-          <Clock3 size={16} aria-hidden="true" /> {formatClock(remaining)}
-        </span>
-        <div
-          className="asmt-progressbar"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={progress.total}
-          aria-valuenow={progress.answered}
-          aria-label="الأسئلة المجاب عنها"
-        >
-          <span style={{ width: `${progress.percent}%` }} />
-        </div>
-      </div>
-      <p className="asmt-visually-hidden" aria-live="polite">
-        {remaining > 0 && remaining <= 60 ? "بقيت دقيقة واحدة أو أقل." : remaining > 0 && remaining <= 300 ? "بقيت خمس دقائق أو أقل." : ""}
-      </p>
+      <section className="qs-shell" aria-labelledby="qs-title">
+        <header className="qs-head">
+          <div className="qs-title">
+            <h1 id="qs-title">{session.title}</h1>
+            <bdi>{requestedSkillsText(session)}</bdi>
+          </div>
+          <div className={`qs-timer ${low ? "qs-timer-low" : ""}`} role="timer" aria-label={`الوقت المتبقي ${formatClock(remaining)}`}>
+            <small>الوقت المتبقي</small>
+            <b>{formatClock(remaining)}</b>
+          </div>
+          <div className="qs-progress">
+            <span>
+              السؤال {progress.current} من {progress.total}
+            </span>
+            <div
+              className="qs-segments"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={progress.total}
+              aria-valuenow={progress.answered}
+              aria-label="الأسئلة المجاب عنها"
+            >
+              {steps.map((step) => (
+                <span key={step.position} className={`qs-seg qs-seg-${step.status}`} />
+              ))}
+            </div>
+          </div>
+        </header>
+        <p className="asmt-visually-hidden" aria-live="polite">
+          {remaining > 0 && remaining <= 60 ? "بقيت دقيقة واحدة أو أقل." : remaining > 0 && remaining <= 300 ? "بقيت خمس دقائق أو أقل." : ""}
+        </p>
 
-      {question ? (
-        <QuestionForm
-          key={question.id}
-          sessionId={session.id}
-          question={question}
-          timeUp={timeUp}
-          onAnswered={applySession}
-          onReload={reload}
-        />
-      ) : (
-        <div className="asmt-state">
-          <p>تعذر عرض السؤال الحالي.</p>
-          <button type="button" className="asmt-btn" onClick={reload}>
-            <RotateCcw size={15} aria-hidden="true" /> تحديث
-          </button>
-        </div>
-      )}
+        {question ? (
+          <QuestionForm
+            key={question.id}
+            sessionId={session.id}
+            question={question}
+            steps={steps}
+            isLast={progress.current === progress.total}
+            timeUp={timeUp}
+            online={online}
+            onAnswered={applySession}
+            onReload={reload}
+          />
+        ) : (
+          <div className="qs-empty" role="alert">
+            <TriangleAlert size={22} aria-hidden="true" />
+            <p>تعذر عرض السؤال الحالي. إجاباتك السابقة محفوظة.</p>
+            <button type="button" className="qs-next" onClick={reload}>
+              <RotateCcw size={15} aria-hidden="true" /> تحديث
+            </button>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

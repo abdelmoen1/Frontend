@@ -25,6 +25,7 @@ import {
   parseAssessmentQuery,
   progressView,
   questionMeta,
+  questionSteps,
   remainingSeconds,
   resultsView,
   sessionPath,
@@ -389,6 +390,28 @@ describe("skill icons", () => {
     for (const key of [...keys, "terminal", "design", "research"]) {
       assert.match(page, new RegExp(`\\n  ${key}: [A-Z]\\w+,`), key);
     }
+  });
+});
+
+describe("questionSteps", () => {
+  it("marks answered, current and upcoming questions from the server counts", () => {
+    const steps = questionSteps({ status: "in_progress", question_count: 4, answered_count: 2 });
+    assert.deepEqual(
+      steps.map((step) => step.status),
+      ["answered", "answered", "current", "upcoming"],
+    );
+    assert.deepEqual(
+      steps.map((step) => step.position),
+      [1, 2, 3, 4],
+    );
+  });
+
+  it("has no current question outside an active session and tolerates missing data", () => {
+    assert.deepEqual(
+      questionSteps({ status: "grading", question_count: 2, answered_count: 1 }).map((step) => step.status),
+      ["answered", "upcoming"],
+    );
+    assert.deepEqual(questionSteps(null), []);
   });
 });
 
