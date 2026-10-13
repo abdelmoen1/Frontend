@@ -31,6 +31,7 @@ import {
   remainingSeconds,
   requestedSkillsText,
   resultsView,
+  taskView,
 } from "../utils/assessments";
 import "../styles/Assessments.css";
 
@@ -156,12 +157,14 @@ function SessionSkeleton() {
 
 function QuestionForm({ sessionId, question, steps, isLast, timeUp, online, onAnswered, onReload }) {
   const key = draftKey(sessionId, question.id);
-  const [answer, setAnswer] = useState(() => readDraft(key));
+  const isCode = question.format === "code";
+  const task = taskView(question);
+  // المسودة المحفوظة أولًا، وإلا يبدأ محرر الكود من الكود المبدئي للمهمة
+  const [answer, setAnswer] = useState(() => readDraft(key) || (isCode ? task.starterCode : ""));
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [indentMode, setIndentMode] = useState(true);
   const fieldRef = useRef(null);
-  const isCode = question.format === "code";
   const meta = questionMeta(question);
 
   useEffect(() => {
@@ -218,9 +221,20 @@ function QuestionForm({ sessionId, question, steps, isLast, timeUp, online, onAn
     <form className="qs-form" onSubmit={submit} noValidate aria-busy={submitting}>
       <div className="qs-body">
         <div className="qs-main">
-          <h2 className="qs-prompt" id={`asmt-q-${question.id}`}>
-            <span className="qs-prompt-num">السؤال {question.position}:</span> <bdi>{question.prompt}</bdi>
-          </h2>
+          {task.title ? (
+            <>
+              <h2 className="qs-prompt" id={`asmt-q-${question.id}`}>
+                <span className="qs-prompt-num">المهمة {question.position}:</span> <bdi>{task.title}</bdi>
+              </h2>
+              <p className="qs-task-text">
+                <bdi>{task.prompt}</bdi>
+              </p>
+            </>
+          ) : (
+            <h2 className="qs-prompt" id={`asmt-q-${question.id}`}>
+              <span className="qs-prompt-num">السؤال {question.position}:</span> <bdi>{task.prompt}</bdi>
+            </h2>
+          )}
           <div className="qs-meta">
             <span className="qs-tag qs-tag-skill">
               <bdi>{questionSkillsText(question)}</bdi>
@@ -232,7 +246,47 @@ function QuestionForm({ sessionId, question, steps, isLast, timeUp, online, onAn
               </span>
             )}
             <span className="qs-tag">{isCode ? "إجابة بالكود" : "إجابة مكتوبة"}</span>
+            {task.language && (
+              <span className="qs-tag" dir="ltr">
+                {task.language}
+              </span>
+            )}
           </div>
+
+          {task.requirements.length > 0 && (
+            <section className="qs-task-block" aria-label="متطلبات الحل">
+              <h3>المتطلبات</h3>
+              <ul>
+                {task.requirements.map((item, index) => (
+                  <li key={index}>
+                    <bdi>{item}</bdi>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {task.examples.length > 0 && (
+            <section className="qs-task-block" aria-label="أمثلة">
+              <h3>أمثلة</h3>
+              <ol className="qs-examples">
+                {task.examples.map((example, index) => (
+                  <li key={index}>
+                    {example.input && (
+                      <span>
+                        المدخل: <code dir="ltr">{example.input}</code>
+                      </span>
+                    )}
+                    {example.output && (
+                      <span>
+                        الناتج المتوقع: <code dir="ltr">{example.output}</code>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
 
           {question.code_context && (
             <pre className="qs-code" aria-label="كود السؤال">
@@ -334,7 +388,7 @@ function Results({ session }) {
           </h1>
           <span className="asmt-progress">
             {session.ended_by_timeout ? "انتهى الوقت قبل الإجابة عن كل الأسئلة. " : ""}
-            لكل مهارة نتيجة مستقلة بمستواها المطلوب، حسبها الخادم من أسئلتها العملية ومعايير المقال الخاصة بها.
+            لكل مهارة نتيجة مستقلة بمستواها المطلوب، حسبها الخادم من تصحيح حلول مهامها البرمجية.
           </span>
         </div>
       </div>
@@ -358,14 +412,22 @@ function Results({ session }) {
               {result.questions.map((question) => (
                 <li key={question.position}>
                   <b>
-                    السؤال {question.position}
-                    {question.category ? ` · ${question.category}` : ""}
+                    {question.title ? (
+                      <>
+                        المهمة {question.position}: <bdi>{question.title}</bdi>
+                      </>
+                    ) : (
+                      `السؤال ${question.position}${question.category ? ` · ${question.category}` : ""}`
+                    )}
                     {question.points ? ` · ${question.points}` : ""}
                     {!question.answered ? " · دون إجابة" : ""}
                   </b>
+                  {question.answered && question.verdict && (
+                    <span className={`asmt-badge asmt-tone-${question.verdictTone}`}>{question.verdict}</span>
+                  )}
                   {question.feedback && <span>{question.feedback}</span>}
                   {question.missing.length > 0 && (
-                    <span className="asmt-muted"> مفاهيم ناقصة: {question.missing.join("، ")}</span>
+                    <span className="asmt-muted"> ملاحظات على الحل: {question.missing.join("، ")}</span>
                   )}
                 </li>
               ))}

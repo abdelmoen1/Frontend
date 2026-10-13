@@ -100,23 +100,34 @@ export function skillCategory(skill) {
   return skill?.programming === false ? "applied" : "programming";
 }
 
+// مهارة في ملف الطالب يقبل الخادم تقييمها بمهام برمجية (assessable؛ الخوادم الأقدم: programming)
+const isAssessable = (skill) =>
+  skill?.selected === true && (typeof skill.assessable === "boolean" ? skill.assessable : skill.programming !== false);
+
 /**
- * مهارات التقييم: المهارات المختارة في ملف الطالب، ومعها مهارة محددة من رابط (مثل سبب عدم الأهلية في فرصة)
- * حتى لو لم تكن في الملف بعد.
+ * مهارات التقييم: كل مهارة في ملف الطالب يمكن تقييمها بمهام برمجية. الخادم يرفض أي مهارة خارج الملف، فمهارة
+ * الرابط (من فرصة مثلًا) تظهر فقط إن كانت في الملف، وتُقدَّم في الترتيب.
  */
 export function preAssessmentSkills(skills, presetSkillId = null) {
-  return (Array.isArray(skills) ? skills : [])
-    .filter((skill) => skill && skill.id && (skill.selected === true || skill.id === presetSkillId))
+  const list = (Array.isArray(skills) ? skills : []).filter((skill) => skill && skill.id && isAssessable(skill));
+  return [...list.filter((skill) => skill.id === presetSkillId), ...list.filter((skill) => skill.id !== presetSkillId)]
     .map((skill) => {
       const view = skillView(skill);
       let chip = { tone: "neutral", text: "لم تُقيَّم بعد" };
       if (view.verifiedLevel) chip = { tone: "success", text: `مستوى مثبت: ${view.verifiedLevelLabel}` };
       else if (view.practical && view.status === "passed") chip = { tone: "warning", text: "تحتاج تحققًا عمليًا من إدارة المنصة" };
       else if (view.status === "failed") chip = { tone: "neutral", text: "لم تجتز تقييمها بعد" };
-      if (skill.selected !== true) chip = { tone: "info", text: "ستُضاف إلى مهارات ملفك" };
       const category = skillCategory(skill);
       return { ...view, category, categoryLabel: SKILL_CATEGORIES[category], icon: skillIconKey(view.name, category), chip };
     });
+}
+
+/** أسماء مهارات الملف التي لا تُقيَّم بمهام برمجية (تصميم وغيرها)؛ تُذكر للطالب ولا تُعرض للاختيار. */
+export function unassessableProfileSkills(skills) {
+  return (Array.isArray(skills) ? skills : [])
+    .filter((skill) => skill?.selected === true && !isAssessable(skill))
+    .map((skill) => skill.name)
+    .filter((name) => typeof name === "string" && name);
 }
 
 /** يغيّر مستوى مهارة واحدة فقط؛ قيمة غير معروفة تُلغي اختيار تلك المهارة وحدها. */
@@ -167,7 +178,15 @@ export const SKILL_STATUSES = {
   incomplete: { label: "تعذر إكمال التصحيح", tone: "warning" },
 };
 
-export const QUESTION_CATEGORIES = { practical: "سؤال عملي", written: "سؤال كتابي" };
+export const QUESTION_CATEGORIES = { practical: "مهمة برمجية", written: "سؤال كتابي" };
+
+// حكم المصحح على حل المهمة (يحدده الخادم بعد التحقق من رد الذكاء الاصطناعي)
+export const VERDICTS = {
+  correct: { label: "حل صحيح", tone: "success" },
+  partially_correct: { label: "صحيح جزئيًا", tone: "warning" },
+  incorrect: { label: "حل غير صحيح", tone: "danger" },
+  no_solution: { label: "لا يوجد حل", tone: "neutral" },
+};
 
 export const QUESTION_TYPES = {
   coding: "كتابة كود",
@@ -187,10 +206,10 @@ export const QUESTION_TYPES = {
 export const RESULT_REASONS = {
   passed: "بلغت إجاباتك نسبة النجاح المطلوبة.",
   below_threshold: "مجموع نقاطك في هذه المحاولة أقل من نسبة النجاح المطلوبة.",
-  practical_below_threshold: "مجموعك جيد، لكن نتيجة الأسئلة العملية لهذه المهارة وحدها أقل من الحد المطلوب لها؛ المقال لا يعوّضها.",
-  weak_answer: "عدد الإجابات العملية الضعيفة جدًا لهذه المهارة تجاوز الحد المسموح.",
-  unanswered_questions: "بقيت أسئلة عملية لهذه المهارة دون إجابة عند انتهاء الوقت أكثر من المسموح.",
-  insufficient_evidence: "لم تتوفر أسئلة عملية كافية لهذه المهارة للحكم عليها، فلا تُحتسب ناجحة.",
+  practical_below_threshold: "مجموعك جيد، لكن نتيجة المهام العملية لهذه المهارة وحدها أقل من الحد المطلوب لها.",
+  weak_answer: "عدد الحلول الضعيفة جدًا لمهام هذه المهارة تجاوز الحد المسموح.",
+  unanswered_questions: "بقيت مهام لهذه المهارة دون حل عند انتهاء الوقت أكثر من المسموح.",
+  insufficient_evidence: "لم تتوفر مهام كافية لهذه المهارة للحكم عليها، فلا تُحتسب ناجحة.",
   grading_unavailable: "تعذر تصحيح إحدى إجاباتك آليًا بعد عدة محاولات. لا يُحتسب ذلك رسوبًا، ويمكنك إعادة التقييم مباشرة.",
 };
 
@@ -329,6 +348,29 @@ export function questionSkillsText(question) {
   return names.length ? `يغطي: ${names.join("، ")}` : "";
 }
 
+const texts = (value, limit) =>
+  (Array.isArray(value) ? value : []).filter((item) => typeof item === "string" && /\S/u.test(item)).slice(0, limit);
+
+/**
+ * نص المهمة البرمجية كما يعرضه الخادم: العنوان، المتطلبات، الأمثلة، والكود المبدئي. الجلسات القديمة بلا هذه
+ * الحقول تعرض نص السؤال وكوده فقط.
+ */
+export function taskView(question) {
+  const examples = (Array.isArray(question?.examples) ? question.examples : [])
+    .filter((item) => item && (typeof item.input === "string" || typeof item.output === "string"))
+    .slice(0, 3)
+    .map((item) => ({ input: typeof item.input === "string" ? item.input : "", output: typeof item.output === "string" ? item.output : "" }));
+  // الكود المبدئي يُملأ في محرر الحل؛ code_context للجلسات القديمة يبقى معروضًا للقراءة كما هو
+  return {
+    title: typeof question?.title === "string" ? question.title.trim() : "",
+    prompt: typeof question?.prompt === "string" ? question.prompt : "",
+    language: typeof question?.language === "string" ? question.language : "",
+    requirements: texts(question?.requirements, 8),
+    examples,
+    starterCode: typeof question?.starter_code === "string" && /\S/u.test(question.starter_code) ? question.starter_code : "",
+  };
+}
+
 /** وصف نوع السؤال للطالب (عملي/كتابي ونوعه)؛ الأسئلة القديمة بلا نوع تعرض فارغة. */
 export function questionMeta(question) {
   return {
@@ -424,7 +466,10 @@ export function resultsView(session) {
       note: note.trim(),
       questions: (Array.isArray(result?.questions) ? result.questions : []).map((question) => ({
         position: question.position,
+        title: typeof question.title === "string" ? question.title : "",
         category: QUESTION_CATEGORIES[question.category] || "",
+        verdict: VERDICTS[question.verdict]?.label || "",
+        verdictTone: VERDICTS[question.verdict]?.tone || "neutral",
         prompt: question.prompt || "",
         answered: question.answered === true,
         points:
@@ -432,7 +477,8 @@ export function resultsView(session) {
             ? `${question.awarded_points} من ${question.max_points}`
             : "",
         feedback: question.feedback || "",
-        missing: Array.isArray(question.missing_concepts) ? question.missing_concepts : [],
+        // الحلول الجديدة تعيد issues؛ الجلسات القديمة missing_concepts
+        missing: texts(Array.isArray(question.issues) ? question.issues : question.missing_concepts, 6),
       })),
     };
   });

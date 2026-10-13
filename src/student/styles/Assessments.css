@@ -1583,6 +1583,50 @@
   white-space: pre;
 }
 
+/* المهمة البرمجية: نصها ومتطلباتها وأمثلتها */
+.qs-task-text {
+  margin: 0;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.9;
+  white-space: pre-line;
+}
+
+.qs-task-block h3 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.qs-task-block ul,
+.qs-examples {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-inline-start: 20px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.qs-examples li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.qs-examples code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .qs-answer label {
   display: block;
   margin-bottom: 8px;

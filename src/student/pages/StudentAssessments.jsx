@@ -60,6 +60,7 @@ import {
   setSkillLevel,
   specializationNotice,
   startOrRecover,
+  unassessableProfileSkills,
 } from "../utils/assessments";
 import "../styles/Assessments.css";
 
@@ -229,6 +230,7 @@ export default function StudentAssessments() {
   const activeSession = data?.active_session || null;
   const rules = assessmentSettings(data?.settings);
   const skills = preAssessmentSkills(data?.skills, preset.skillId);
+  const unassessable = unassessableProfileSkills(data?.skills);
   const effectiveExcluded = excluded ?? defaultExcluded(skills, rules.maxSkills, preset.skillId);
   const state = preAssessmentState({ skills, levels, excluded: effectiveExcluded, confirmed, maxSkills: rules.maxSkills });
   const removedSkills = skills.filter((skill) => effectiveExcluded.includes(skill.id));
@@ -298,13 +300,13 @@ export default function StudentAssessments() {
       caption: `${verifiedCount} مهارات مثبتة`,
       featured: true,
     },
-    { icon: ListChecks, label: "عدد الأسئلة", value: shown(rules.questions), caption: "لكل المهارات معًا" },
+    { icon: ListChecks, label: "عدد المهام", value: shown(rules.questions), caption: "مهام برمجية لكل المهارات معًا" },
     { icon: Clock3, label: "مدة التقييم", value: shown(rules.minutes), caption: "دقيقة" },
     {
       icon: Target,
-      label: "توزيع الأسئلة",
-      value: `${shown(rules.practical)} + ${shown(rules.written)}`,
-      caption: "عملية + سؤال كتابي",
+      label: "الحد الأدنى لكل مهارة",
+      value: shown(rules.minPracticalPerSkill),
+      caption: "مهام برمجية",
     },
   ];
 
@@ -413,8 +415,16 @@ export default function StudentAssessments() {
 
           {skills.length === 0 ? (
             <div className="asmt-state">
-              <h2>لا توجد مهارات في ملفك بعد</h2>
-              <p>أضف المهارات التي تريد تقييمها إلى ملفك الشخصي أولًا، ثم عد لاختيار مستوى كل منها.</p>
+              <h2>لا توجد في ملفك مهارات يمكن تقييمها بعد</h2>
+              <p>
+                التقييم مهام برمجية لمهارات ملفك فقط. أضف مهارة برمجية (مثل PHP أو JavaScript) إلى ملفك الشخصي، ثم عد
+                لاختيار مستوى كل منها.
+              </p>
+              {unassessable.length > 0 && (
+                <p className="asmt-muted">
+                  لا تُقيَّم بمهام برمجية حاليًا: <bdi>{unassessable.join("، ")}</bdi>
+                </p>
+              )}
               <Link className="asmt-btn" to="/student/profile">
                 تحديث مهاراتي
               </Link>
@@ -475,6 +485,11 @@ export default function StudentAssessments() {
               </ul>
               {state.included.length === 0 && (
                 <p className="asmt-muted">حذفت كل المهارات من هذا التقييم. أعد إحداها أدناه للمتابعة.</p>
+              )}
+              {unassessable.length > 0 && (
+                <p className="asmt-muted">
+                  مهارات في ملفك لا تُقيَّم بمهام برمجية حاليًا: <bdi>{unassessable.join("، ")}</bdi>
+                </p>
               )}
               {removedSkills.length > 0 && (
                 <p className="pre-removed">
