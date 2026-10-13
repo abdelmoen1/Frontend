@@ -31,6 +31,7 @@ import {
   sessionPath,
   skillView,
   specializationNotice,
+  startOrRecover,
 } from "./assessments.js";
 
 const skill = (overrides = {}) => ({
@@ -429,11 +430,76 @@ describe("assessment routes survive a refresh", () => {
     assert.equal(ASSESSMENTS_PATH, "/student/assessment");
   });
 
-  it("guards the start button against double submits and resumes a session the server already saved", async () => {
+  it("guards the start button against double submits and starts through startOrRecover", async () => {
     const { readFile } = await import("node:fs/promises");
     const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
     assert.match(page, /startingRef\.current\) return;/);
-    assert.match(page, /overview\?\.active_session/);
+    assert.match(page, /startOrRecover\(\(\) => startAssessmentSession\(state\.payload\), getAssessments\)/);
+  });
+});
+
+describe("startOrRecover", () => {
+  const calls = () => ({ start: 0, overview: 0 });
+
+  it("returns the created session after one request and never asks for the overview", async () => {
+    const log = calls();
+    const outcome = await startOrRecover(
+      async () => (log.start++, { id: 7, status: "in_progress" }),
+      async () => (log.overview++, { active_session: null }),
+    );
+    assert.deepEqual(outcome, { session: { id: 7, status: "in_progress" } });
+    assert.deepEqual(log, { start: 1, overview: 0 });
+  });
+
+  it("resumes the session the server committed when the response was lost (500, network drop, no id)", async () => {
+    for (const failure of [
+      { status: 500, data: { message: "Server Error" } },
+      { kind: "network", status: 0 },
+      { status: 409, data: { code: "session_starting", message: "يجري إعداد تقييمك الآن.", retryable: true } },
+    ]) {
+      const log = calls();
+      const outcome = await startOrRecover(
+        async () => {
+          log.start++;
+          throw failure;
+        },
+        async () => (log.overview++, { active_session: { id: 42 } }),
+      );
+      assert.deepEqual(outcome, { resumedId: 42 });
+      assert.deepEqual(log, { start: 1, overview: 1 }, "the start request is never repeated");
+    }
+
+    const lost = await startOrRecover(async () => ({}), async () => ({ active_session: { id: 43 } }));
+    assert.deepEqual(lost, { resumedId: 43 });
+  });
+
+  it("shows a safe retryable error when nothing was saved, even if the overview also fails", async () => {
+    const crash = { status: 500, data: { message: "SQLSTATE[42S22]: Column not found", exception: "QueryException" } };
+    for (const overview of [async () => ({ active_session: null }), async () => Promise.reject(new Error("offline"))]) {
+      const outcome = await startOrRecover(async () => Promise.reject(crash), overview);
+      assert.equal(outcome.error.retryable, true);
+      assert.equal(outcome.error.message, "حدث خطأ في الخادم. أعد المحاولة بعد قليل.");
+      assert.equal(outcome.session, undefined);
+      assert.equal(outcome.resumedId, undefined);
+    }
+  });
+
+  it("does not look for a session after a non-retryable refusal", async () => {
+    for (const failure of [
+      { status: 503, data: { code: "assessment_unavailable", message: "التقييم غير متاح مؤقتًا بسبب تحديث في الخادم.", retryable: false } },
+      { status: 422, data: { code: "specialization_required", message: "اختر مسارك المهني أولًا." } },
+    ]) {
+      const log = calls();
+      const outcome = await startOrRecover(
+        async () => {
+          throw failure;
+        },
+        async () => (log.overview++, { active_session: { id: 1 } }),
+      );
+      assert.equal(outcome.error.retryable, false);
+      assert.equal(outcome.error.message, failure.data.message);
+      assert.equal(log.overview, 0);
+    }
   });
 });
 

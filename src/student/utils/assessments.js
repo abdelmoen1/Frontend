@@ -488,3 +488,26 @@ export function assessmentError(error) {
   if (status >= 500) return { message: "حدث خطأ في الخادم. أعد المحاولة بعد قليل.", retryable: true, server: true };
   return { message: "تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت ثم أعد المحاولة.", retryable: true };
 }
+
+/**
+ * يبدأ التقييم مرة واحدة. عند فشل يمكن إعادته ربما حفظ الخادم الجلسة وضاع الرد، فيُسأل الخادم عن جلسة مفتوحة
+ * لمتابعتها بدل إنشاء أخرى. يعيد { session } أو { resumedId } أو { error } (من assessmentError).
+ */
+export async function startOrRecover(start, overview) {
+  try {
+    const session = await start();
+    // رد بلا معرّف جلسة لا يُنتقل به؛ يُعامل كرد ضائع
+    if (session?.id) return { session };
+    throw { kind: "invalid_response", status: 0 };
+  } catch (failure) {
+    const error = assessmentError(failure);
+    if (error.retryable) {
+      const committed = await Promise.resolve()
+        .then(overview)
+        .then((data) => data?.active_session)
+        .catch(() => null);
+      if (committed?.id) return { resumedId: committed.id };
+    }
+    return { error };
+  }
+}

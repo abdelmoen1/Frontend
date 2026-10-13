@@ -59,6 +59,7 @@ import {
   sessionPath,
   setSkillLevel,
   specializationNotice,
+  startOrRecover,
 } from "../utils/assessments";
 import "../styles/Assessments.css";
 
@@ -272,23 +273,17 @@ export default function StudentAssessments() {
     setStarting(true);
     setStartError(null);
     try {
-      const session = await startAssessmentSession(state.payload);
-      navigate(sessionPath(session.id), { state: sessionState(session) });
-    } catch (failure) {
-      const mapped = assessmentError(failure);
-      if (mapped.retryable) {
-        // ربما حفظ الخادم الجلسة وضاع الرد: نتابع الجلسة المفتوحة نفسها بدل إنشاء أخرى
-        const committed = await getAssessments()
-          .then((overview) => overview?.active_session)
-          .catch(() => null);
-        if (committed?.id) {
-          navigate(sessionPath(committed.id));
-          return;
-        }
+      // ربما حفظ الخادم الجلسة وضاع الرد: startOrRecover يتابع الجلسة المفتوحة نفسها بدل إنشاء أخرى
+      const outcome = await startOrRecover(() => startAssessmentSession(state.payload), getAssessments);
+      if (outcome.session) {
+        navigate(sessionPath(outcome.session.id), { state: sessionState(outcome.session) });
+      } else if (outcome.resumedId) {
+        navigate(sessionPath(outcome.resumedId));
+      } else {
+        setStartError(outcome.error);
+        // مثل مهلة إعادة أو حد يومي: نحدّث حالة المهارات من الخادم (الاختيارات في الصفحة تبقى)
+        if (!outcome.error.retryable) load();
       }
-      setStartError(mapped);
-      // مثل مهلة إعادة أو حد يومي: نحدّث حالة المهارات من الخادم (الاختيارات في الصفحة تبقى)
-      if (!mapped.retryable) load();
     } finally {
       startingRef.current = false;
       setStarting(false);
