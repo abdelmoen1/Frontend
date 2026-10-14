@@ -321,7 +321,7 @@ body:has(.lp) {
 .lp-hero {
   position: relative;
   display: grid;
-  min-height: min(92vh, 780px);
+  min-height: min(100vh, 780px);
   place-items: center;
   padding: calc(var(--lp-header-h) + 48px) 0 88px;
   overflow: hidden;
