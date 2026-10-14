@@ -55,9 +55,7 @@ export default function LandingHeader({ navItems }) {
       <div className="lp-container lp-header-inner">
         <Link to="/" className="lp-logo" aria-label={header.homeLabel}>
           <img src={logo} alt="" width="130" height="91" />
-          <span className="lp-wordmark" dir="ltr" aria-hidden="true">
-            <span className="lp-wordmark-go">Go</span>Trainee
-          </span>
+
         </Link>
 
         <button
