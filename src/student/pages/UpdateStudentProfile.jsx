@@ -30,6 +30,7 @@ import {
 } from "../services/studentService";
 import { resolveMediaUrl } from "../../shared/utils/resolveMediaUrl";
 import { ACADEMIC_MAJORS } from "../constants/academicOptions";
+import { markSkillAssessed } from "../utils/assessments";
 import "../styles/UpdateStudentProfile.css";
 
 const EMPTY_PROFILE = {
@@ -686,8 +687,13 @@ export default function UpdateStudentProfile() {
     });
 
     if (addedSkills.length > 0) {
-      setSkills((current) => [...current, ...addedSkills]);
-      savedSkillsRef.current = [...savedSkillsRef.current, ...addedSkills];
+      // رد الإضافة لا يحمل has_assessment؛ القائمة من الخادم هي المرجع (وإلا تُلحق المهارات المضافة)
+      const fresh = await getStudentSkills().catch(() => null);
+      const nextSkills = Array.isArray(fresh)
+        ? fresh
+        : [...savedSkillsRef.current, ...addedSkills];
+      setSkills(nextSkills);
+      savedSkillsRef.current = nextSkills;
     }
 
     setSelectedSkillIds(failedSkillIds);
@@ -743,6 +749,11 @@ export default function UpdateStudentProfile() {
       setNotice("تمت إزالة المهارة.");
     } catch (removeError) {
       console.error("تعذر حذف المهارة:", removeError);
+      // قائمة الصفحة قديمة (اكتمل تقييم بعد تحميلها): يُقفل زر الحذف بدل أن يبقى مفعّلًا
+      if (removeError?.code === "skill_has_assessment") {
+        setSkills((current) => markSkillAssessed(current, skillId));
+        savedSkillsRef.current = markSkillAssessed(savedSkillsRef.current, skillId);
+      }
       setError(removeError.message || "تعذر إزالة المهارة.");
     } finally {
       setRemovingSkillId(null);
@@ -1230,12 +1241,24 @@ export default function UpdateStudentProfile() {
                       <option value="expert">خبير</option>
                     </select>
                   </label>
+                  {/* مهارة لها تقييم محفوظ لا تُحذف (الخادم يرفض الحذف أيضًا) */}
                   <button
                     type="button"
                     className="student-profile-delete-button icon"
-                    aria-label={`حذف ${studentSkill.skill?.name}`}
+                    aria-label={
+                      studentSkill.has_assessment
+                        ? `لا يمكن حذف ${studentSkill.skill?.name}: لها سجل تقييم محفوظ`
+                        : `حذف ${studentSkill.skill?.name}`
+                    }
+                    title={
+                      studentSkill.has_assessment
+                        ? "لا يمكن حذف هذه المهارة لأن لها سجل تقييم محفوظ."
+                        : undefined
+                    }
                     disabled={
-                      saving || removingSkillId === studentSkill.skill_id
+                      saving ||
+                      removingSkillId === studentSkill.skill_id ||
+                      studentSkill.has_assessment === true
                     }
                     onClick={() => handleRemoveSkill(studentSkill.skill_id)}
                   >

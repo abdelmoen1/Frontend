@@ -6,7 +6,13 @@ import {
   LEVELS,
   TARGET_LEVELS,
   assessmentSettings,
+  COOLDOWN_MESSAGE,
+  coolingDownSkills,
   defaultExcluded,
+  formatDateTime,
+  latestAssessmentView,
+  markSkillAssessed,
+  timeUntil,
   questionSkillsText,
   requestedSkillsText,
   answerError,
@@ -186,7 +192,7 @@ describe("results", () => {
     });
     assert.match(laravel.note, /المهام العملية/);
     assert.match(laravel.note, /مستواك المثبت السابق \(متوسط\) لم يتغير/);
-    assert.match(laravel.note, /إعادة هذا المستوى بعد/);
+    assert.match(laravel.note, /إعادة تقييم هذه المهارة بعد/);
 
     const [figma] = resultsView({
       results: [{ skill: { name: "Figma" }, status: "passed", score: 80, needs_human_verification: true, counts_for_matching: false, questions: [] }],
@@ -289,7 +295,8 @@ describe("errors", () => {
       status: 409,
       data: { code: "retake_not_available", message: "x", skills: [{ skill: "Laravel", level: "intermediate", next_attempt_at: "2026-10-13T10:00:00+00:00" }] },
     });
-    assert.match(retake.message, /Laravel \(متوسط\) بعد/);
+    assert.match(retake.message, /Laravel بعد/);
+    assert.match(retake.message, /قيّم مهارات أخرى/);
     assert.equal(retake.retryable, false);
     const limit = assessmentError({
       status: 429,
@@ -450,7 +457,7 @@ describe("pre-assessment screen", () => {
         skills: [{ skill: "PHP", level: "beginner", next_attempt_at: "2026-10-13T10:00:00+00:00" }],
       },
     });
-    assert.match(error.message, /PHP \(مبتدئ\) بعد/);
+    assert.match(error.message, /PHP بعد/);
     assert.match(resultsView({ results: [{ status: "failed", reason: "insufficient_evidence", questions: [] }] })[0].note, /مهام كافية/);
   });
 
@@ -484,6 +491,91 @@ describe("pre-assessment screen", () => {
     assert.doesNotMatch(page, /\b10 أسئلة|\b30 دقيقة/);
     // كل المهام برمجية: لا "سؤال كتابي" في ملخص التقييم
     assert.doesNotMatch(page, /سؤال كتابي|rules\.written/);
+  });
+});
+
+describe("seven-day cooldown per skill", () => {
+  const now = Date.parse("2026-10-14T10:00:00Z");
+  const latest = {
+    assessment_session_id: 41,
+    status: "failed",
+    level: "advanced",
+    score: 55,
+    reason: "below_threshold",
+    source: "ai_written_assessment",
+    assessed_at: "2026-10-12T09:00:00+00:00",
+  };
+  const profile = [
+    skill({ id: 1, name: "PHP", assessable: true, can_assess: false, next_attempt_at: "2026-10-19T09:00:00+00:00", latest_assessment: latest }),
+    skill({ id: 2, name: "Laravel", assessable: true, can_assess: true, next_attempt_at: null, latest_assessment: null }),
+    skill({ id: 3, name: "MySQL", assessable: true }),
+  ];
+
+  it("keeps a cooling-down skill out of the selection and every other skill in it", () => {
+    assert.deepEqual(preAssessmentSkills(profile).map((item) => item.name), ["Laravel", "MySQL"]);
+    // حتى لو جاءت من رابط فرصة
+    assert.deepEqual(preAssessmentSkills(profile, 1).map((item) => item.id), [2, 3]);
+    assert.deepEqual(coolingDownSkills(profile, now).map((item) => item.name), ["PHP"]);
+    const payload = preAssessmentState({ skills: preAssessmentSkills(profile), levels: { 2: "beginner", 3: "expert" }, confirmed: true }).payload;
+    assert.deepEqual(payload.map((item) => item.skill_id), [2, 3]);
+  });
+
+  it("shows the saved result, its level and the date the skill is available again", () => {
+    const [php] = coolingDownSkills(profile, now);
+    assert.equal(php.nextAttemptAt, "2026-10-19T09:00:00+00:00");
+    assert.equal(php.availableAt, formatDateTime("2026-10-19T09:00:00+00:00"));
+    assert.equal(php.remaining, "5 أيام");
+    assert.deepEqual(php.latest, {
+      status: "failed",
+      label: "لم تجتز التقييم",
+      tone: "danger",
+      levelLabel: "متقدم",
+      score: 55,
+      reason: "مجموع نقاطك في هذه المحاولة أقل من نسبة النجاح المطلوبة.",
+      assessedAt: formatDateTime("2026-10-12T09:00:00+00:00"),
+      sessionId: 41,
+    });
+    assert.equal(latestAssessmentView(null), null);
+    assert.equal(latestAssessmentView({ status: "weird" }), null);
+    assert.match(COOLDOWN_MESSAGE, /طوّر مهاراتك واستفد من ملاحظات التقييم/);
+    assert.match(COOLDOWN_MESSAGE, /بعد انتهاء فترة الانتظار/);
+  });
+
+  it("counts down in days, then hours", () => {
+    assert.equal(timeUntil("2026-10-21T10:00:00Z", now), "7 أيام");
+    assert.equal(timeUntil("2026-10-16T09:00:00Z", now), "يومين");
+    assert.equal(timeUntil("2026-10-15T09:00:00Z", now), "23 ساعة");
+    assert.equal(timeUntil("2026-10-14T12:00:00Z", now), "ساعتين");
+    assert.equal(timeUntil("2026-10-14T10:20:00Z", now), "ساعة واحدة");
+    assert.equal(timeUntil("2026-10-14T09:00:00Z", now), "");
+    assert.equal(timeUntil(null, now), "");
+  });
+
+  it("renders the cooldown section with a disabled retake and a link to the saved feedback", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile(new URL("../pages/StudentAssessments.jsx", import.meta.url), "utf8");
+    assert.match(page, /coolingDownSkills\(data\?\.skills\)/);
+    assert.match(page, /\{COOLDOWN_MESSAGE\}/);
+    assert.match(page, /متاحة للتقييم في \{skill\.availableAt\}/);
+    assert.match(page, /sessionPath\(skill\.latest\.sessionId\)/);
+    assert.match(page, /disabled>\s*إعادة الاختبار/);
+    const profilePage = await readFile(new URL("../pages/UpdateStudentProfile.jsx", import.meta.url), "utf8");
+    assert.match(profilePage, /studentSkill\.has_assessment === true/);
+    // بعد الإضافة تُقرأ القائمة من الخادم (تحمل has_assessment)، ورفض الحذف يقفل الزر فورًا
+    assert.match(profilePage, /getStudentSkills\(\)\.catch/);
+    assert.match(profilePage, /removeError\?\.code === "skill_has_assessment"/);
+  });
+
+  it("locks the remove button of a skill the server refused to delete, and nothing else", () => {
+    const list = [
+      { skill_id: 1, proficiency: "advanced", has_assessment: false, skill: { id: 1, name: "PHP" } },
+      { skill_id: 2, proficiency: "beginner", skill: { id: 2, name: "Laravel" } },
+    ];
+    const locked = markSkillAssessed(list, 1);
+    assert.deepEqual(locked[0], { ...list[0], has_assessment: true });
+    assert.equal(locked[1], list[1]);
+    assert.equal(list[0].has_assessment, false);
+    assert.deepEqual(markSkillAssessed(null, 1), []);
   });
 });
 
