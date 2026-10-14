@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import HeroAuthForm from "../components/HeroAuthForm";
 import "../styles/AuthForm.css";
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MdOutlineMail } from "react-icons/md";
 import { CiLock, CiUser } from "react-icons/ci";
 import { FaRegBuilding } from "react-icons/fa";
@@ -48,12 +48,16 @@ const focusField = (name) => document.getElementById(name)?.focus();
 function Register() {
   const navigate = useNavigate();
   const { setAuthenticatedUser } = useAuth();
+  // ?role=organization (من روابط الصفحة الرئيسية) يبدأ النموذج بحساب مؤسسة؛ أي قيمة أخرى = طالب
+  const [searchParams] = useSearchParams();
+  // قيم زر الاختيار نفسها: "student" أو "orga"
+  const initialRole = searchParams.get("role") === "organization" ? "orga" : "student";
 
   const [formData, setFormData] = useState({
     name: "",
     orgName: "",
     email: "",
-    role: "student",
+    role: initialRole,
     password: "",
     password_confirmation: "",
     rememberMe: false,
@@ -64,7 +68,7 @@ function Register() {
   const oauthError = useOAuthError();
   const [generalError, setGeneralError] = useState(oauthError);
   const submittingRef = useRef(false);
-  const [selectedRole, setSelectedRole] = useState("student");
+  const [selectedRole, setSelectedRole] = useState(initialRole);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

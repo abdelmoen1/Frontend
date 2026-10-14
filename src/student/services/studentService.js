@@ -189,7 +189,10 @@ export const deleteStudentSkill = async (skill_id) => {
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "Failed to remove student skill.");
+    // code يميز رفض حذف مهارة لها تقييم محفوظ (skill_has_assessment)
+    const error = new Error(result.message || "Failed to remove student skill.");
+    error.code = result.code;
+    throw error;
   }
 
   return result.data;

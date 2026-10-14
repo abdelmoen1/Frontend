@@ -568,7 +568,7 @@
 .student-profile-primary-button {
   border-color: #142a45;
   background: #142a45;
-  color: #fffefa;
+  color: #ffffff;
 }
 
 .student-profile-primary-button:hover:not(:disabled) {
@@ -577,23 +577,23 @@
 }
 
 .student-profile-secondary-button {
-  border-color: #cde6e2;
-  background: #f2f8f6;
-  color: #277c77;
+  border-color: #cfe3f3;
+  background: #eaf3fa;
+  color: #1f6fb2;
 }
 
 .student-profile-secondary-button:hover:not(:disabled) {
-  background: #e7f4f0;
+  background: #eaf3fa;
 }
 
 .student-profile-quiet-button {
-  border-color: #e4e0d8;
+  border-color: #dbe7f1;
   background: transparent;
   color: #69798a;
 }
 
 .student-profile-quiet-button:hover:not(:disabled) {
-  background: #f4f2ec;
+  background: #f3f8fc;
 }
 
 .student-profile-primary-button:disabled,
@@ -625,15 +625,15 @@
 
 .student-profile-hero {
   overflow: hidden;
-  border: 1px solid #e8e4da;
+  border: 1px solid #dbe7f1;
   border-radius: 13px;
-  background: #fffefa;
+  background: #ffffff;
 }
 
 .student-profile-hero-cover {
   height: 145px;
   background:
-    radial-gradient(ellipse at 72% 120%, rgba(72, 188, 180, 0.2), transparent 38%),
+    radial-gradient(ellipse at 72% 120%, rgba(43, 143, 214, 0.25), transparent 38%),
     linear-gradient(115deg, #142a45, #203b5d);
 }
 
@@ -651,15 +651,15 @@
   height: 86px;
   flex: 0 0 auto;
   place-items: center;
-  border: 4px solid #fffefa;
+  border: 4px solid #ffffff;
   border-radius: 50%;
-  background: #edf5f2;
-  color: #348e89;
+  background: #eaf3fa;
+  color: #2b8fd6;
   object-fit: cover;
 }
 
 .student-profile-avatar-fallback {
-  border: 4px solid #fffefa;
+  border: 4px solid #ffffff;
 }
 
 .student-profile-identity {
@@ -669,7 +669,7 @@
 
 .student-profile-eyebrow {
   display: block;
-  color: #328e89;
+  color: #2b8fd6;
   font-size: 10px;
   font-weight: 750;
 }
@@ -704,7 +704,7 @@
 }
 
 .student-profile-hero-meta svg {
-  color: #3d9893;
+  color: #2b8fd6;
 }
 
 .student-profile-nav,
@@ -717,10 +717,10 @@
   margin: 0 0 17px;
   padding: 0 16px;
   overflow-x: auto;
-  border: 1px solid #e9e5dc;
+  border: 1px solid #dbe7f1;
   border-top: 0;
   border-radius: 0 0 10px 10px;
-  background: rgba(250, 249, 245, 0.97);
+  background: rgba(255, 255, 255, 0.97);
   scrollbar-width: thin;
 }
 
@@ -744,8 +744,8 @@
 .student-profile-nav a:hover,
 .student-editor-tabs button:hover,
 .student-editor-tabs button.active {
-  border-bottom-color: #49b9b1;
-  color: #225e5d;
+  border-bottom-color: #2b8fd6;
+  color: #1f5f99;
 }
 
 .student-profile-layout {
@@ -766,9 +766,9 @@
 .student-editor-card {
   min-width: 0;
   padding: clamp(17px, 2.4vw, 23px);
-  border: 1px solid #e9e5dc;
+  border: 1px solid #dbe7f1;
   border-radius: 12px;
-  background: #fffefa;
+  background: #ffffff;
   box-shadow: 0 3px 11px rgba(42, 47, 51, 0.025);
   scroll-margin-top: 62px;
 }
@@ -812,9 +812,9 @@
 .student-portfolio-filters button {
   min-height: 29px;
   padding: 5px 10px;
-  border: 1px solid #e4e2da;
+  border: 1px solid #dbe7f1;
   border-radius: 7px;
-  background: #fffefa;
+  background: #ffffff;
   color: #788392;
   font: inherit;
   font-size: 9px;
@@ -823,8 +823,8 @@
 
 .student-portfolio-filters button:hover,
 .student-portfolio-filters button.active {
-  border-color: #a9d9d4;
-  background: #edf7f5;
+  border-color: #b9d8f0;
+  background: #eaf3fa;
   color: #287c78;
 }
 
@@ -836,7 +836,7 @@
 
 .student-portfolio-card {
   overflow: hidden;
-  border: 1px solid #e9e5dc;
+  border: 1px solid #dbe7f1;
   border-radius: 10px;
   background: #fff;
 }
@@ -847,7 +847,7 @@
   width: 100%;
   height: 132px;
   place-items: center;
-  background: #f1f2ec;
+  background: #f3f8fc;
   color: #4c9690;
   object-fit: cover;
 }
@@ -961,7 +961,7 @@
 
 .student-profile-education > div {
   padding: 11px 0;
-  border-top: 1px solid #efede7;
+  border-top: 1px solid #dbe7f1;
 }
 
 .student-profile-education > div:first-child {
@@ -1020,7 +1020,7 @@
   align-items: center;
   gap: 9px;
   padding: 10px;
-  border: 1px solid #eeece6;
+  border: 1px solid #dbe7f1;
   border-radius: 8px;
 }
 
@@ -1061,7 +1061,7 @@
   padding: 13px;
   border-inline-start: 2px solid #bd895d;
   border-radius: 0 8px 8px 0;
-  background: #f8f6f0;
+  background: #f3f8fc;
 }
 
 .student-profile-testimonials blockquote > svg {
@@ -1093,7 +1093,7 @@
 .student-profile-empty {
   margin: 0;
   padding: 14px;
-  border: 1px dashed #e2dfd6;
+  border: 1px dashed #dbe7f1;
   border-radius: 8px;
   color: #89939d;
   font-size: 10px;
@@ -1107,7 +1107,7 @@
 
 .student-profile-skeleton {
   border-radius: 12px;
-  background: linear-gradient(90deg, #ebe9e1 25%, #f8f7f2 50%, #ebe9e1 75%);
+  background: linear-gradient(90deg, #dbe7f1 25%, #f3f8fc 50%, #dbe7f1 75%);
   background-size: 200% 100%;
   animation: student-profile-shimmer 1.4s ease-in-out infinite;
 }
@@ -1152,7 +1152,7 @@
 .student-editor-tabs {
   position: static;
   margin-bottom: 14px;
-  border-top: 1px solid #e9e5dc;
+  border-top: 1px solid #dbe7f1;
   border-radius: 10px;
 }
 
@@ -1167,7 +1167,7 @@
   gap: 13px;
   margin-bottom: 19px;
   padding-bottom: 17px;
-  border-bottom: 1px solid #efede7;
+  border-bottom: 1px solid #dbe7f1;
 }
 
 .student-edit-avatar-row > img,
@@ -1177,7 +1177,7 @@
   height: 58px;
   place-items: center;
   border-radius: 50%;
-  background: #edf5f2;
+  background: #eaf3fa;
   color: #398c87;
   object-fit: cover;
 }
@@ -1230,9 +1230,9 @@
   width: 100%;
   min-height: 39px;
   padding: 8px 10px;
-  border: 1px solid #e2dfd6;
+  border: 1px solid #dbe7f1;
   border-radius: 8px;
-  background: #fffefa;
+  background: #ffffff;
   color: #30485e;
   font: inherit;
   font-size: 10px;
@@ -1243,12 +1243,12 @@
 .student-edit-field input:focus,
 .student-edit-field select:focus,
 .student-edit-field textarea:focus {
-  border-color: #59b9b1;
-  box-shadow: 0 0 0 3px rgba(59, 157, 151, 0.1);
+  border-color: #2b8fd6;
+  box-shadow: 0 0 0 3px rgba(43, 143, 214, 0.1);
 }
 
 .student-edit-field input:disabled {
-  background: #f3f2ed;
+  background: #f3f8fc;
   color: #8a929a;
 }
 
@@ -1284,15 +1284,15 @@
   align-items: center;
   gap: 7px;
   padding: 6px 10px;
-  border: 1px solid #e2dfd6;
+  border: 1px solid #dbe7f1;
   border-radius: 8px;
-  background: #fffefa;
+  background: #ffffff;
   color: #587084;
 }
 
 .student-skill-picker-control:focus-within {
-  border-color: #59b9b1;
-  box-shadow: 0 0 0 3px rgba(59, 157, 151, 0.1);
+  border-color: #2b8fd6;
+  box-shadow: 0 0 0 3px rgba(43, 143, 214, 0.1);
 }
 
 .student-skill-picker-control > svg {
@@ -1323,10 +1323,10 @@
   align-items: center;
   gap: 5px;
   padding: 3px 5px 3px 9px;
-  border: 1px solid #cde6e2;
+  border: 1px solid #cfe3f3;
   border-radius: 999px;
-  background: #f2f8f6;
-  color: #277c77;
+  background: #eaf3fa;
+  color: #1f6fb2;
   font-size: 10px;
   white-space: nowrap;
 }
@@ -1341,7 +1341,7 @@
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #277c77;
+  color: #1f6fb2;
   cursor: pointer;
 }
 
@@ -1363,7 +1363,7 @@
   overflow-y: auto;
   margin: 0;
   padding: 5px;
-  border: 1px solid #e2dfd6;
+  border: 1px solid #dbe7f1;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 8px 22px rgba(24, 54, 80, 0.12);
@@ -1390,8 +1390,8 @@
 .student-skill-search-results button:hover,
 .student-skill-search-results button:focus-visible {
   outline: 0;
-  background: #f2f8f6;
-  color: #277c77;
+  background: #eaf3fa;
+  color: #1f6fb2;
 }
 
 .student-skill-search-results button svg {
@@ -1416,7 +1416,7 @@
   width: 100%;
   min-height: 31px;
   padding: 5px 7px;
-  border: 1px solid #e2dfd6;
+  border: 1px solid #dbe7f1;
   border-radius: 7px;
   background: #fff;
   color: #183650;
@@ -1441,9 +1441,9 @@
 .student-edit-collection {
   margin-top: 18px;
   padding: 15px;
-  border: 1px solid #e9e5dc;
+  border: 1px solid #dbe7f1;
   border-radius: 10px;
-  background: #fffefa;
+  background: #ffffff;
 }
 
 .student-edit-collection-heading {
@@ -1476,7 +1476,7 @@
   display: grid;
   gap: 9px;
   padding: 11px;
-  border: 1px solid #eeece6;
+  border: 1px solid #dbe7f1;
   border-radius: 8px;
   background: #fff;
 }
@@ -1509,7 +1509,7 @@
   gap: 9px;
   margin-top: 14px;
   padding: 12px 0;
-  background: linear-gradient(transparent, #f8f7f2 25%);
+  background: linear-gradient(transparent, #f3f8fc 25%);
 }
 
 .sr-only {
@@ -1630,5 +1630,516 @@
 
   .student-editor-actions > button {
     flex: 1;
+  }
+}
+
+/* زر حذف مهارة لها تقييم محفوظ: مقفل لا "قيد الانتظار" */
+.student-profile-delete-button:disabled[title] {
+  cursor: not-allowed;
+}
+
+/* ===== عرض الملف الشخصي: الهوية، ثم المهارات ونتائج تقييمها، ثم بقية الملف ===== */
+.sp {
+  --sp-navy: #0f2a4a;
+  --sp-accent: #2b8fd6;
+  --sp-accent-dark: #1f6fb2;
+  --sp-soft: #eaf3fa;
+  --sp-border: #dbe7f1;
+  --sp-text: #1b2f45;
+  --sp-muted: #607286;
+  /* الغلاف student-profile-shell يضيف الحواف */
+  padding: 0;
+  color: var(--sp-text);
+}
+
+.sp-hero {
+  overflow: hidden;
+  border: 1px solid var(--sp-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(15, 42, 74, 0.06);
+}
+
+.sp-hero-cover {
+  position: relative;
+  height: 132px;
+  background: linear-gradient(160deg, #0b1f3a 0%, #123a63 55%, #1b5a8c 100%);
+}
+
+/* موجتان شفافتان كما في الواجهة المرجعية */
+.sp-hero-cover::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 64px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0 70 C200 20 400 120 600 70 S1000 20 1200 60 V120 H0Z' fill='%23ffffff' fill-opacity='0.12'/%3E%3Cpath d='M0 95 C250 55 450 125 700 90 S1050 60 1200 85 V120 H0Z' fill='%23ffffff' fill-opacity='0.16'/%3E%3C/svg%3E")
+    bottom / 100% 100% no-repeat;
+}
+
+.sp-hero-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 14px clamp(18px, 3vw, 30px) 20px;
+}
+
+.sp-avatar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: var(--sp-soft);
+  color: var(--sp-accent);
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(15, 42, 74, 0.18);
+  /* الصورة وحدها تتداخل مع الغلاف؛ الاسم يبقى على الخلفية البيضاء */
+  margin-top: -62px;
+}
+
+.sp-identity {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-bottom: 2px;
+}
+
+.sp-identity h1 {
+  margin: 0;
+  color: var(--sp-navy);
+  font-size: clamp(21px, 2.6vw, 26px);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.sp-role {
+  margin: 2px 0 8px;
+  color: var(--sp-muted);
+  font-size: 13px;
+}
+
+.sp-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--sp-soft);
+  color: var(--sp-accent-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sp .sp-edit {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.sp-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.85fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.sp-side,
+.sp-main {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+
+.sp-card {
+  min-width: 0;
+  padding: clamp(16px, 2.2vw, 22px);
+  border: 1px solid var(--sp-border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 42, 74, 0.04);
+}
+
+.sp-card h2 {
+  margin: 0 0 12px;
+  color: var(--sp-navy);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sp-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.sp-card-head h2 {
+  margin: 0;
+}
+
+.sp-card-head .student-profile-secondary-button {
+  font-size: 12px;
+}
+
+.sp-summary {
+  margin: 4px 0 0;
+  color: var(--sp-muted);
+  font-size: 12px;
+}
+
+.sp-bio {
+  margin: 0;
+  color: #44566b;
+  font-size: 13px;
+  line-height: 1.9;
+  white-space: pre-line;
+}
+
+.sp-details {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--sp-border);
+}
+
+.sp-details div {
+  display: grid;
+  gap: 2px;
+}
+
+.sp-details dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sp-muted);
+  font-size: 12px;
+}
+
+.sp-details dt svg {
+  color: var(--sp-accent);
+}
+
+.sp-details dd {
+  margin: 0;
+  padding-inline-start: 21px;
+  color: var(--sp-text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.sp-contact {
+  display: grid;
+  gap: 4px;
+}
+
+.sp-contact a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  color: var(--sp-text);
+  font-size: 13px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.sp-contact a:hover {
+  background: var(--sp-soft);
+}
+
+.sp-contact a svg {
+  flex: 0 0 auto;
+  color: var(--sp-accent);
+}
+
+.sp-empty,
+.sp-status {
+  margin: 0;
+  color: var(--sp-muted);
+  font-size: 13px;
+}
+
+.sp-status {
+  margin-bottom: 12px;
+}
+
+.sp-inline-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sp-cooldown-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #cfe3f3;
+  border-radius: 10px;
+  background: #f3f8fc;
+  color: #2c4a66;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.sp-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 16px;
+  border: 1px dashed var(--sp-border);
+  border-radius: 12px;
+  color: var(--sp-muted);
+  font-size: 13px;
+}
+
+.sp-empty-state p {
+  margin: 0;
+}
+
+.sp-skills {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sp-skill {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--sp-border);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.sp-skill-cooldown {
+  border-color: #cfe3f3;
+  background: #f6fafe;
+}
+
+.sp-skill-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sp-skill-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--sp-soft);
+  color: var(--sp-accent);
+}
+
+.sp-skill-title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sp-skill-title h3 {
+  margin: 0;
+  color: var(--sp-navy);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.sp-skill-title small {
+  color: var(--sp-muted);
+  font-size: 12px;
+}
+
+.sp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sp-badge-neutral {
+  background: #eef2f6;
+  color: #55677b;
+}
+
+.sp-badge-success {
+  background: #e6f6ec;
+  color: #1f7a45;
+}
+
+.sp-badge-danger {
+  background: #fdeceb;
+  color: #b23b31;
+}
+
+.sp-badge-warning {
+  background: #fff4e0;
+  color: #9a5b00;
+}
+
+.sp-skill-result {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--sp-border);
+}
+
+.sp-skill-result div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sp-skill-result dt {
+  color: var(--sp-muted);
+  font-size: 11px;
+}
+
+.sp-skill-result dd {
+  margin: 0;
+  color: var(--sp-text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.sp-skill-note {
+  margin: 0;
+  color: #4b5d71;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.sp-skill-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sp-border);
+}
+
+.sp-skill-wait,
+.sp-skill-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2c4a66;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.sp-skill-muted {
+  color: var(--sp-muted);
+  font-weight: 500;
+}
+
+.sp-skill-wait svg {
+  color: var(--sp-accent);
+}
+
+.sp-skill-action,
+.sp-skill-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.sp-skill-action {
+  background: var(--sp-navy);
+  color: #fff;
+}
+
+.sp-skill-action:hover {
+  background: #1b3d63;
+}
+
+.sp-skill-link {
+  margin-inline-start: auto;
+  color: var(--sp-accent-dark);
+}
+
+.sp-skill-link:hover {
+  background: var(--sp-soft);
+}
+
+.sp-skill-action:focus-visible,
+.sp-skill-link:focus-visible,
+.sp-contact a:focus-visible,
+.sp-inline-button:focus-visible {
+  outline: 2px solid var(--sp-accent);
+  outline-offset: 2px;
+}
+
+/* على الشاشات الضيقة: النبذة، ثم المهارات والتقييمات، ثم التواصل */
+@media (max-width: 900px) {
+  .sp-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sp-side {
+    display: contents;
+  }
+
+  .sp-about-card {
+    order: 1;
+  }
+
+  .sp-main {
+    order: 2;
+  }
+
+  .sp-contact-card {
+    order: 3;
+  }
+}
+
+@media (max-width: 560px) {
+  .sp-hero-body {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .sp .sp-edit {
+    width: 100%;
+  }
+
+  .sp-skill-head {
+    flex-wrap: wrap;
+  }
+
+  .sp-skill-result {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sp-skill-link {
+    margin-inline-start: 0;
   }
 }

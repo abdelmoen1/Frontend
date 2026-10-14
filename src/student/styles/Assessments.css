@@ -1583,6 +1583,51 @@
   white-space: pre;
 }
 
+/* مهارات في فترة الانتظار بعد تقييم مكتمل: نتيجتها المحفوظة وموعد إتاحتها */
+.pre-cooldown {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.pre-cooldown h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.pre-cooldown p {
+  margin: 0;
+}
+
+.pre-cooldown-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pre-cooldown-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.pre-cooldown-item .pre-skill-name {
+  flex: 1 1 160px;
+}
+
+.pre-cooldown-when {
+  color: #334155;
+  font-size: 13px;
+}
+
 /* المهمة البرمجية: نصها ومتطلباتها وأمثلتها */
 .qs-task-text {
   margin: 0;

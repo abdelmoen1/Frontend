@@ -45,10 +45,12 @@ import PreAssessmentDialog from "../components/PreAssessmentDialog";
 import { getAssessments, startAssessmentSession, updateStudentProfile } from "../services/studentService";
 import {
   assessmentSettings,
+  COOLDOWN_MESSAGE,
   SKILL_CATEGORIES,
   SKILL_STATUSES,
   TARGET_LEVELS,
   assessmentError,
+  coolingDownSkills,
   formatDateTime,
   levelRank,
   parseAssessmentQuery,
@@ -231,6 +233,7 @@ export default function StudentAssessments() {
   const rules = assessmentSettings(data?.settings);
   const skills = preAssessmentSkills(data?.skills, preset.skillId);
   const unassessable = unassessableProfileSkills(data?.skills);
+  const cooling = coolingDownSkills(data?.skills);
   const effectiveExcluded = excluded ?? defaultExcluded(skills, rules.maxSkills, preset.skillId);
   const state = preAssessmentState({ skills, levels, excluded: effectiveExcluded, confirmed, maxSkills: rules.maxSkills });
   const removedSkills = skills.filter((skill) => effectiveExcluded.includes(skill.id));
@@ -413,7 +416,47 @@ export default function StudentAssessments() {
             ))}
           </ul>
 
-          {skills.length === 0 ? (
+          {cooling.length > 0 && (
+            <section className="pre-cooldown" aria-labelledby="pre-cooldown-title">
+              <h2 id="pre-cooldown-title">مهارات في فترة الانتظار</h2>
+              <p className="asmt-muted">{COOLDOWN_MESSAGE}</p>
+              <ul className="pre-cooldown-list">
+                {cooling.map((skill) => (
+                  <li key={skill.id} className="pre-cooldown-item">
+                    <span className="pre-skill-name">
+                      <bdi>{skill.name}</bdi>
+                      {skill.latest?.assessedAt && <small>آخر تقييم: {skill.latest.assessedAt}</small>}
+                    </span>
+                    {skill.latest && (
+                      <span className={`asmt-badge asmt-tone-${skill.latest.tone}`}>
+                        {skill.latest.label}
+                        {skill.latest.levelLabel ? ` · مستوى ${skill.latest.levelLabel}` : ""}
+                        {skill.latest.score !== null ? ` · ${skill.latest.score}%` : ""}
+                      </span>
+                    )}
+                    {skill.availableAt && (
+                      <span className="pre-cooldown-when">
+                        متاحة للتقييم في {skill.availableAt}
+                        {skill.remaining ? ` (بعد ${skill.remaining})` : ""}
+                      </span>
+                    )}
+                    {skill.latest?.sessionId && (
+                      <Link className="pre-restore" to={sessionPath(skill.latest.sessionId)}>
+                        ملاحظات التقييم
+                      </Link>
+                    )}
+                    <button type="button" className="asmt-btn asmt-btn-light" disabled>
+                      إعادة الاختبار
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {skills.length === 0 && cooling.length > 0 ? (
+            <p className="asmt-muted">كل مهارات ملفك القابلة للتقييم في فترة الانتظار الآن. أضف مهارة برمجية أخرى إلى ملفك لتقييمها.</p>
+          ) : skills.length === 0 ? (
             <div className="asmt-state">
               <h2>لا توجد في ملفك مهارات يمكن تقييمها بعد</h2>
               <p>

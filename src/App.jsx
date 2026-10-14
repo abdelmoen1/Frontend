@@ -14,7 +14,7 @@ import StudentOpportunityDetails from "./student/pages/StudentOpportunityDetails
 import StudentAssessments from "./student/pages/StudentAssessments";
 import StudentAssessmentSession from "./student/pages/StudentAssessmentSession";
 import LoadingScreen from "./shared/pages/LoadingScreen";
-import LandingPage from "./shared/components/LandingPage";
+import LandingPage from "./landing/LandingPage";
 import StudentOnboarding from "./student/pages/StudentOnboarding";
 import DashboardMenu from "./shared/pages/DashboardMenu";
 import OrganizationProjects from "./organization/pages/OrganizationProjects";

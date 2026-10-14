@@ -109,7 +109,10 @@ const isAssessable = (skill) =>
  * الرابط (من فرصة مثلًا) تظهر فقط إن كانت في الملف، وتُقدَّم في الترتيب.
  */
 export function preAssessmentSkills(skills, presetSkillId = null) {
-  const list = (Array.isArray(skills) ? skills : []).filter((skill) => skill && skill.id && isAssessable(skill));
+  // مهارة في فترة الانتظار لا تُعرض للاختيار (الخادم يرفضها)؛ تظهر في coolingDownSkills مع نتيجتها
+  const list = (Array.isArray(skills) ? skills : []).filter(
+    (skill) => skill && skill.id && isAssessable(skill) && skill.can_assess !== false,
+  );
   return [...list.filter((skill) => skill.id === presetSkillId), ...list.filter((skill) => skill.id !== presetSkillId)]
     .map((skill) => {
       const view = skillView(skill);
@@ -120,6 +123,108 @@ export function preAssessmentSkills(skills, presetSkillId = null) {
       const category = skillCategory(skill);
       return { ...view, category, categoryLabel: SKILL_CATEGORIES[category], icon: skillIconKey(view.name, category), chip };
     });
+}
+
+export const COOLDOWN_MESSAGE = "طوّر مهاراتك واستفد من ملاحظات التقييم، ويمكنك إعادة الاختبار بعد انتهاء فترة الانتظار.";
+
+// "3 أيام" أو "ساعتين" حتى موعد محدد؛ فارغ إن مضى الموعد أو لم يكن صالحًا
+export function timeUntil(value, now = Date.now()) {
+  const ms = new Date(value).getTime() - now;
+  if (!Number.isFinite(ms) || ms <= 0) return "";
+  const hours = Math.ceil(ms / 3600000);
+  if (hours < 24) {
+    if (hours === 1) return "ساعة واحدة";
+    if (hours === 2) return "ساعتين";
+    return `${hours} ${hours <= 10 ? "ساعات" : "ساعة"}`;
+  }
+  const days = Math.ceil(ms / 86400000);
+  if (days === 1) return "يوم واحد";
+  if (days === 2) return "يومين";
+  return `${days} ${days <= 10 ? "أيام" : "يومًا"}`;
+}
+
+/** آخر تقييم مكتمل محفوظ للمهارة كما أعاده الخادم (المستوى المطلوب والدرجة منفصلان)، أو null. */
+export function latestAssessmentView(latest) {
+  if (!latest || !SKILL_STATUSES[latest.status]) return null;
+  return {
+    status: latest.status,
+    label: SKILL_STATUSES[latest.status].label,
+    tone: SKILL_STATUSES[latest.status].tone,
+    levelLabel: levelLabel(latest.level),
+    score: Number.isInteger(latest.score) ? latest.score : null,
+    reason: RESULT_REASONS[latest.reason] || "",
+    assessedAt: formatDateTime(latest.assessed_at),
+    sessionId: Number.isInteger(latest.assessment_session_id) ? latest.assessment_session_id : null,
+  };
+}
+
+/**
+ * مهارات الملف في فترة الانتظار بعد تقييم مكتمل: نتيجتها المحفوظة وموعد إتاحتها. كل مهارة وحدها، فبقية المهارات
+ * تبقى متاحة للاختيار.
+ */
+export function coolingDownSkills(skills, now = Date.now()) {
+  return (Array.isArray(skills) ? skills : [])
+    .filter((skill) => skill && skill.id && isAssessable(skill) && skill.can_assess === false)
+    .map((skill) => ({
+      id: skill.id,
+      name: skill.name || "",
+      latest: latestAssessmentView(skill.latest_assessment),
+      nextAttemptAt: skill.next_attempt_at || null,
+      availableAt: formatDateTime(skill.next_attempt_at),
+      remaining: timeUntil(skill.next_attempt_at, now),
+    }));
+}
+
+/**
+ * مهارات ملف الطالب (GET /student/skills) مع حالة تقييم كل منها من نظرة التقييم (GET /student/assessments) بمعرّف
+ * المهارة، دون أي طلب إلى الذكاء الاصطناعي. ثلاثة مستويات منفصلة لا يُخلط بينها:
+ * - selfLevel: تقدير الطالب لنفسه في ملفه (proficiency)، ليس نتيجة تقييم.
+ * - verifiedLevel: أعلى مستوى نجح فيه (المثبت فعلًا).
+ * - latest.levelLabel: صعوبة آخر اختبار كما اختارها الطالب، ليست مستوى محققًا.
+ * overview غائب (يُحمَّل أو تعذر تحميله): تُعرض المهارات بلا حالة تقييم (availability.state = "unknown").
+ */
+export function profileSkillsView(studentSkills, overviewSkills, now = Date.now()) {
+  const byId = new Map(
+    (Array.isArray(overviewSkills) ? overviewSkills : []).filter((item) => item && item.id).map((item) => [item.id, item]),
+  );
+  return (Array.isArray(studentSkills) ? studentSkills : [])
+    .filter((item) => item && item.skill_id)
+    .map((item) => {
+      const status = byId.get(item.skill_id) || null;
+      const latest = latestAssessmentView(status?.latest_assessment);
+      const verifiedLevel = LEVELS.some((level) => level.key === status?.verified_level) ? status.verified_level : null;
+      let availability = { state: "unknown" };
+      if (status && status.programming === false) {
+        availability = { state: "unavailable", text: "لا تُقيَّم بمهام برمجية حاليًا" };
+      } else if (status && status.can_assess === false && status.next_attempt_at) {
+        availability = {
+          state: "cooldown",
+          availableAt: formatDateTime(status.next_attempt_at),
+          remaining: timeUntil(status.next_attempt_at, now),
+        };
+      } else if (status) {
+        availability = { state: "ready", link: assessmentLink(item.skill_id), label: latest ? "إعادة التقييم" : "تقييم المهارة" };
+      }
+      return {
+        id: item.skill_id,
+        name: item.skill?.name || status?.name || "مهارة",
+        selfLevelLabel: levelLabel(item.proficiency),
+        verifiedLevel,
+        verifiedLevelLabel: levelLabel(verifiedLevel),
+        latest,
+        // ناجحة معرفيًا لكنها عملية: تحتاج تحققًا من إدارة المنصة قبل أن تُثبت
+        practicalPending: status?.practical === true && latest?.status === "passed" && !verifiedLevel,
+        availability,
+        // الحذف مقفل بما يقوله الخادم (has_assessment) أو بنتيجة مكتملة في نظرة التقييم؛ الخادم يرفض الحذف في الحالتين
+        locked: item.has_assessment === true || latest !== null,
+      };
+    });
+}
+/** يقفل حذف مهارة في قائمة مهارات الملف بعد أن رفض الخادم حذفها (skill_has_assessment) لأن قائمة الصفحة قديمة. */
+export function markSkillAssessed(studentSkills, skillId) {
+  return (Array.isArray(studentSkills) ? studentSkills : []).map((item) =>
+    item?.skill_id === skillId ? { ...item, has_assessment: true } : item,
+  );
 }
 
 /** أسماء مهارات الملف التي لا تُقيَّم بمهام برمجية (تصميم وغيرها)؛ تُذكر للطالب ولا تُعرض للاختيار. */
@@ -274,7 +379,7 @@ export function levelNote(skill, levelKey) {
   const level = skill?.levels?.find((item) => item.key === levelKey);
   if (!level) return "";
   if (!level.canAssess && level.nextAttemptAt) {
-    return `أكملت محاولة بهذا المستوى مؤخرًا؛ يمكنك إعادته بعد ${formatDateTime(level.nextAttemptAt)}، أو اختيار مستوى آخر.`;
+    return `قُيّمت هذه المهارة مؤخرًا؛ يمكنك إعادة تقييمها بعد ${formatDateTime(level.nextAttemptAt)}.`;
   }
   const rank = (key) => LEVELS.findIndex((item) => item.key === key);
   if (skill.verifiedLevel && rank(levelKey) <= rank(skill.verifiedLevel)) {
@@ -449,7 +554,7 @@ export function resultsView(session) {
       note = `${note} مستواك المثبت في هذه المهارة الآن: ${verified}.`;
     } else if (status === "failed") {
       if (verified) note = `${note} مستواك المثبت السابق (${verified}) لم يتغير.`;
-      if (result.next_attempt_at) note = `${note} يمكنك إعادة هذا المستوى بعد ${formatDateTime(result.next_attempt_at)}.`;
+      if (result.next_attempt_at) note = `${note} يمكنك إعادة تقييم هذه المهارة بعد ${formatDateTime(result.next_attempt_at)}.`;
     }
 
     return {
@@ -491,13 +596,13 @@ export function assessmentError(error) {
   const message = serverMessage(error);
 
   if (code === "retake_not_available") {
-    // الخادم يعيد كل مهارة ومستوى في فترة الانتظار
+    // الخادم يعيد كل مهارة في فترة الانتظار وموعد إتاحتها
     const details = (Array.isArray(error.data.skills) ? error.data.skills : [])
       .filter((item) => item && typeof item.skill === "string" && formatDateTime(item.next_attempt_at))
-      .map((item) => `${item.skill}${levelLabel(item.level) ? ` (${levelLabel(item.level)})` : ""} بعد ${formatDateTime(item.next_attempt_at)}`)
+      .map((item) => `${item.skill} بعد ${formatDateTime(item.next_attempt_at)}`)
       .join("، ");
     return {
-      message: details ? `لا يمكن إعادة تقييم: ${details}. اختر مستوى آخر لها أو احذفها من هذا التقييم.` : message,
+      message: details ? `لا يمكن إعادة تقييم: ${details}. احذفها من هذا التقييم أو قيّم مهارات أخرى.` : message,
       retryable: false,
     };
   }
