@@ -12,6 +12,7 @@ import {
   formatDateTime,
   latestAssessmentView,
   markSkillAssessed,
+  profileSkillsView,
   timeUntil,
   questionSkillsText,
   requestedSkillsText,
@@ -719,5 +720,94 @@ describe("no multiple choice in the assessment UI", () => {
     assert.match(page, /<textarea/);
     assert.doesNotMatch(page, /type="radio"/);
     assert.doesNotMatch(page, /\.options\b|choices/);
+  });
+});
+
+describe("student profile skills", () => {
+  const now = Date.parse("2026-10-14T10:00:00Z");
+  const studentSkills = [
+    { skill_id: 1, proficiency: "expert", has_assessment: true, skill: { id: 1, name: "PHP" } },
+    { skill_id: 2, proficiency: "beginner", skill: { id: 2, name: "Laravel" } },
+    { skill_id: 3, proficiency: "intermediate", skill: { id: 3, name: "Figma" } },
+    { skill_id: 4, proficiency: "advanced", has_assessment: false, skill: { id: 4, name: "MySQL" } },
+  ];
+  const overview = [
+    {
+      id: 1,
+      name: "PHP",
+      programming: true,
+      verified_level: "intermediate",
+      can_assess: false,
+      next_attempt_at: "2026-10-17T09:00:00+00:00",
+      latest_assessment: {
+        assessment_session_id: 7,
+        status: "failed",
+        level: "advanced",
+        score: 55,
+        reason: "below_threshold",
+        assessed_at: "2026-10-10T09:00:00+00:00",
+      },
+    },
+    { id: 2, name: "Laravel", programming: true, verified_level: null, can_assess: true, next_attempt_at: null, latest_assessment: null },
+    { id: 3, name: "Figma", programming: false, practical: true, can_assess: true, latest_assessment: null },
+    {
+      id: 4,
+      name: "MySQL",
+      programming: true,
+      can_assess: true,
+      next_attempt_at: null,
+      // نتيجة سجلتها الإدارة: بلا جلسة، فلا رابط ملاحظات ولا انتظار
+      latest_assessment: { assessment_session_id: null, status: "passed", level: "beginner", score: 90, assessed_at: "2026-09-01T09:00:00+00:00" },
+      verified_level: "beginner",
+    },
+  ];
+
+  it("keeps the self rating, the verified level and the tested difficulty apart", () => {
+    const [php] = profileSkillsView(studentSkills, overview, now);
+    assert.equal(php.selfLevelLabel, "خبير");
+    assert.equal(php.verifiedLevelLabel, "متوسط");
+    assert.equal(php.latest.levelLabel, "متقدم");
+    assert.deepEqual([php.latest.label, php.latest.score, php.latest.sessionId], ["لم تجتز التقييم", 55, 7]);
+    assert.match(php.latest.reason, /أقل من نسبة النجاح/);
+  });
+
+  it("shows the cooldown, the next eligible date, or the way to assess", () => {
+    const [php, laravel, figma, mysql] = profileSkillsView(studentSkills, overview, now);
+    assert.deepEqual(php.availability, {
+      state: "cooldown",
+      availableAt: formatDateTime("2026-10-17T09:00:00+00:00"),
+      remaining: "3 أيام",
+    });
+    assert.deepEqual(laravel.availability, { state: "ready", link: "/student/assessment?skill=2", label: "تقييم المهارة" });
+    assert.equal(laravel.latest, null);
+    assert.equal(figma.availability.state, "unavailable");
+    assert.deepEqual([mysql.availability.label, mysql.latest.sessionId], ["إعادة التقييم", null]);
+  });
+
+  it("locks removal from has_assessment or a saved result, never from stale client state alone", () => {
+    const [php, laravel, figma, mysql] = profileSkillsView(studentSkills, overview, now);
+    assert.deepEqual([php.locked, laravel.locked, figma.locked], [true, false, false]);
+    // has_assessment قديم (false) لكن نظرة التقييم فيها نتيجة مكتملة: يبقى مقفلًا
+    assert.equal(mysql.locked, true);
+  });
+
+  it("still lists the skills while the assessment overview is loading or failed", () => {
+    const views = profileSkillsView(studentSkills, null, now);
+    assert.deepEqual(views.map((item) => item.name), ["PHP", "Laravel", "Figma", "MySQL"]);
+    assert.ok(views.every((item) => item.availability.state === "unknown" && item.latest === null));
+    assert.equal(views[0].locked, true);
+    assert.deepEqual(profileSkillsView(undefined, overview), []);
+  });
+
+  it("renders saved results, cooldowns and the removal lock on the profile page", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile(new URL("../pages/UpdateStudentProfile.jsx", import.meta.url), "utf8");
+    assert.match(page, /profileSkillsView\(skills, assessments\.state === "ready" \? assessments\.skills : null\)/);
+    assert.match(page, /متاحة لإعادة التقييم في \{availability\.availableAt\}/);
+    assert.match(page, /sessionPath\(latest\.sessionId\)/);
+    assert.match(page, /\{COOLDOWN_MESSAGE\}/);
+    assert.match(page, /assessedSkillIds\.has\(studentSkill\.skill_id\)/);
+    // لا بيانات تجريبية في الصفحة
+    assert.doesNotMatch(page, /mock|dummy|faker/i);
   });
 });

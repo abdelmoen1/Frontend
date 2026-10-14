@@ -1,18 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Award,
+  BadgeCheck,
   BriefcaseBusiness,
+  Building2,
+  CalendarDays,
+  ClipboardCheck,
+  Clock3,
   Code2,
   ExternalLink,
   GraduationCap,
   Mail,
   MapPin,
+  MessageSquareText,
   Pencil,
   Phone,
   Plus,
   Quote,
   Search,
   Save,
+  ShieldCheck,
   Trash2,
   UserRound,
   X,
@@ -21,6 +29,7 @@ import { FaGithub as Github, FaLinkedinIn as Linkedin } from "react-icons/fa";
 import {
   addStudentSkill,
   deleteStudentSkill,
+  getAssessments,
   getAvailableSkills,
   getSpecializations,
   getStudentProfile,
@@ -30,7 +39,13 @@ import {
 } from "../services/studentService";
 import { resolveMediaUrl } from "../../shared/utils/resolveMediaUrl";
 import { ACADEMIC_MAJORS } from "../constants/academicOptions";
-import { markSkillAssessed } from "../utils/assessments";
+import {
+  ASSESSMENTS_PATH,
+  COOLDOWN_MESSAGE,
+  markSkillAssessed,
+  profileSkillsView,
+  sessionPath,
+} from "../utils/assessments";
 import "../styles/UpdateStudentProfile.css";
 
 const EMPTY_PROFILE = {
@@ -131,21 +146,6 @@ function ProfileSkeleton() {
   );
 }
 
-function ProfileSection({ id, eyebrow, title, action, children }) {
-  return (
-    <section className="student-profile-section" id={id}>
-      <header className="student-profile-section-heading">
-        <div>
-          {eyebrow && <span className="student-profile-eyebrow">{eyebrow}</span>}
-          <h2>{title}</h2>
-        </div>
-        {action}
-      </header>
-      {children}
-    </section>
-  );
-}
-
 function ProficiencyIndicator({ proficiency }) {
   const level = {
     beginner: 1,
@@ -172,7 +172,102 @@ function ProficiencyIndicator({ proficiency }) {
   );
 }
 
-function StudentProfileView({ profile, skills }) {
+// شارة حالة التقييم بألوان صفحة التقييم نفسها (success/danger/warning/neutral)
+function SkillBadge({ tone = "neutral", icon: Icon, children }) {
+  return (
+    <span className={`sp-badge sp-badge-${tone}`}>
+      {Icon && <Icon size={13} aria-hidden="true" />}
+      {children}
+    </span>
+  );
+}
+
+function SkillAssessmentCard({ skill }) {
+  const { latest, availability } = skill;
+
+  return (
+    <li className={`sp-skill sp-skill-${availability.state}`}>
+      <div className="sp-skill-head">
+        <span className="sp-skill-icon" aria-hidden="true">
+          <Code2 size={18} />
+        </span>
+        <div className="sp-skill-title">
+          <h3>
+            <bdi>{skill.name}</bdi>
+          </h3>
+          {skill.selfLevelLabel && <small>تقديرك الذاتي: {skill.selfLevelLabel}</small>}
+        </div>
+        {skill.verifiedLevel ? (
+          <SkillBadge tone="success" icon={BadgeCheck}>
+            مستوى مثبت: {skill.verifiedLevelLabel}
+          </SkillBadge>
+        ) : (
+          availability.state !== "unknown" && <SkillBadge>غير مثبتة بعد</SkillBadge>
+        )}
+      </div>
+
+      {latest ? (
+        <>
+          <dl className="sp-skill-result" aria-label={`آخر تقييم لمهارة ${skill.name}`}>
+            <div>
+              <dt>آخر نتيجة</dt>
+              <dd>
+                <SkillBadge tone={latest.tone}>{latest.label}</SkillBadge>
+              </dd>
+            </div>
+            <div>
+              <dt>صعوبة الاختبار</dt>
+              <dd>{latest.levelLabel || "—"}</dd>
+            </div>
+            <div>
+              <dt>الدرجة</dt>
+              <dd>{latest.score !== null ? `${latest.score}%` : "—"}</dd>
+            </div>
+            <div>
+              <dt>تاريخ التقييم</dt>
+              <dd>{latest.assessedAt || "—"}</dd>
+            </div>
+          </dl>
+          {latest.reason && <p className="sp-skill-note">{latest.reason}</p>}
+        </>
+      ) : (
+        ["ready", "cooldown"].includes(availability.state) && (
+          <p className="sp-skill-note">لم تُقيَّم هذه المهارة بعد.</p>
+        )
+      )}
+      {skill.practicalPending && (
+        <p className="sp-skill-note">اجتزت الجانب المعرفي؛ هذه مهارة عملية تحتاج تحققًا من إدارة المنصة لتُثبت.</p>
+      )}
+
+      {(availability.state !== "unknown" || latest?.sessionId) && (
+        <div className="sp-skill-foot">
+          {availability.state === "cooldown" && (
+            <span className="sp-skill-wait">
+              <Clock3 size={14} aria-hidden="true" />
+              متاحة لإعادة التقييم في {availability.availableAt}
+              {availability.remaining ? ` (بعد ${availability.remaining})` : ""}
+            </span>
+          )}
+          {availability.state === "unavailable" && <span className="sp-skill-muted">{availability.text}</span>}
+          {availability.state === "ready" && (
+            <Link className="sp-skill-action" to={availability.link}>
+              <ClipboardCheck size={14} aria-hidden="true" />
+              {availability.label}
+            </Link>
+          )}
+          {latest?.sessionId && (
+            <Link className="sp-skill-link" to={sessionPath(latest.sessionId)}>
+              <MessageSquareText size={14} aria-hidden="true" />
+              النتيجة وملاحظات المصحح
+            </Link>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function StudentProfileView({ profile, skills, assessments, onEdit }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const filters = [
     { id: "all", label: "الكل" },
@@ -184,104 +279,180 @@ function StudentProfileView({ profile, skills }) {
     activeFilter === "all"
       ? profile.portfolio
       : profile.portfolio.filter((project) => project.category === activeFilter);
+  const skillViews = profileSkillsView(skills, assessments.state === "ready" ? assessments.skills : null);
+  const verifiedCount = skillViews.filter((skill) => skill.verifiedLevel).length;
+  const coolingCount = skillViews.filter((skill) => skill.availability.state === "cooldown").length;
+  const details = [
+    { icon: Building2, label: "الجامعة / الكلية", value: profile.university },
+    { icon: GraduationCap, label: "التخصص الجامعي", value: profile.academic_major },
+    { icon: CalendarDays, label: "سنة التخرج", value: profile.graduation_year },
+    { icon: MapPin, label: "الموقع", value: profile.location },
+  ].filter((item) => item.value);
+  const hasContact =
+    profile.email || profile.phone || profile.linkedin_url || profile.github_url || profile.external_links.length > 0;
 
   return (
-    <main className="student-profile-page" dir="rtl">
-      <section className="student-profile-hero">
-        <div className="student-profile-hero-cover" aria-hidden="true" />
-        <div className="student-profile-hero-content">
+    <main className="student-profile-page sp" dir="rtl">
+      <section className="sp-hero" aria-labelledby="sp-name">
+        <div className="sp-hero-cover" aria-hidden="true" />
+        <div className="sp-hero-body">
           {profile.image_url ? (
-            <img
-              className="student-profile-avatar"
-              src={profile.image_url}
-              alt={`صورة ${profile.name}`}
-            />
+            <img className="sp-avatar" src={profile.image_url} alt={`صورة ${profile.name}`} />
           ) : (
-            <span className="student-profile-avatar student-profile-avatar-fallback">
-              <UserRound size={29} aria-hidden="true" />
+            <span className="sp-avatar sp-avatar-fallback">
+              <UserRound size={34} aria-hidden="true" />
             </span>
           )}
-          <div className="student-profile-identity">
-            <span className="student-profile-eyebrow">
-              {profile.status === "graduated" ? "خريج" : "طالب"}
-            </span>
-            <h1>{profile.name || "ملفي الشخصي"}</h1>
-            <p>
-              {[profile.academic_major, profile.university]
-                .filter(Boolean)
-                .join(" · ") || "أضف تخصصك وجامعتك"}
+          <div className="sp-identity">
+            <h1 id="sp-name">{profile.name || "ملفي الشخصي"}</h1>
+            <p className="sp-role">
+              {profile.professional_specialization_label || "لم تحدد مسارك المهني بعد"}
             </p>
+            <span className="sp-chip">{profile.status === "graduated" ? "خريج" : "طالب"}</span>
           </div>
-        </div>
-        <div className="student-profile-hero-meta">
-          {profile.location && (
-            <span>
-              <MapPin size={14} aria-hidden="true" />
-              {profile.location}
-            </span>
-          )}
-          {profile.graduation_year && (
-            <span>
-              <GraduationCap size={14} aria-hidden="true" />
-              التخرج {profile.graduation_year}
-            </span>
-          )}
+          <button className="student-profile-primary-button sp-edit" type="button" onClick={onEdit}>
+            <Pencil size={15} aria-hidden="true" />
+            تعديل الملف
+          </button>
         </div>
       </section>
 
-      <nav className="student-profile-nav" aria-label="أقسام الملف الشخصي">
-        <a href="#student-about">نبذة</a>
-        <a href="#student-portfolio">الأعمال</a>
-        <a href="#student-skills">المهارات</a>
-        <a href="#student-education">التعليم</a>
-        {profile.certifications.length > 0 && <a href="#student-certificates">الشهادات</a>}
-        <a href="#student-contact">التواصل</a>
-      </nav>
+      <div className="sp-layout">
+        <aside className="sp-side">
+          <section className="sp-card sp-about-card" aria-labelledby="sp-about-title">
+            <h2 id="sp-about-title">نبذة تعريفية</h2>
+            <p className="sp-bio">{profile.bio || "لم تتم إضافة نبذة تعريفية بعد."}</p>
+            {details.length > 0 && (
+              <dl className="sp-details">
+                {details.map((item) => (
+                  <div key={item.label}>
+                    <dt>
+                      <item.icon size={15} aria-hidden="true" />
+                      {item.label}
+                    </dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
 
-      <div className="student-profile-layout">
-        <div className="student-profile-main-column">
-          <ProfileSection
-            id="student-about"
-            eyebrow="نبذة مختصرة"
-            title="عني"
-          >
-            <p className="student-profile-bio">
-              {profile.bio || "لم تتم إضافة نبذة تعريفية بعد."}
-            </p>
-          </ProfileSection>
+          <section className="sp-card sp-contact-card" aria-labelledby="sp-contact-title">
+            <h2 id="sp-contact-title">التواصل</h2>
+            {hasContact ? (
+              <div className="sp-contact">
+                {profile.email && (
+                  <a href={`mailto:${profile.email}`}>
+                    <Mail size={16} aria-hidden="true" />
+                    <span dir="ltr">{profile.email}</span>
+                  </a>
+                )}
+                {profile.phone && (
+                  <a href={`tel:${profile.phone}`}>
+                    <Phone size={16} aria-hidden="true" />
+                    <span dir="ltr">{profile.phone}</span>
+                  </a>
+                )}
+                {profile.linkedin_url && (
+                  <a href={profile.linkedin_url} target="_blank" rel="noreferrer">
+                    <Linkedin size={16} aria-hidden="true" />
+                    <span>LinkedIn</span>
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                )}
+                {profile.github_url && (
+                  <a href={profile.github_url} target="_blank" rel="noreferrer">
+                    <Github size={16} aria-hidden="true" />
+                    <span>GitHub</span>
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                )}
+                {profile.external_links.map((link, index) => (
+                  <a href={link.url} key={`${link.label}-${index}`} target="_blank" rel="noreferrer">
+                    <ExternalLink size={16} aria-hidden="true" />
+                    <span>{link.label}</span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="sp-empty">لم تُضف وسائل تواصل بعد.</p>
+            )}
+          </section>
+        </aside>
 
-          <ProfileSection
-            id="student-portfolio"
-            eyebrow="مشاريع مختارة"
-            title="معرض الأعمال"
-            action={
-              <span className="student-profile-count">
-                {profile.portfolio.length} مشاريع
-              </span>
-            }
-          >
-            <div className="student-portfolio-filters" aria-label="تصفية المشاريع">
-              {filters.map((filter) => (
-                <button
-                  type="button"
-                  key={filter.id}
-                  className={
-                    activeFilter === filter.id ? "active" : ""
-                  }
-                  aria-pressed={activeFilter === filter.id}
-                  onClick={() => setActiveFilter(filter.id)}
-                >
-                  {filter.label}
+        <div className="sp-main">
+          <section className="sp-card" aria-labelledby="sp-skills-title">
+            <header className="sp-card-head">
+              <div>
+                <h2 id="sp-skills-title">المهارات والتقييمات</h2>
+                <p className="sp-summary">
+                  {skillViews.length} مهارات
+                  {assessments.state === "ready" && ` · ${verifiedCount} مثبتة`}
+                  {assessments.state === "ready" && coolingCount > 0 && ` · ${coolingCount} في فترة الانتظار`}
+                </p>
+              </div>
+              <Link className="student-profile-secondary-button" to={ASSESSMENTS_PATH}>
+                <ShieldCheck size={15} aria-hidden="true" />
+                صفحة التقييم
+              </Link>
+            </header>
+
+            {assessments.state === "loading" && (
+              <p className="sp-status" role="status">
+                جارٍ تحميل نتائج التقييم…
+              </p>
+            )}
+            {assessments.state === "error" && (
+              <p className="student-profile-alert error sp-status" role="alert">
+                تعذر تحميل نتائج التقييم، فالمهارات معروضة دون حالتها.{" "}
+                <button type="button" className="sp-inline-button" onClick={assessments.retry}>
+                  إعادة المحاولة
                 </button>
-              ))}
-            </div>
+              </p>
+            )}
+            {assessments.state === "ready" && coolingCount > 0 && <p className="sp-cooldown-note">{COOLDOWN_MESSAGE}</p>}
+
+            {skillViews.length ? (
+              <ul className="sp-skills">
+                {skillViews.map((skill) => (
+                  <SkillAssessmentCard key={skill.id} skill={skill} />
+                ))}
+              </ul>
+            ) : (
+              <div className="sp-empty-state">
+                <p>لم تتم إضافة مهارات بعد. أضف مهاراتك من تعديل الملف ثم قيّمها لتظهر نتائجها هنا.</p>
+                <button type="button" className="student-profile-secondary-button" onClick={onEdit}>
+                  <Plus size={14} aria-hidden="true" />
+                  إضافة مهارات
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="sp-card" id="student-portfolio" aria-labelledby="sp-portfolio-title">
+            <header className="sp-card-head">
+              <h2 id="sp-portfolio-title">معرض الأعمال</h2>
+              <span className="sp-summary">{profile.portfolio.length} مشاريع</span>
+            </header>
+            {profile.portfolio.length > 0 && (
+              <div className="student-portfolio-filters" aria-label="تصفية المشاريع">
+                {filters.map((filter) => (
+                  <button
+                    type="button"
+                    key={filter.id}
+                    className={activeFilter === filter.id ? "active" : ""}
+                    aria-pressed={activeFilter === filter.id}
+                    onClick={() => setActiveFilter(filter.id)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {projects.length ? (
               <div className="student-portfolio-grid">
                 {projects.map((project, index) => (
-                  <article
-                    className="student-portfolio-card"
-                    key={`${project.title}-${index}`}
-                  >
+                  <article className="student-portfolio-card" key={`${project.title}-${index}`}>
                     {project.image_url ? (
                       <img src={project.image_url} alt="" loading="lazy" />
                     ) : (
@@ -307,43 +478,15 @@ function StudentProfileView({ profile, skills }) {
                 ))}
               </div>
             ) : (
-              <p className="student-profile-empty">
-                لا توجد مشاريع ضمن هذا التصنيف بعد.
+              <p className="sp-empty">
+                {profile.portfolio.length ? "لا توجد مشاريع ضمن هذا التصنيف." : "لم تُضف مشاريع بعد."}
               </p>
             )}
-          </ProfileSection>
-
-          <ProfileSection
-            id="student-skills"
-            eyebrow="قدراتي"
-            title="المهارات"
-            action={<span className="student-profile-count">{skills.length} مهارات</span>}
-          >
-            {skills.length ? (
-              <ul className="student-skill-list">
-                {skills.map((skill) => (
-                  <li className="student-skill-row" key={skill.skill_id}>
-                    <span className="student-skill-icon" aria-hidden="true">
-                      <Code2 size={18} />
-                    </span>
-                    <strong className="student-skill-name">
-                      {skill.skill?.name || "مهارة"}
-                    </strong>
-                    <ProficiencyIndicator proficiency={skill.proficiency} />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="student-profile-empty">لم تتم إضافة مهارات بعد.</p>
-            )}
-          </ProfileSection>
+          </section>
 
           {profile.certifications.length > 0 && (
-            <ProfileSection
-              id="student-certificates"
-              eyebrow="التعلّم المستمر"
-              title="الشهادات والدورات"
-            >
+            <section className="sp-card" aria-labelledby="sp-certificates-title">
+              <h2 id="sp-certificates-title">الشهادات والدورات</h2>
               <div className="student-profile-certifications">
                 {profile.certifications.map((certificate, index) => (
                   <article key={`${certificate.name}-${index}`}>
@@ -352,11 +495,7 @@ function StudentProfileView({ profile, skills }) {
                     </span>
                     <div>
                       <h3>{certificate.name}</h3>
-                      <p>
-                        {[certificate.issuer, certificate.issued_at]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
+                      <p>{[certificate.issuer, certificate.issued_at].filter(Boolean).join(" · ")}</p>
                     </div>
                     {certificate.credential_url && (
                       <a
@@ -371,14 +510,12 @@ function StudentProfileView({ profile, skills }) {
                   </article>
                 ))}
               </div>
-            </ProfileSection>
+            </section>
           )}
 
           {profile.testimonials.length > 0 && (
-            <ProfileSection
-              eyebrow="كلمات من حولي"
-              title="التوصيات"
-            >
+            <section className="sp-card" aria-labelledby="sp-testimonials-title">
+              <h2 id="sp-testimonials-title">التوصيات</h2>
               <div className="student-profile-testimonials">
                 {profile.testimonials.map((testimonial, index) => (
                   <blockquote key={`${testimonial.author}-${index}`}>
@@ -391,74 +528,9 @@ function StudentProfileView({ profile, skills }) {
                   </blockquote>
                 ))}
               </div>
-            </ProfileSection>
+            </section>
           )}
         </div>
-
-        <aside className="student-profile-side-column">
-          <ProfileSection id="student-education" eyebrow="مساري" title="التعليم">
-            <dl className="student-profile-education">
-              <div>
-                <dt>الجامعة / الكلية</dt>
-                <dd>{profile.university || "غير محدد"}</dd>
-              </div>
-              <div>
-                <dt>التخصص</dt>
-                <dd>{profile.academic_major || "غير محدد"}</dd>
-              </div>
-              <div>
-                <dt>المسار المهني</dt>
-                <dd>{profile.professional_specialization_label || "غير محدد"}</dd>
-              </div>
-              <div>
-                <dt>سنة التخرج</dt>
-                <dd>{profile.graduation_year || "غير محددة"}</dd>
-              </div>
-            </dl>
-          </ProfileSection>
-
-          <ProfileSection id="student-contact" eyebrow="روابطي" title="التواصل">
-            <div className="student-profile-contact-list">
-              {profile.email && (
-                <a href={`mailto:${profile.email}`}>
-                  <Mail size={16} aria-hidden="true" />
-                  <span>{profile.email}</span>
-                </a>
-              )}
-              {profile.phone && (
-                <a href={`tel:${profile.phone}`}>
-                  <Phone size={16} aria-hidden="true" />
-                  <span dir="ltr">{profile.phone}</span>
-                </a>
-              )}
-              {profile.linkedin_url && (
-                <a href={profile.linkedin_url} target="_blank" rel="noreferrer">
-                  <Linkedin size={16} aria-hidden="true" />
-                  <span>LinkedIn</span>
-                  <ExternalLink size={12} aria-hidden="true" />
-                </a>
-              )}
-              {profile.github_url && (
-                <a href={profile.github_url} target="_blank" rel="noreferrer">
-                  <Github size={16} aria-hidden="true" />
-                  <span>GitHub</span>
-                  <ExternalLink size={12} aria-hidden="true" />
-                </a>
-              )}
-              {profile.external_links.map((link, index) => (
-                <a
-                  href={link.url}
-                  key={`${link.label}-${index}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink size={16} aria-hidden="true" />
-                  <span>{link.label}</span>
-                </a>
-              ))}
-            </div>
-          </ProfileSection>
-        </aside>
       </div>
     </main>
   );
@@ -485,6 +557,40 @@ export default function UpdateStudentProfile() {
   const imageInputRef = useRef(null);
   const savedProfileRef = useRef(null);
   const savedSkillsRef = useRef([]);
+  // نتائج التقييم المحفوظة وفترات الانتظار من نظرة التقييم (بلا ذكاء اصطناعي)؛ فشلها لا يمنع عرض الملف
+  const [assessments, setAssessments] = useState({ state: "loading", skills: [] });
+  const fetchAssessments = useCallback(
+    () =>
+      getAssessments()
+        .then((data) =>
+          setAssessments({ state: "ready", skills: Array.isArray(data?.skills) ? data.skills : [] }),
+        )
+        .catch((loadError) => {
+          console.error("تعذر تحميل نتائج التقييم:", loadError);
+          setAssessments({ state: "error", skills: [] });
+        }),
+    [],
+  );
+  const retryAssessments = () => {
+    setAssessments({ state: "loading", skills: [] });
+    fetchAssessments();
+  };
+  // مهارات لها تقييم مكتمل في نظرة التقييم: يُقفل حذفها حتى لو كانت قائمة المهارات أقدم (الخادم يرفض الحذف أيضًا)
+  const assessedSkillIds = useMemo(
+    () =>
+      new Set(
+        assessments.skills
+          .filter((item) => item?.latest_assessment)
+          .map((item) => item.id),
+      ),
+    [assessments.skills],
+  );
+
+  useEffect(() => {
+    fetchAssessments();
+  }, [fetchAssessments]);
+  const isSkillLocked = (studentSkill) =>
+    studentSkill.has_assessment === true || assessedSkillIds.has(studentSkill.skill_id);
 
   const visibleSkillOptions = useMemo(
     () =>
@@ -800,18 +906,12 @@ export default function UpdateStudentProfile() {
             {notice}
           </p>
         )}
-        <div className="student-profile-view-toolbar">
-          <span>ملفي المهني</span>
-          <button
-            className="student-profile-primary-button"
-            type="button"
-            onClick={() => setMode("edit")}
-          >
-            <Pencil size={15} aria-hidden="true" />
-            تعديل الملف
-          </button>
-        </div>
-        <StudentProfileView profile={profile} skills={skills} />
+        <StudentProfileView
+          profile={profile}
+          skills={skills}
+          assessments={{ ...assessments, retry: retryAssessments }}
+          onEdit={() => setMode("edit")}
+        />
       </div>
     );
   }
@@ -1246,19 +1346,19 @@ export default function UpdateStudentProfile() {
                     type="button"
                     className="student-profile-delete-button icon"
                     aria-label={
-                      studentSkill.has_assessment
+                      isSkillLocked(studentSkill)
                         ? `لا يمكن حذف ${studentSkill.skill?.name}: لها سجل تقييم محفوظ`
                         : `حذف ${studentSkill.skill?.name}`
                     }
                     title={
-                      studentSkill.has_assessment
+                      isSkillLocked(studentSkill)
                         ? "لا يمكن حذف هذه المهارة لأن لها سجل تقييم محفوظ."
                         : undefined
                     }
                     disabled={
                       saving ||
                       removingSkillId === studentSkill.skill_id ||
-                      studentSkill.has_assessment === true
+                      isSkillLocked(studentSkill)
                     }
                     onClick={() => handleRemoveSkill(studentSkill.skill_id)}
                   >

@@ -175,6 +175,51 @@ export function coolingDownSkills(skills, now = Date.now()) {
     }));
 }
 
+/**
+ * مهارات ملف الطالب (GET /student/skills) مع حالة تقييم كل منها من نظرة التقييم (GET /student/assessments) بمعرّف
+ * المهارة، دون أي طلب إلى الذكاء الاصطناعي. ثلاثة مستويات منفصلة لا يُخلط بينها:
+ * - selfLevel: تقدير الطالب لنفسه في ملفه (proficiency)، ليس نتيجة تقييم.
+ * - verifiedLevel: أعلى مستوى نجح فيه (المثبت فعلًا).
+ * - latest.levelLabel: صعوبة آخر اختبار كما اختارها الطالب، ليست مستوى محققًا.
+ * overview غائب (يُحمَّل أو تعذر تحميله): تُعرض المهارات بلا حالة تقييم (availability.state = "unknown").
+ */
+export function profileSkillsView(studentSkills, overviewSkills, now = Date.now()) {
+  const byId = new Map(
+    (Array.isArray(overviewSkills) ? overviewSkills : []).filter((item) => item && item.id).map((item) => [item.id, item]),
+  );
+  return (Array.isArray(studentSkills) ? studentSkills : [])
+    .filter((item) => item && item.skill_id)
+    .map((item) => {
+      const status = byId.get(item.skill_id) || null;
+      const latest = latestAssessmentView(status?.latest_assessment);
+      const verifiedLevel = LEVELS.some((level) => level.key === status?.verified_level) ? status.verified_level : null;
+      let availability = { state: "unknown" };
+      if (status && status.programming === false) {
+        availability = { state: "unavailable", text: "لا تُقيَّم بمهام برمجية حاليًا" };
+      } else if (status && status.can_assess === false && status.next_attempt_at) {
+        availability = {
+          state: "cooldown",
+          availableAt: formatDateTime(status.next_attempt_at),
+          remaining: timeUntil(status.next_attempt_at, now),
+        };
+      } else if (status) {
+        availability = { state: "ready", link: assessmentLink(item.skill_id), label: latest ? "إعادة التقييم" : "تقييم المهارة" };
+      }
+      return {
+        id: item.skill_id,
+        name: item.skill?.name || status?.name || "مهارة",
+        selfLevelLabel: levelLabel(item.proficiency),
+        verifiedLevel,
+        verifiedLevelLabel: levelLabel(verifiedLevel),
+        latest,
+        // ناجحة معرفيًا لكنها عملية: تحتاج تحققًا من إدارة المنصة قبل أن تُثبت
+        practicalPending: status?.practical === true && latest?.status === "passed" && !verifiedLevel,
+        availability,
+        // الحذف مقفل بما يقوله الخادم (has_assessment) أو بنتيجة مكتملة في نظرة التقييم؛ الخادم يرفض الحذف في الحالتين
+        locked: item.has_assessment === true || latest !== null,
+      };
+    });
+}
 /** يقفل حذف مهارة في قائمة مهارات الملف بعد أن رفض الخادم حذفها (skill_has_assessment) لأن قائمة الصفحة قديمة. */
 export function markSkillAssessed(studentSkills, skillId) {
   return (Array.isArray(studentSkills) ? studentSkills : []).map((item) =>
