@@ -2,7 +2,8 @@ import { header, SECTIONS } from "./content";
 import LandingHeader from "./components/LandingHeader";
 import LandingFooter from "./components/LandingFooter";
 import HeroSection from "./sections/HeroSection";
-import ApproachSection from "./sections/ApproachSection";
+import ProblemSection from "./sections/ProblemSection";
+import WorkflowSection from "./sections/WorkflowSection";
 import AudiencesSection from "./sections/AudiencesSection";
 import HowItWorksSection from "./sections/HowItWorksSection";
 import CapabilitiesSection from "./sections/CapabilitiesSection";
@@ -17,8 +18,9 @@ import "./landing.css";
  * لإضافة قسم جديد: أنشئ مكوّنه في sections/، وأضفه هنا مع معرّفات الروابط التي يحتويها، ثم إلى SECTIONS.
  */
 const SECTION_COMPONENTS = {
-  hero: { Component: HeroSection, anchors: [] },
-  approach: { Component: ApproachSection, anchors: ["approach"] },
+  hero: { Component: HeroSection, anchors: ["top"] },
+  problem: { Component: ProblemSection, anchors: ["problem"] },
+  workflow: { Component: WorkflowSection, anchors: ["workflow"] },
   audiences: { Component: AudiencesSection, anchors: ["students", "organizations"] },
   how: { Component: HowItWorksSection, anchors: ["how"] },
   capabilities: { Component: CapabilitiesSection, anchors: ["capabilities"] },

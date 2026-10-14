@@ -7,10 +7,39 @@ import { getUserDestination } from "../../shared/auth/destination";
 import { header, ROUTES } from "../content";
 import { CtaLink } from "./shared";
 
-// navItems: روابط الأقسام المفعّلة فقط (يمررها LandingPage)
+const isScrolled = () => typeof window !== "undefined" && window.scrollY > 24;
+
+// navItems: روابط الأقسام المفعّلة فقط (يمررها LandingPage). الترويسة شفافة فوق صورة البطل وتصبح بيضاء عند التمرير.
 export default function LandingHeader({ navItems }) {
   const [open, setOpen] = useState(false);
+  const [solid, setSolid] = useState(isScrolled);
+  const [active, setActive] = useState(navItems[0]?.href || "");
   const { user } = useAuth();
+  const hrefs = navItems.map((item) => item.href).join("|");
+
+  useEffect(() => {
+    const onScroll = () => setSolid(isScrolled());
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // يميّز رابط القسم الظاهر في منتصف الشاشة
+  useEffect(() => {
+    if (!hrefs || !("IntersectionObserver" in window)) return undefined;
+    const targets = hrefs
+      .split("|")
+      .map((href) => document.getElementById(href.slice(1)))
+      .filter(Boolean);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length) setActive(`#${visible[0].target.id}`);
+      },
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [hrefs]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -22,7 +51,7 @@ export default function LandingHeader({ navItems }) {
   const close = () => setOpen(false);
 
   return (
-    <header className={`lp-header ${open ? "is-open" : ""}`}>
+    <header className={`lp-header ${solid ? "is-solid" : ""} ${open ? "is-open" : ""}`}>
       <div className="lp-container lp-header-inner">
         <Link to="/" className="lp-logo" aria-label={header.homeLabel}>
           <img src={logo} alt="" width="130" height="91" />
@@ -47,7 +76,7 @@ export default function LandingHeader({ navItems }) {
             <ul className="lp-nav">
               {navItems.map((item) => (
                 <li key={item.href}>
-                  <a href={item.href} onClick={close}>
+                  <a href={item.href} onClick={close} aria-current={active === item.href ? "true" : undefined}>
                     {item.label}
                   </a>
                 </li>
@@ -56,7 +85,7 @@ export default function LandingHeader({ navItems }) {
           </nav>
           <div className="lp-header-actions">
             {user ? (
-              <CtaLink to={getUserDestination(user)} onClick={close}>
+              <CtaLink to={getUserDestination(user)} variant="sky" onClick={close}>
                 {header.account}
               </CtaLink>
             ) : (
@@ -64,7 +93,7 @@ export default function LandingHeader({ navItems }) {
                 <CtaLink to={ROUTES.login} variant="ghost" onClick={close}>
                   {header.login}
                 </CtaLink>
-                <CtaLink to={ROUTES.register} onClick={close}>
+                <CtaLink to={ROUTES.register} variant="sky" onClick={close}>
                   {header.register}
                 </CtaLink>
               </>
