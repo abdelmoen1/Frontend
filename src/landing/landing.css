@@ -339,18 +339,18 @@ body:has(.lp) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 40%;
+  object-position: 50% 45%;
 }
 
-/* طبقة كحلية تضمن وضوح النص فوق الصورة */
+/* طبقة كحلية أخف تُظهر المكتب كما في التصميم، وأغمق في المنتصف خلف النص لضمان وضوحه */
 .lp-hero::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(60rem 30rem at 50% 45%, rgba(2, 24, 83, 0.35), transparent 70%),
-    linear-gradient(180deg, rgba(2, 24, 83, 0.84) 0%, rgba(2, 24, 83, 0.72) 45%, rgba(2, 24, 83, 0.9) 100%);
+    radial-gradient(46rem 22rem at 50% 50%, rgba(3, 22, 52, 0.55), transparent 75%),
+    linear-gradient(180deg, rgba(3, 22, 52, 0.78) 0%, rgba(4, 30, 66, 0.62) 40%, rgba(3, 22, 52, 0.85) 100%);
 }
 
 .lp-hero-content {
@@ -390,7 +390,16 @@ body:has(.lp) {
 }
 
 .lp-hero-actions .lp-btn {
-  min-width: 190px;
+  min-width: 210px;
+}
+
+.lp-hero-lead strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.lp-btn-pill {
+  border-radius: 999px;
 }
 
 /* ---------- المشكلة ---------- */

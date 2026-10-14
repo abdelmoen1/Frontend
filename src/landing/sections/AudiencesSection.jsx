@@ -32,7 +32,7 @@ function AudiencePanel({ audience, tone }) {
 
 export default function AudiencesSection() {
   return (
-    <section className="lp-section lp-section-tight" aria-label="لمن GoTrainee">
+    <section className="lp-section lp-section-tight" id="roles" aria-label="لمن GoTrainee">
       <div className="lp-container lp-audiences">
         <AudiencePanel audience={audiences.students} tone="light" />
         <AudiencePanel audience={audiences.organizations} tone="dark" />

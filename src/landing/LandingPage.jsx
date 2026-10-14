@@ -21,7 +21,7 @@ const SECTION_COMPONENTS = {
   hero: { Component: HeroSection, anchors: ["top"] },
   problem: { Component: ProblemSection, anchors: ["problem"] },
   workflow: { Component: WorkflowSection, anchors: ["workflow"] },
-  audiences: { Component: AudiencesSection, anchors: ["students", "organizations"] },
+  audiences: { Component: AudiencesSection, anchors: ["roles", "students", "organizations"] },
   how: { Component: HowItWorksSection, anchors: ["how"] },
   capabilities: { Component: CapabilitiesSection, anchors: ["capabilities"] },
   outcomes: { Component: OutcomesSection, anchors: ["outcomes"] },

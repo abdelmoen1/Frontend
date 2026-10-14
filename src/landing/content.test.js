@@ -5,7 +5,7 @@ import * as content from "./content.js";
 
 // كل رابط داخلي في content.js يجب أن يكون مسارًا موجودًا في App.jsx أو قسمًا في الصفحة
 const PUBLIC_ROUTES = ["/", "/login", "/register"];
-const SECTION_ANCHORS = ["top", "problem", "workflow", "students", "organizations", "how", "capabilities", "outcomes", "proof", "start", "faq"];
+const SECTION_ANCHORS = ["top", "problem", "workflow", "roles", "students", "organizations", "how", "capabilities", "outcomes", "proof", "start", "faq"];
 
 function collectLinks(value, found = []) {
   if (Array.isArray(value)) value.forEach((item) => collectLinks(item, found));
