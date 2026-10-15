@@ -36,6 +36,7 @@ import {
   staffingRoles,
   stripListNumbering,
 } from "../utils/proposalReview";
+import { PROJECT_STAGES } from "../utils/projectTeam";
 import "../styles/ProjectProposal.css";
 
 // أدوات قراءة آمنة: نعرض فقط ما ولّده المقترح فعلًا
@@ -371,7 +372,24 @@ function PublicationPanel({ publication, justApproved }) {
             <dd>{formatDate(publication.published_at)}</dd>
           </div>
         )}
+        {publication.project_status && (
+          <div>
+            <dt>مرحلة المشروع</dt>
+            <dd>{PROJECT_STAGES[publication.project_status]?.label || publication.project_status}</dd>
+          </div>
+        )}
+        {Number.isInteger(publication.applications_count) && (
+          <div>
+            <dt>طلبات الانضمام</dt>
+            <dd>{publication.applications_count}</dd>
+          </div>
+        )}
       </dl>
+      {publication.opportunity_id && (
+        <Link className="prp-btn prp-btn-primary" to={`/organization/projects/${publication.opportunity_id}`}>
+          إدارة المرشحين والفريق
+        </Link>
+      )}
       {summary.roles.length > 0 && (
         <div className="prp-table-wrap">
           <table className="prp-table">

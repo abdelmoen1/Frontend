@@ -67,6 +67,20 @@ export const approveProposal = (id, roleSkillLevels) =>
 export const requestRevision = (id, data) =>
   request(`${projectRequestsPath}/${id}/revision`, json("POST", data));
 
+// إدارة المشروع المنشور: المرشحون المرتبون والفريق. الخادم يتحقق من ملكية المشروع والأهلية في كل طلب.
+export const getProjectMatches = (projectId) => request(`/projects/${projectId}/matches`);
+export const updateProject = (projectId, data) =>
+  request(`/projects/${projectId}`, json("PATCH", data));
+export const reviewApplication = (projectId, applicationId, status) =>
+  request(`/projects/${projectId}/applications/${applicationId}`, json("PATCH", { status }));
+// members: [{ application_id, role_id }] = تشكيلة الفريق كاملة (من لا يُذكر يُزال)
+export const saveProjectTeam = (projectId, members) =>
+  request(`/projects/${projectId}/team`, json("POST", { members }));
+export const assignTeamLeader = (teamId, studentProfileId) =>
+  request(`/teams/${teamId}/leader`, json("POST", { student_profile_id: studentProfileId }));
+export const confirmProjectTeam = (teamId) =>
+  request(`/teams/${teamId}/confirm`, { method: "POST" });
+
 export const getOrganizationProfile = () => request("/organization/onboarding");
 export const updateOrganizationProfile = (data) =>
   request("/organization/onboarding", json("PATCH", data));

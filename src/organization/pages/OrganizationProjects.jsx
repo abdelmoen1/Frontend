@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, Trash2 } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, Trash2, Users } from "lucide-react";
 import { showAlert, Swal } from "../../shared/utils/alerts";
 import {
   deleteProjectRequest,
@@ -195,6 +195,14 @@ export default function OrganizationProjects() {
                     <Link className="od-link" to={action.path}>
                       {action.label} <ArrowLeft size={15} aria-hidden="true" />
                     </Link>
+                    {request.publication?.opportunity_id && (
+                      <Link
+                        className="od-link"
+                        to={`/organization/projects/${request.publication.opportunity_id}`}
+                      >
+                        <Users size={15} aria-hidden="true" /> المرشحون والفريق
+                      </Link>
+                    )}
                     {/* المشروع المنشور (ولو كان قيد التعديل) لا يُحذف؛ الخادم يرفض ذلك أيضًا */}
                     {request.status !== "converted_to_opportunity" && !request.publication && (
                       <button

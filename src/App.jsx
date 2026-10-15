@@ -21,6 +21,8 @@ import OrganizationProjects from "./organization/pages/OrganizationProjects";
 import ProjectProblemInfo from "./organization/pages/ProjectProblemInfo";
 import DynamicProjectDiscovery from "./organization/components/DynamicProjectDiscovery";
 import ProjectProposal from "./organization/pages/ProjectProposal";
+import ProjectWorkspace from "./organization/pages/ProjectWorkspace";
+import StudentApplications from "./student/pages/StudentApplications";
 import { AuthProvider } from "./shared/auth/AuthProvider";
 import {
   GuestRoute,
@@ -69,6 +71,7 @@ function App() {
                 path="/student/opportunities/:id"
                 element={<StudentOpportunityDetails />}
               />
+              <Route path="/student/applications" element={<StudentApplications />} />
               <Route
                 path="/student/profile"
                 element={<UpdateStudentProfile />}
@@ -132,6 +135,10 @@ function App() {
               <Route
                 path="/organization/requests/:id/review"
                 element={<ProjectProposal />}
+              />
+              <Route
+                path="/organization/projects/:projectId"
+                element={<ProjectWorkspace />}
               />
             </Route>
           </Route>

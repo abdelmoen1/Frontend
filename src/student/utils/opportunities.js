@@ -1,6 +1,7 @@
 // عرض فرص المشاريع للطالب: بطاقة الفرصة وأهليته لكل دور كما حسبها الخادم، رسائل الحالة الفارغة، وأخطاء التحميل.
 // دوال نقية تُختبر عبر node --test. الأهلية يحسبها الخادم وحده؛ هنا عرضها وروابط الإجراء التالي فقط.
 
+import { applicationView } from "./applications.js";
 import { assessmentLink, levelLabel, specializationNotice } from "./assessments.js";
 
 const ARABIC = /[؀-ۿ]/;
@@ -58,6 +59,10 @@ export function opportunityCard(item) {
     organization: item?.organization?.name || "",
     industry: item?.organization?.industry || "",
     duration: item?.estimated_duration || "",
+    teamSize: Number.isInteger(item?.team_size) ? item.team_size : roles.reduce((sum, role) => sum + (role?.headcount || 1), 0),
+    minWeeklyHours: Number.isInteger(item?.min_weekly_hours) ? item.min_weekly_hours : null,
+    acceptingApplications: item?.accepting_applications !== false,
+    application: applicationView(item?.application),
     // أهلية الطالب على مستوى الفرصة = الدور الأقرب للأهلية
     eligibility: eligibilityView(item?.eligibility),
     closestRole: typeof item?.eligibility?.role_title === "string" ? item.eligibility.role_title : "",

@@ -60,6 +60,8 @@ const EMPTY_PROFILE = {
   graduation_year: "",
   linkedin_url: "",
   github_url: "",
+  // ساعات التفرغ الأسبوعية للمشاريع؛ مدخل "التوفر" في مطابقة المرشحين ("" = غير محدد)
+  weekly_availability_hours: "",
   email: "",
   image_url: "",
   location: "",
@@ -286,6 +288,11 @@ function StudentProfileView({ profile, skills, assessments, onEdit }) {
     { icon: Building2, label: "الجامعة / الكلية", value: profile.university },
     { icon: GraduationCap, label: "التخصص الجامعي", value: profile.academic_major },
     { icon: CalendarDays, label: "سنة التخرج", value: profile.graduation_year },
+    {
+      icon: Clock3,
+      label: "التفرغ للمشاريع",
+      value: profile.weekly_availability_hours ? `${profile.weekly_availability_hours} ساعة أسبوعيًا` : "",
+    },
     { icon: MapPin, label: "الموقع", value: profile.location },
   ].filter((item) => item.value);
   const hasContact =
@@ -701,6 +708,10 @@ export default function UpdateStudentProfile() {
         graduation_year: profile.graduation_year || null,
         linkedin_url: profile.linkedin_url || null,
         github_url: profile.github_url || null,
+        weekly_availability_hours:
+          profile.weekly_availability_hours === "" || profile.weekly_availability_hours == null
+            ? null
+            : Number(profile.weekly_availability_hours),
         portfolio: profile.portfolio,
         external_links: profile.external_links,
         certifications: profile.certifications,
@@ -1175,6 +1186,20 @@ export default function UpdateStudentProfile() {
                   )}
                 </label>
               ))}
+              <label className="student-edit-field">
+                <span>ساعات التفرغ الأسبوعية للمشاريع</span>
+                <input
+                  name="weekly_availability_hours"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={60}
+                  value={profile.weekly_availability_hours ?? ""}
+                  onChange={setField}
+                  placeholder="مثال: 15"
+                />
+                <small>تراها المؤسسات عند مطابقة المرشحين مع وقت المشروع المطلوب.</small>
+              </label>
               <label className="student-edit-field full">
                 <span>البريد الإلكتروني</span>
                 <input value={profile.email} disabled readOnly />

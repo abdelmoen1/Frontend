@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { FaSignOutAlt, FaSearch, FaBell, FaUserCircle } from "react-icons/fa";
-import { Briefcase, Building2, ClipboardCheck, LayoutDashboard, Plus, UserRound } from "lucide-react";
+import { Briefcase, Building2, ClipboardCheck, FileCheck2, LayoutDashboard, Plus, UserRound } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { showAlert, Swal } from "../utils/alerts";
 import logo from "../assets/logo.svg";
@@ -117,6 +117,19 @@ function DashboardMenu() {
                 <Briefcase size={18} aria-hidden="true" />
               </span>
               <span>فرص المشاريع</span>
+            </NavLink>
+          )}
+          {user?.role === "student" && (
+            <NavLink
+              to="/student/applications"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <FileCheck2 size={18} aria-hidden="true" />
+              </span>
+              <span>طلباتي</span>
             </NavLink>
           )}
           {user?.role === "organization" && (

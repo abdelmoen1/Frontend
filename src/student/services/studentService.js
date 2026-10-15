@@ -209,13 +209,39 @@ export const completeStudentOnboarding = async (payload) =>
     })
   ).data;
 
-// فرص المشاريع: الخادم يعيد فقط المشاريع المنشورة التي يطابق الطالب أحد أدوارها.
+// فرص المشاريع المنشورة المفتوحة للتقديم مع أهلية الطالب لكل دور. params: page, filter (all|eligible), q.
 // الأخطاء تحمل status (مثل 404 لفرصة لم تعد متاحة) لعرض الحالة المناسبة.
-export const getOpportunities = async () =>
-  (await requestJson(`${BASE_URL}/student/opportunities`, { headers: getAuthHeaders(false) })).data;
+export const getOpportunities = async (params = {}) => {
+  const query = new URLSearchParams(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ""),
+  ).toString();
+  return (await requestJson(`${BASE_URL}/opportunities${query ? `?${query}` : ""}`, { headers: getAuthHeaders(false) }))
+    .data;
+};
 
 export const getOpportunity = async (id) =>
-  (await requestJson(`${BASE_URL}/student/opportunities/${id}`, { headers: getAuthHeaders(false) })).data;
+  (await requestJson(`${BASE_URL}/opportunities/${id}`, { headers: getAuthHeaders(false) })).data;
+
+// التقديم لنفسه فقط: الخادم يأخذ الطالب من الجلسة ويتحقق من الأهلية وحالة الفرصة وعدم التكرار
+export const applyToOpportunity = async (id, { preferredRoleId = null, note = "" } = {}) =>
+  (
+    await requestJson(`${BASE_URL}/opportunities/${id}/applications`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ preferred_role_id: preferredRoleId, note: note.trim() || null }),
+    })
+  ).data;
+
+export const getMyApplications = async () =>
+  (await requestJson(`${BASE_URL}/student/applications`, { headers: getAuthHeaders(false) })).data;
+
+export const withdrawApplication = async (id) =>
+  (
+    await requestJson(`${BASE_URL}/student/applications/${id}/withdraw`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    })
+  ).data;
 
 // تقييم المهارات بأسئلة مفتوحة: الطالب يرسل نص إجابته فقط، والخادم يولد الأسئلة ويصحح ويسجل النتائج.
 export const getSpecializations = async () =>

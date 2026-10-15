@@ -360,3 +360,602 @@
     animation: none;
   }
 }
+
+/* ===== Sprint 4: التصفية والتقديم والطلبات ===== */
+/* .opp-tag معرّف بعد ألوان الحالات فيغلب لونه الأخضر؛ نعيد لون الحالة للشارة صراحةً */
+.opp-tag.opp-tone-warning {
+  background: #fff7e6;
+  color: #8a4b00;
+}
+
+.opp-tag.opp-tone-info {
+  background: #e6f5fb;
+  color: #0f5f7d;
+}
+
+.opp-tag.opp-tone-neutral {
+  background: #f1f5f9;
+  color: #3d4f66;
+}
+
+.opp-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.opp-page-head p {
+  max-width: 640px;
+  margin-bottom: 0;
+  line-height: 1.8;
+}
+
+.opp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.opp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.opp-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--opp-line);
+  border-radius: 999px;
+  background: #fff;
+}
+
+.opp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--opp-ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.opp-tab-active {
+  background: var(--opp-navy);
+  color: #fff;
+}
+
+.opp-tab-count {
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(25, 155, 197, 0.14);
+  font-size: 12px;
+  text-align: center;
+}
+
+.opp-tab-active .opp-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.opp-search {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 8px;
+  max-width: 380px;
+  padding: 0 14px;
+  border: 1px solid var(--opp-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--opp-muted);
+}
+
+.opp-search:focus-within {
+  border-color: var(--opp-blue);
+  box-shadow: 0 0 0 3px rgba(25, 155, 197, 0.15);
+}
+
+.opp-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--opp-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.opp-card-item {
+  gap: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.opp-card-item:hover {
+  border-color: #bfd7e4;
+  box-shadow: 0 8px 24px rgba(7, 20, 38, 0.06);
+}
+
+.opp-card-item h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.opp-card-item .opp-summary {
+  margin: 0;
+  color: #3d4f66;
+  font-size: 14px;
+}
+
+.opp-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.opp-clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.opp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.opp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  color: var(--opp-muted);
+  font-size: 13px;
+  list-style: none;
+}
+
+.opp-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.opp-fit {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.opp-fit svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.opp-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opp-role-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 13.5px;
+}
+
+.opp-role-name {
+  font-weight: 700;
+}
+
+.opp-role-skills {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 2;
+  gap: 4px;
+}
+
+.opp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.opp-dot-success {
+  background: #16a34a;
+}
+
+.opp-dot-warning {
+  background: #d97706;
+}
+
+.opp-dot-info {
+  background: var(--opp-blue);
+}
+
+.opp-chip {
+  padding: 1px 8px;
+  border: 1px solid var(--opp-line);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+}
+
+.opp-chip-met {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.opp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.opp-btn:disabled:hover {
+  border-color: var(--opp-navy);
+  background: var(--opp-navy);
+}
+
+.opp-btn-light:hover,
+.opp-btn-light:disabled:hover {
+  border-color: var(--opp-blue);
+  background: #f0f9ff;
+  color: var(--opp-navy);
+}
+
+.opp-btn:focus-visible,
+.opp-tab:focus-visible,
+.opp-radio:focus-within {
+  outline: 3px solid rgba(25, 155, 197, 0.45);
+  outline-offset: 2px;
+}
+
+.opp-btn-danger {
+  border-color: #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.opp-btn-danger:hover {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.opp-btn-block {
+  justify-content: center;
+  width: 100%;
+  padding-block: 11px;
+  font-weight: 700;
+}
+
+.opp-tone-danger {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.opp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+  color: var(--opp-muted);
+  font-size: 14px;
+}
+
+/* صفحة التفاصيل: المحتوى + لوحة التقديم الثابتة على الشاشات الواسعة */
+.opp-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 16px;
+}
+
+.opp-detail-aside {
+  position: sticky;
+  top: 16px;
+}
+
+.opp-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opp-apply h2 {
+  margin-bottom: 12px;
+}
+
+.opp-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.opp-banner svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.opp-apply-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.opp-apply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.opp-apply-locked {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #3d4f66;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.opp-apply-locked svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.opp-apply-locked p {
+  margin: 0 0 6px;
+}
+
+.opp-apply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.opp-apply-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.opp-apply-form legend {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.opp-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--opp-line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.opp-radio input {
+  margin-top: 5px;
+  accent-color: var(--opp-navy);
+}
+
+.opp-radio span {
+  display: flex;
+  flex-direction: column;
+}
+
+.opp-radio small {
+  color: var(--opp-muted);
+}
+
+.opp-radio-active {
+  border-color: var(--opp-blue);
+  background: #f0f9ff;
+}
+
+.opp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.opp-field small {
+  color: var(--opp-muted);
+  font-weight: 400;
+}
+
+.opp-field textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--opp-line);
+  border-radius: 10px;
+  color: var(--opp-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.opp-field textarea:focus {
+  border-color: var(--opp-blue);
+  outline: 3px solid rgba(25, 155, 197, 0.15);
+}
+
+.opp-counter {
+  align-self: flex-end;
+}
+
+.opp-small {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.opp-skill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.opp-skill-table th,
+.opp-skill-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--opp-line);
+  text-align: right;
+}
+
+.opp-skill-table thead th {
+  color: var(--opp-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.opp-skill-table tbody th {
+  font-weight: 700;
+}
+
+.opp-row-met td:last-child {
+  color: #166534;
+  font-weight: 600;
+}
+
+.opp-met-icon {
+  margin-inline-start: 4px;
+  vertical-align: -2px;
+}
+
+/* صفحة طلباتي */
+.opp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.opp-application {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0;
+}
+
+.opp-application-main {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opp-application-main h2,
+.opp-application-main p {
+  margin: 0;
+}
+
+.opp-application-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.opp-skeleton-short {
+  min-height: 120px;
+}
+
+@media (max-width: 900px) {
+  /* على الجوال: رأس الفرصة ثم لوحة التقديم ثم التفاصيل الطويلة */
+  .opp-detail-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .opp-detail-main {
+    display: contents;
+  }
+
+  .opp-detail-main > * {
+    order: 2;
+  }
+
+  .opp-detail-main > .opp-detail-head {
+    order: 0;
+  }
+
+  .opp-detail-aside {
+    position: static;
+    order: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .opp-toolbar,
+  .opp-tabs,
+  .opp-search {
+    width: 100%;
+    max-width: none;
+  }
+
+  .opp-tab {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .opp-application-side {
+    align-items: flex-start;
+  }
+}
