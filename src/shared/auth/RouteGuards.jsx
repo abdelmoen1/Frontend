@@ -97,3 +97,12 @@ export function OrganizationOnboardingRoute() {
 
   return <Outlet />;
 }
+export function AdminRoute() {
+  const { user } = useAuth();
+
+  if (user?.role !== "admin") {
+    return <Navigate to={getUserDestination(user)} replace />;
+  }
+
+  return <Outlet />;
+}

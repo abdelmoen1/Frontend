@@ -22,9 +22,16 @@ import ProjectProblemInfo from "./organization/pages/ProjectProblemInfo";
 import DynamicProjectDiscovery from "./organization/components/DynamicProjectDiscovery";
 import ProjectProposal from "./organization/pages/ProjectProposal";
 import ProjectWorkspace from "./organization/pages/ProjectWorkspace";
+import OrganizationProjectOverview from "./organization/pages/OrganizationProjectOverview";
+import LeadingProjects from "./student/pages/LeadingProjects";
+import AdminDashboard from "./admin/pages/AdminDashboard";
+import AdminProjectReview from "./admin/pages/AdminProjectReview";
+import AdminUsers from "./admin/pages/AdminUsers";
+import ProjectPlanWorkspace from "./shared/pages/ProjectPlanWorkspace";
 import StudentApplications from "./student/pages/StudentApplications";
 import { AuthProvider } from "./shared/auth/AuthProvider";
 import {
+  AdminRoute,
   GuestRoute,
   OrganizationOnboardingRoute,
   OrganizationProfileRoute,
@@ -72,11 +79,28 @@ function App() {
                 element={<StudentOpportunityDetails />}
               />
               <Route path="/student/applications" element={<StudentApplications />} />
+              {/* قيادة الفريق: الصلاحية الفعلية من الخادم (تعيين ساري من إدارة المنصة) */}
+              <Route path="/student/leading" element={<LeadingProjects />} />
+              <Route path="/student/leading/:projectId" element={<ProjectWorkspace />} />
               <Route
                 path="/student/profile"
                 element={<UpdateStudentProfile />}
               />
             </Route>
+          </Route>
+
+          {/* إدارة المنصة */}
+          <Route element={<AdminRoute />}>
+            <Route element={<DashboardMenu />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/projects/:projectId" element={<AdminProjectReview />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+            </Route>
+          </Route>
+
+          {/* مساحة الخطة المشتركة: القائد والمؤسسة ومدير المنصة؛ الخادم يحدد الصفة والصلاحيات */}
+          <Route element={<DashboardMenu />}>
+            <Route path="/projects/:projectId/plan" element={<ProjectPlanWorkspace />} />
           </Route>
 
           <Route element={<LoadingRoute />}>
@@ -138,7 +162,7 @@ function App() {
               />
               <Route
                 path="/organization/projects/:projectId"
-                element={<ProjectWorkspace />}
+                element={<OrganizationProjectOverview />}
               />
             </Route>
           </Route>

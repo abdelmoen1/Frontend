@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import {
-  assignTeamLeader,
   confirmProjectTeam,
   getProjectMatches,
   reviewApplication,
@@ -387,13 +386,13 @@ function SelectionTray({ summary, selection, candidates, locked, changed, saving
   );
 }
 
-function TeamPanel({ team, required, busy, onAssignLeader, onConfirm, onGoToCandidates }) {
+function TeamPanel({ team, required, busy, onConfirm, onGoToCandidates }) {
   if (!team) {
     return (
       <div className="pw-empty">
         <Users size={30} aria-hidden="true" />
         <h2>لم يُكوَّن الفريق بعد</h2>
-        <p>اختر أعضاء الفريق من المرشحين المؤهلين، ثم عيّن قائدًا وأكّد الفريق.</p>
+        <p>اختر أعضاء الفريق من المرشحين المؤهلين، ثم أكّد الفريق.</p>
         <button type="button" className="pw-btn" onClick={onGoToCandidates}>
           اختيار المرشحين
         </button>
@@ -405,7 +404,7 @@ function TeamPanel({ team, required, busy, onAssignLeader, onConfirm, onGoToCand
   const forming = team.status === "forming";
   const steps = [
     { done: team.members.length > 0, label: `أعضاء الفريق (${team.members.length}/${required})` },
-    { done: Boolean(team.leader), label: team.leader ? `القائد: ${team.leader.name}` : "تعيين قائد للفريق" },
+    { done: Boolean(team.leader), label: team.leader ? `القائد: ${team.leader.name}` : "قائد الفريق (يعيّنه مدير المنصة)" },
     { done: !forming, label: forming ? "تأكيد الفريق" : "تم تأكيد الفريق" },
   ];
 
@@ -432,17 +431,16 @@ function TeamPanel({ team, required, busy, onAssignLeader, onConfirm, onGoToCand
           <button
             type="button"
             className="pw-btn"
-            disabled={busy || !team.leader || team.members.length === 0}
+            disabled={busy || team.members.length === 0}
             onClick={onConfirm}
           >
             <BadgeCheck size={16} aria-hidden="true" /> تأكيد الفريق
           </button>
         )}
-        {forming && !team.leader && <p className="pw-muted pw-small">عيّن قائدًا من الأعضاء قبل تأكيد الفريق.</p>}
       </section>
 
       <section className="pw-card" aria-labelledby="pw-members-title">
-        <h2 id="pw-members-title">الأعضاء والقائد</h2>
+        <h2 id="pw-members-title">أعضاء الفريق</h2>
         <ul className="pw-members">
           {team.members.map((member) => (
             <li key={member.id} className={member.is_leader ? "pw-member-leader" : ""}>
@@ -461,17 +459,12 @@ function TeamPanel({ team, required, busy, onAssignLeader, onConfirm, onGoToCand
                   {member.academic_major ? ` · ${member.academic_major}` : ""}
                 </span>
               </div>
-              {!member.is_leader && ["forming", "ready"].includes(team.status) && (
-                <button type="button" className="pw-btn pw-btn-light" disabled={busy} onClick={() => onAssignLeader(member)}>
-                  <Crown size={14} aria-hidden="true" /> {team.leader ? "تعيينه قائدًا بدلًا" : "تعيينه قائدًا"}
-                </button>
-              )}
             </li>
           ))}
         </ul>
         {team.leader?.assigned_at && (
           <p className="pw-muted pw-small">
-            عُيّن القائد الحالي في {formatDate(team.leader.assigned_at)}. القائد يجب أن يكون عضوًا في الفريق، ويمكن تغييره في أي وقت.
+            قائد الفريق يعيّنه مدير المنصة لهذا المشروع، وهو مسؤول عن اختيار الأعضاء وخطة التنفيذ مع المؤسسة.
           </p>
         )}
       </section>
@@ -552,7 +545,7 @@ export default function ProjectWorkspace() {
       <main className="pw-page" dir="rtl">
         <div className="pw-empty" role="alert">
           <h2>{loadError || "المشروع غير موجود."}</h2>
-          <Link className="pw-btn" to="/organization/requests">
+          <Link className="pw-btn" to="/student/leading">
             العودة إلى المشاريع
           </Link>
         </div>
@@ -623,26 +616,11 @@ export default function ProjectWorkspace() {
     await run(() => reviewApplication(project.id, candidate.application.id, status), status === "rejected" ? "تم رفض الطلب." : "تم تحديث حالة الطلب.");
   };
 
-  const assignLeader = async (member) => {
-    const confirmation = await showAlert({
-      icon: "question",
-      title: team.leader ? "تغيير قائد الفريق؟" : "تعيين قائد الفريق؟",
-      text: team.leader
-        ? `سيصبح ${member.name} قائد الفريق بدلًا من ${team.leader.name}.`
-        : `سيصبح ${member.name} قائد الفريق والمسؤول عن تنسيقه أثناء التنفيذ.`,
-      showCancelButton: true,
-      confirmButtonText: "تأكيد",
-      cancelButtonText: "إلغاء",
-    });
-    if (!confirmation.isConfirmed) return;
-    await run(() => assignTeamLeader(team.id, member.student_profile_id), `أصبح ${member.name} قائد الفريق.`);
-  };
-
   const confirmTeam = async () => {
     const confirmation = await showAlert({
       icon: "question",
       title: "تأكيد الفريق؟",
-      text: "بعد التأكيد يصبح الفريق جاهزًا للتنفيذ ولا يمكن تعديل أعضائه. يبقى تغيير القائد ممكنًا.",
+      text: "بعد التأكيد يصبح الفريق جاهزًا للتنفيذ ولا يمكن تعديل أعضائه. يبدأ التنفيذ بعد اتفاقك مع المؤسسة على خطة التنفيذ.",
       showCancelButton: true,
       confirmButtonText: "تأكيد الفريق",
       cancelButtonText: "تراجع",
@@ -675,9 +653,14 @@ export default function ProjectWorkspace() {
 
   return (
     <main className="pw-page" dir="rtl">
-      <Link className="pw-back" to={`/organization/requests/${project.project_request_id}`}>
-        <ArrowRight size={16} aria-hidden="true" /> تفاصيل المقترح
-      </Link>
+      <div className="pw-back-row">
+        <Link className="pw-back" to="/student/leading">
+          <ArrowRight size={16} aria-hidden="true" /> المشاريع التي أقودها
+        </Link>
+        <Link className="pw-btn pw-btn-light" to={`/projects/${project.id}/plan`}>
+          خطة التنفيذ والاتفاق
+        </Link>
+      </div>
 
       <header className="pw-card pw-head">
         <div className="pw-head-main">
@@ -791,7 +774,7 @@ export default function ProjectWorkspace() {
           className={tab === "team" ? "pw-tab pw-tab-active" : "pw-tab"}
           onClick={() => setTab("team")}
         >
-          الفريق والقائد {teamStatus && <span className={`pw-dot pw-dot-${teamStatus.tone}`} aria-hidden="true" />}
+          الفريق {teamStatus && <span className={`pw-dot pw-dot-${teamStatus.tone}`} aria-hidden="true" />}
         </button>
       </div>
 
@@ -800,7 +783,6 @@ export default function ProjectWorkspace() {
           team={team}
           required={stats.required_team_size}
           busy={busy}
-          onAssignLeader={assignLeader}
           onConfirm={confirmTeam}
           onGoToCandidates={() => setTab("candidates")}
         />
