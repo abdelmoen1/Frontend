@@ -8,5 +8,9 @@ export function getUserDestination(user) {
     return user.onboarding_completed ? "/loading" : "/organization/onboarding";
   }
 
+  if (user?.role === "admin") {
+    return "/admin/dashboard";
+  }
+
   return "/";
 }

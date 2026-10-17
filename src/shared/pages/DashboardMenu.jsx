@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { FaSignOutAlt, FaSearch, FaBell, FaUserCircle } from "react-icons/fa";
-import { Briefcase, Building2, ClipboardCheck, FileCheck2, LayoutDashboard, Plus, UserRound } from "lucide-react";
+import { FaSignOutAlt, FaSearch, FaUserCircle } from "react-icons/fa";
+import NotificationBell from "../components/NotificationBell";
+import EmailVerificationBanner from "../components/EmailVerificationBanner";
+import { Award, Briefcase, Building2, ClipboardCheck, Crown, FileCheck2, FolderKanban, LayoutDashboard, Plus, UserRound, Users } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { showAlert, Swal } from "../utils/alerts";
 import logo from "../assets/logo.svg";
@@ -14,12 +16,20 @@ function DashboardMenu() {
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navRef = useRef(null);
+
+  // على الجوال الشريط السفلي قابل للتمرير؛ نُظهر الرابط النشط بعد كل تنقل
+  useEffect(() => {
+    navRef.current?.querySelector(".sidebar-link-active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [pathname]);
   const isOrganizationProfile = pathname.startsWith("/organization/profile");
   const userName = user?.name?.trim() || "";
   const dashboardPath =
     user?.role === "organization"
       ? "/organization/dashboard"
-      : "/student/dashboard";
+      : user?.role === "admin"
+        ? "/admin/dashboard"
+        : "/student/dashboard";
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -58,7 +68,7 @@ function DashboardMenu() {
 
         <p className="sidebar-section-label">القائمة الرئيسية</p>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" ref={navRef}>
           {user?.role === "organization" && (
             <NavLink
               to="/organization/requests/new"
@@ -132,6 +142,58 @@ function DashboardMenu() {
               <span>طلباتي</span>
             </NavLink>
           )}
+          {user?.role === "student" && (
+            <NavLink
+              to="/student/projects"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <FolderKanban size={18} aria-hidden="true" />
+              </span>
+              <span>مشاريعي</span>
+            </NavLink>
+          )}
+          {user?.role === "student" && (
+            <NavLink
+              to="/student/evidence"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <Award size={18} aria-hidden="true" />
+              </span>
+              <span>سجل الخبرة</span>
+            </NavLink>
+          )}
+          {user?.role === "student" && user?.leading_projects_count > 0 && (
+            <NavLink
+              to="/student/leading"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <Crown size={18} aria-hidden="true" />
+              </span>
+              <span>مشاريع أقودها</span>
+            </NavLink>
+          )}
+          {user?.role === "admin" && (
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
+              }
+            >
+              <span className="sidebar-link-icon">
+                <Users size={18} aria-hidden="true" />
+              </span>
+              <span>الحسابات</span>
+            </NavLink>
+          )}
           {user?.role === "organization" && (
             <NavLink
               to="/organization/requests"
@@ -188,9 +250,7 @@ function DashboardMenu() {
               </div>
             )}
 
-            <button className="topbar-bell" aria-label="الإشعارات">
-              <FaBell />
-            </button>
+            <NotificationBell />
 
             {!isOrganizationProfile && (
               <div className="topbar-user">
@@ -202,6 +262,7 @@ function DashboardMenu() {
         )}
 
         <main className="app-content">
+          <EmailVerificationBanner />
           <Outlet />
         </main>
       </div>

@@ -1,26 +1,32 @@
 import { ArrowLeft } from "lucide-react";
 import { closing } from "../content";
 import { CtaLink } from "../components/shared";
+import { Reveal } from "../components/Reveal";
+import { trackPointer } from "../motion";
 
+// لوحة ختامية بحافة ضوئية متحركة وتوهج يتبع المؤشر
 export default function ClosingSection() {
   return (
     <section className="lp-section lp-section-tight" id={closing.id} aria-labelledby="lp-closing-title">
       <div className="lp-container">
-        <div className="lp-closing">
-          <div>
-            <h2 id="lp-closing-title">{closing.title}</h2>
-            <p>{closing.text}</p>
+        <Reveal className="lp-closing lp-beam" onPointerMove={trackPointer}>
+          <div className="lp-aurora lp-aurora-soft" aria-hidden="true">
+            <i />
+            <i />
           </div>
+          <span className="lp-closing-light" aria-hidden="true" />
+          <h2 id="lp-closing-title">{closing.title}</h2>
+          <p>{closing.text}</p>
           <div className="lp-closing-actions">
-            <CtaLink to={closing.primary.to} variant="light" className="lp-btn-lg">
+            <CtaLink to={closing.primary.to} className="lp-btn-lg">
               {closing.primary.label}
               <ArrowLeft size={18} aria-hidden="true" />
             </CtaLink>
-            <CtaLink to={closing.secondary.to} variant="outline-light" className="lp-btn-lg">
+            <CtaLink to={closing.secondary.to} variant="ghost" className="lp-btn-lg">
               {closing.secondary.label}
             </CtaLink>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

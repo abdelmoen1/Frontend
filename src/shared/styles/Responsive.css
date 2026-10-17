@@ -581,3 +581,30 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* شريط التنقل السفلي: عناصر بعرض ثابت قابلة للتمرير أفقيًا بدل تكسير التسميات عندما تكثر الروابط */
+@media (max-width: 767px) {
+  .sidebar-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-nav .sidebar-link,
+  .sidebar-nav .sidebar-create-project {
+    flex: 0 0 auto;
+    min-width: 62px;
+    padding-inline: 6px;
+  }
+
+  .sidebar-nav .sidebar-link > span:last-child,
+  .sidebar-nav .sidebar-create-project > span {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+}
