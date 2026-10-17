@@ -1,6 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./shared/pages/Login";
 import Register from "./shared/pages/Register";
+import ForgotPassword from "./shared/pages/ForgotPassword";
+import ResetPassword from "./shared/pages/ResetPassword";
+import VerifyEmailNotice from "./shared/pages/VerifyEmailNotice";
+import VerifyEmailConfirm from "./shared/pages/VerifyEmailConfirm";
 import GoogleCallback from "./shared/pages/GoogleCallback";
 import OrganizationOnboarding from "./organization/pages/OrganizationOnboarding";
 import OrganizationProfilePage from "./organization/pages/OrganizationProfilePage";
@@ -53,15 +57,20 @@ function App() {
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
         {/* مسار بديل لنفس صفحة إكمال تسجيل الدخول عبر Google */}
         <Route path="/auth/callback" element={<GoogleCallback />} />
+        {/* رابط تأكيد البريد من الرسالة: لا يتطلب تسجيل الدخول (FR-ACC-08) */}
+        <Route path="/verify-email/:id/:hash" element={<VerifyEmailConfirm />} />
 
         {/* Only guests */}
         <Route element={<GuestRoute />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Route>
 
         {/* Authenticated student */}
         <Route element={<ProtectedRoute />}>
+          <Route path="/verify-email" element={<VerifyEmailNotice />} />
           {/* Onboarding */}
           <Route element={<StudentOnboardingRoute />}>
             <Route path="/student/onboarding" element={<StudentOnboarding />} />

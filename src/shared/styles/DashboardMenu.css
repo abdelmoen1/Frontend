@@ -379,3 +379,24 @@
 @media (max-width: 640px) {
   .notif-panel { position: fixed; top: 64px; left: 16px; right: 16px; width: auto; }
 }
+
+/* تنبيه تأكيد البريد (FR-ACC-08) */
+.verify-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fef9c3;
+  color: #854d0e;
+  font-size: 14px;
+  direction: rtl;
+}
+.verify-banner-link {
+  margin-inline-start: auto;
+  color: #0f7fa3;
+  font-weight: 700;
+  text-decoration: none;
+}

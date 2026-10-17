@@ -142,9 +142,9 @@ function Login() {
                     />
                     <span>تذكرني</span>
                   </label>
-                  <a href="#" id="resetPassword" className="action-link">
+                  <Link to="/forgot-password" id="resetPassword" className="action-link">
                     نسيت كلمة المرور؟
-                  </a>
+                  </Link>
                 </div>
 
                 <button

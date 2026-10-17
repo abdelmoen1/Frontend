@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { FaSignOutAlt, FaSearch, FaUserCircle } from "react-icons/fa";
 import NotificationBell from "../components/NotificationBell";
+import EmailVerificationBanner from "../components/EmailVerificationBanner";
 import { Award, Briefcase, Building2, ClipboardCheck, Crown, FileCheck2, FolderKanban, LayoutDashboard, Plus, UserRound, Users } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { showAlert, Swal } from "../utils/alerts";
@@ -261,6 +262,7 @@ function DashboardMenu() {
         )}
 
         <main className="app-content">
+          <EmailVerificationBanner />
           <Outlet />
         </main>
       </div>

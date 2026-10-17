@@ -83,6 +83,21 @@ export const getCurrentUser = async () => {
   }
 };
 
+// إعادة تعيين كلمة المرور (FR-ACC-05): الرد واحد سواء كان البريد مسجلًا أم لا
+export const requestPasswordReset = (email) => requestJson(`${BASE_URL}/forgot-password`, jsonPost({ email }));
+
+export const resetPassword = ({ token, email, password, passwordConfirmation }) =>
+  requestJson(
+    `${BASE_URL}/reset-password`,
+    jsonPost({ token, email, password, password_confirmation: passwordConfirmation }),
+  );
+
+// تأكيد البريد (FR-ACC-08): الرابط الموقّع نفسه هو الإثبات، فلا يلزم تسجيل الدخول
+export const verifyEmail = (apiPath) => requestJson(`${BASE_URL}${apiPath}`, { headers: { Accept: "application/json" } });
+
+export const resendVerificationEmail = () =>
+  requestJson(`${BASE_URL}/email/verification-notification`, { method: "POST", headers: authHeaders() });
+
 export const logoutUser = async () => {
   await requestJson(`${BASE_URL}/logout`, { method: "POST", headers: authHeaders() });
 };
