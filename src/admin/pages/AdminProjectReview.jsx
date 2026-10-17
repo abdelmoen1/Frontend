@@ -334,6 +334,7 @@ export default function AdminProjectReview() {
             <p className="wf-muted wf-small" style={{ marginTop: 12 }}>
               خطة التنفيذ: {project.plan.versions} نسخة{project.plan.agreed_at ? ` · متفق عليها في ${formatDate(project.plan.agreed_at)}` : ""}
               {project.plan.versions > 0 && <> · <Link to={`/projects/${project.id}/plan`}>عرض الخطة</Link></>}
+              {["in_progress", "completed"].includes(project.project_status) && <> · <Link to={`/projects/${project.id}/execution`}>متابعة التنفيذ</Link></>}
             </p>
           )}
         </section>

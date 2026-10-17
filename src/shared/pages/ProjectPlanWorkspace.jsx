@@ -323,6 +323,9 @@ export default function ProjectPlanWorkspace() {
           {project.organization_name} · قائد الفريق: {project.leader?.name || "غير معيّن"}.
           {" "}لا يبدأ التنفيذ إلا بعد موافقة القائد والمؤسسة على النسخة نفسها.
         </p>
+        {project.execution_started_at && (
+          <Link className="wf-btn wf-btn-light" to={`/projects/${project.id}/execution`}>الانتقال إلى مساحة التنفيذ</Link>
+        )}
         {permissions.start_execution && (
           <button type="button" className="wf-btn" onClick={start} disabled={busy}><Rocket size={16} aria-hidden="true" /> بدء التنفيذ</button>
         )}

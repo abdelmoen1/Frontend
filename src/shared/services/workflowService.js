@@ -63,9 +63,26 @@ export const decidePlanVersion = (id, versionId, decision, contentHash, note) =>
 export const commentOnPlanVersion = (id, versionId, body) =>
   request(`/projects/${id}/plan/versions/${versionId}/comments`, send("POST", { body })).then((r) => r.data);
 
+// مساحة التنفيذ: لوحة المشروع والمهام والتسليمات والتقييمات (الخادم يحدد صفة المستخدم وصلاحياته)
+export const getExecutionWorkspace = (id) => request(`/projects/${id}/execution`).then((r) => r.data);
+export const createProjectTask = (id, task) => request(`/projects/${id}/tasks`, send("POST", task)).then((r) => r.data);
+export const updateProjectTask = (id, taskId, changes) => request(`/projects/${id}/tasks/${taskId}`, send("PATCH", changes)).then((r) => r.data);
+export const updateProjectMilestone = (id, milestoneId, status) => request(`/projects/${id}/milestones/${milestoneId}`, send("PATCH", { status })).then((r) => r.data);
+export const submitTaskDeliverable = (id, taskId, deliverable) => request(`/projects/${id}/tasks/${taskId}/deliverables`, send("POST", deliverable)).then((r) => r.data);
+export const reviewTaskDeliverable = (id, deliverableId, decision, feedback) =>
+  request(`/projects/${id}/deliverables/${deliverableId}/review`, send("POST", { decision, feedback: feedback || null })).then((r) => r.data);
+export const completeProject = (id) => request(`/projects/${id}/complete`, send("POST", {})).then((r) => r.data);
+export const evaluateTeamMember = (id, evaluation) => request(`/projects/${id}/evaluations`, send("POST", evaluation)).then((r) => r.data);
+export const submitClientFeedback = (id, feedback) => request(`/projects/${id}/feedback`, send("POST", feedback)).then((r) => r.data);
+
+// الطالب: مشاريعي وسجل أدلة الخبرة
+export const getStudentProjects = () => request("/student/projects").then((r) => r.data);
+export const getStudentEvidence = () => request("/student/evidence").then((r) => r.data);
+
 // المؤسسة: عرض المشروع للقراءة
 export const getOrganizationProject = (id) => request(`/organization/projects/${id}`).then((r) => r.data);
 
 // الإشعارات
 export const getNotifications = () => request("/notifications");
 export const markAllNotificationsRead = () => request("/notifications/read-all", send("POST", {}));
+export const markNotificationRead = (id) => request(`/notifications/${id}/read`, send("POST", {}));

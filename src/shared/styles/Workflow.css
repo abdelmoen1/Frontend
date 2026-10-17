@@ -137,3 +137,28 @@
 .wf-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .wf-money dt { color: var(--wf-muted); }
 .wf-money dd { margin: 0; font-weight: 600; text-align: left; }
+
+/* مساحة التنفيذ */
+.wf-milestone { border: 1px solid var(--wf-line); border-radius: 12px; padding: 12px; margin-bottom: 12px; background: var(--wf-soft); }
+.wf-task-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.wf-task-head .wf-list-main span { display: block; }
+.wf-tasks { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.wf-task { background: #fff; border: 1px solid var(--wf-line); border-radius: 10px; padding: 10px 12px; }
+.wf-subcard { background: var(--wf-soft); border: 1px dashed #cbd5e1; border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
+.wf-task .wf-subcard { background: #f8fafc; }
+.wf-deliverables { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.wf-deliverables li { border-inline-start: 3px solid var(--wf-line); padding-inline-start: 10px; }
+.wf-feedback { background: var(--wf-warning-bg); color: var(--wf-warning); border-radius: 8px; padding: 6px 10px; }
+.wf-link { display: inline-flex; align-items: center; gap: 3px; color: var(--wf-blue-dark); font-size: 13px; }
+.wf-inline { display: inline-flex; align-items: center; gap: 6px; color: var(--wf-muted); }
+.wf-select-sm { width: auto; min-height: 32px; padding: 4px 8px; font-size: 13px; }
+.wf-progress { height: 6px; border-radius: 999px; background: var(--wf-line); overflow: hidden; margin-top: 6px; }
+.wf-progress span { display: block; height: 100%; background: var(--wf-blue); border-radius: 999px; }
+.wf-evidence-skills { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+
+@media (max-width: 640px) {
+  .wf-task-head { flex-direction: column; }
+  .wf-inline { width: 100%; justify-content: space-between; }
+  .wf-inline .wf-select-sm { flex: 1; }
+  .wf-milestone { padding: 10px; }
+}

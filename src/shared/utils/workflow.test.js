@@ -8,6 +8,11 @@ import {
   planFormFrom,
   planPayload,
   reviewActions,
+  averageScore,
+  completionBlockers,
+  emptyTask,
+  groupTasksByMilestone,
+  taskPayload,
 } from "./workflow.js";
 
 test("admin review actions mirror the server transitions", () => {
@@ -58,4 +63,32 @@ test("server validation keys map to form fields", () => {
     "milestones.0.due_date": "خطأ",
     payment_schedule: "المجموع",
   });
+});
+
+test("task payload trims text, nulls empty optionals and converts ids", () => {
+  const payload = taskPayload({ title: "  شاشة الحجز ", description: " ", priority: "", due_date: "", milestone_id: "4", assignee_member_id: "" });
+  assert.deepEqual(payload, { title: "شاشة الحجز", description: null, priority: "medium", due_date: null, milestone_id: 4, assignee_member_id: null });
+  assert.deepEqual(Object.keys(taskPayload(emptyTask())).sort(), ["assignee_member_id", "description", "due_date", "milestone_id", "priority", "title"]);
+});
+
+test("tasks are grouped under their milestones with unassigned ones last", () => {
+  const groups = groupTasksByMilestone(
+    [{ id: 1, title: "أ" }, { id: 2, title: "ب" }],
+    [{ id: 10, milestone_id: 2 }, { id: 11, milestone_id: null }, { id: 12, milestone_id: 1 }, { id: 13, milestone_id: 99 }],
+  );
+  assert.deepEqual(groups.map((g) => [g.milestone?.id ?? null, g.tasks.map((t) => t.id)]), [[1, [12]], [2, [10]], [null, [11, 13]]]);
+  assert.equal(groupTasksByMilestone([], []).length, 0);
+});
+
+test("completion blockers mirror the server rules", () => {
+  const milestones = [{ status: "completed" }, { status: "in_progress" }];
+  const tasks = [{ status: "done" }, { status: "cancelled" }, { status: "in_review" }, { status: "todo" }];
+  assert.deepEqual(completionBlockers(milestones, tasks), ["2 مهمة ما زالت مفتوحة", "1 مرحلة غير مكتملة"]);
+  assert.deepEqual(completionBlockers([{ status: "completed" }], [{ status: "done" }, { status: "cancelled" }]), []);
+});
+
+test("evaluation average matches the server rounding", () => {
+  assert.equal(averageScore({ technical_quality: 5, communication: 4, reliability: 4, teamwork: 4 }), 4);
+  assert.equal(averageScore({ a: 5, b: 5, c: 4, d: 4 }), 5);
+  assert.equal(averageScore({}), 0);
 });

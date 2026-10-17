@@ -660,6 +660,9 @@ export default function ProjectWorkspace() {
         <Link className="pw-btn pw-btn-light" to={`/projects/${project.id}/plan`}>
           خطة التنفيذ والاتفاق
         </Link>
+        <Link className="pw-btn pw-btn-light" to={`/projects/${project.id}/execution`}>
+          المهام والتسليمات
+        </Link>
       </div>
 
       <header className="pw-card pw-head">

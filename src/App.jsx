@@ -29,6 +29,9 @@ import AdminProjectReview from "./admin/pages/AdminProjectReview";
 import AdminUsers from "./admin/pages/AdminUsers";
 import ProjectPlanWorkspace from "./shared/pages/ProjectPlanWorkspace";
 import StudentApplications from "./student/pages/StudentApplications";
+import StudentProjects from "./student/pages/StudentProjects";
+import StudentEvidence from "./student/pages/StudentEvidence";
+import ProjectExecutionWorkspace from "./shared/pages/ProjectExecutionWorkspace";
 import { AuthProvider } from "./shared/auth/AuthProvider";
 import {
   AdminRoute,
@@ -79,6 +82,9 @@ function App() {
                 element={<StudentOpportunityDetails />}
               />
               <Route path="/student/applications" element={<StudentApplications />} />
+              <Route path="/student/projects" element={<StudentProjects />} />
+              <Route path="/student/projects/:projectId" element={<ProjectExecutionWorkspace />} />
+              <Route path="/student/evidence" element={<StudentEvidence />} />
               {/* قيادة الفريق: الصلاحية الفعلية من الخادم (تعيين ساري من إدارة المنصة) */}
               <Route path="/student/leading" element={<LeadingProjects />} />
               <Route path="/student/leading/:projectId" element={<ProjectWorkspace />} />
@@ -101,6 +107,7 @@ function App() {
           {/* مساحة الخطة المشتركة: القائد والمؤسسة ومدير المنصة؛ الخادم يحدد الصفة والصلاحيات */}
           <Route element={<DashboardMenu />}>
             <Route path="/projects/:projectId/plan" element={<ProjectPlanWorkspace />} />
+            <Route path="/projects/:projectId/execution" element={<ProjectExecutionWorkspace />} />
           </Route>
 
           <Route element={<LoadingRoute />}>

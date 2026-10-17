@@ -64,7 +64,12 @@ export default function OrganizationProjectOverview() {
           ) : (
             <p className="wf-muted">لم يقدّم قائد الفريق خطة بعد.</p>
           )}
-          {project.leader && <Link className="wf-btn" to={`/projects/${project.id}/plan`}>فتح مساحة الخطة</Link>}
+          <div className="wf-actions">
+            {project.leader && <Link className="wf-btn" to={`/projects/${project.id}/plan`}>فتح مساحة الخطة</Link>}
+            {["in_progress", "completed"].includes(project.project_status) && (
+              <Link className="wf-btn wf-btn-light" to={`/projects/${project.id}/execution`}>متابعة التنفيذ والتقدم</Link>
+            )}
+          </div>
         </section>
       </div>
 

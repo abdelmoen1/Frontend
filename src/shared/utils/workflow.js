@@ -151,3 +151,87 @@ export function fieldErrors(errors) {
   });
   return out;
 }
+
+// ===== مرحلة التنفيذ =====
+
+export const TASK_STATUSES = {
+  todo: { label: "لم تبدأ", tone: "neutral" },
+  in_progress: { label: "قيد العمل", tone: "info" },
+  in_review: { label: "بانتظار المراجعة", tone: "warning" },
+  changes_requested: { label: "مطلوب تعديل", tone: "danger" },
+  done: { label: "منجزة", tone: "success" },
+  cancelled: { label: "ملغاة", tone: "neutral" },
+};
+
+/** الحالات التي يضبطها القائد يدويًا (in_review و changes_requested تأتي من التسليم والمراجعة) */
+export const MANUAL_TASK_STATUSES = ["todo", "in_progress", "done", "cancelled"];
+
+export const TASK_PRIORITIES = {
+  low: "منخفضة",
+  medium: "متوسطة",
+  high: "عالية",
+  urgent: "عاجلة",
+};
+
+export const MILESTONE_STATUSES = {
+  pending: { label: "لم تبدأ", tone: "neutral" },
+  in_progress: { label: "جارية", tone: "info" },
+  completed: { label: "مكتملة", tone: "success" },
+};
+
+export const DELIVERABLE_STATUSES = {
+  pending_review: { label: "بانتظار المراجعة", tone: "warning" },
+  accepted: { label: "مقبول", tone: "success" },
+  revision_requested: { label: "مطلوب تعديل", tone: "danger" },
+};
+
+export const EVALUATION_CRITERIA = {
+  technical_quality: "جودة العمل التقني",
+  communication: "التواصل",
+  reliability: "الالتزام بالمواعيد",
+  teamwork: "العمل الجماعي",
+};
+
+const OPEN_TASK_STATUSES = ["todo", "in_progress", "in_review", "changes_requested"];
+
+export function emptyTask() {
+  return { title: "", description: "", priority: "medium", due_date: "", milestone_id: "", assignee_member_id: "" };
+}
+
+/** حمولة المهمة: نصوص مقصوصة، والحقول الاختيارية الفارغة null، والمعرفات أرقام */
+export function taskPayload(form) {
+  const id = (value) => (value === "" || value === null || value === undefined ? null : Number(value));
+  return {
+    title: (form.title || "").trim(),
+    description: (form.description || "").trim() || null,
+    priority: form.priority || "medium",
+    due_date: form.due_date || null,
+    milestone_id: id(form.milestone_id),
+    assignee_member_id: id(form.assignee_member_id),
+  };
+}
+
+/** يجمع المهام تحت مراحلها بترتيب المراحل، والمهام بلا مرحلة في مجموعة أخيرة */
+export function groupTasksByMilestone(milestones, tasks) {
+  const groups = (milestones || []).map((milestone) => ({ milestone, tasks: (tasks || []).filter((t) => t.milestone_id === milestone.id) }));
+  const known = new Set((milestones || []).map((m) => m.id));
+  const loose = (tasks || []).filter((t) => !t.milestone_id || !known.has(t.milestone_id));
+  if (loose.length) groups.push({ milestone: null, tasks: loose });
+  return groups;
+}
+
+/** موانع إكمال المشروع كما يطبقها الخادم: مهام مفتوحة ومراحل غير مكتملة */
+export function completionBlockers(milestones, tasks) {
+  const blockers = [];
+  const open = (tasks || []).filter((t) => OPEN_TASK_STATUSES.includes(t.status)).length;
+  if (open) blockers.push(`${open} مهمة ما زالت مفتوحة`);
+  const pending = (milestones || []).filter((m) => m.status !== "completed").length;
+  if (pending) blockers.push(`${pending} مرحلة غير مكتملة`);
+  return blockers;
+}
+
+/** المتوسط المقرب لمعايير التقييم (المعادلة نفسها في الخادم) */
+export function averageScore(criteria) {
+  const values = Object.values(criteria || {}).map(Number).filter((n) => Number.isFinite(n) && n > 0);
+  return values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+}

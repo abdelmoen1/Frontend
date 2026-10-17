@@ -41,6 +41,9 @@ export default function LeadingProjects() {
           <div className="wf-actions">
             <Link className="wf-btn" to={`/student/leading/${project.id}`}>المتقدمون والفريق ({project.applications_count})</Link>
             <Link className="wf-btn wf-btn-light" to={`/projects/${project.id}/plan`}>خطة التنفيذ والاتفاق</Link>
+            {["in_progress", "completed"].includes(project.project_status) && (
+              <Link className="wf-btn wf-btn-light" to={`/projects/${project.id}/execution`}>المهام والتسليمات</Link>
+            )}
           </div>
         </section>
       ))}
