@@ -51,7 +51,7 @@ export const header = {
   closeMenu: "إغلاق القائمة",
 };
 
-// بداية الصفحة حسب التصميم المعتمد: صورة بطل بعرض الشاشة، ثم المشكلة، ثم مسار المؤسسة
+// بداية الصفحة: تكوين نصي في الوسط يلتقي تحته مساران مرسومان (المؤسسة والطالب)، ثم المشكلة، ثم مسار المؤسسة
 export const hero = {
   id: "top",
   eyebrow: "من فرصة تدريب…",
@@ -61,6 +61,8 @@ export const hero = {
   lead: "منصة تربط الطلاب والخريجين بالمؤسسات والشركات عبر مشاريع حقيقية، لتقترب الخبرة العملية ويتضح الطريق إلى سوق العمل.",
   primary: { label: "ابدأ الآن", to: ROUTES.register },
   secondary: { label: "اكتشف", href: "#problem" },
+  // تسميتا المسارين المرسومين تحت العنوان؛ يلتقيان في نقطة واحدة
+  tracks: { organization: "المؤسسة", student: "الطالب" },
 };
 
 export const problem = {
@@ -261,6 +263,13 @@ export const capabilities = {
     },
   ],
   audienceLabels: { students: "للطلاب", organizations: "للمؤسسات", both: "للطرفين" },
+  // أزرار التصفية فوق البطاقات؛ عناصر "both" تظهر مع كل تصفية
+  filterLabel: "عرض الأدوات حسب الجهة",
+  filters: [
+    { id: "all", label: "الكل" },
+    { id: "organizations", label: "للمؤسسات" },
+    { id: "students", label: "للطلاب" },
+  ],
 };
 
 export const outcomes = {

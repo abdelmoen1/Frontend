@@ -5,11 +5,11 @@ import logo from "../../shared/assets/logo.svg";
 import { useAuth } from "../../shared/auth/useAuth";
 import { getUserDestination } from "../../shared/auth/destination";
 import { header, ROUTES } from "../content";
-import { CtaLink } from "./shared";
+import { CtaLink, LogoMark } from "./shared";
 
 const isScrolled = () => typeof window !== "undefined" && window.scrollY > 24;
 
-// navItems: روابط الأقسام المفعّلة فقط (يمررها LandingPage). الترويسة شفافة فوق صورة البطل وتصبح بيضاء عند التمرير.
+// navItems: روابط الأقسام المفعّلة فقط (يمررها LandingPage). الترويسة شفافة فوق البطل وتصبح زجاجية داكنة عند التمرير.
 export default function LandingHeader({ navItems }) {
   const [open, setOpen] = useState(false);
   const [solid, setSolid] = useState(isScrolled);
@@ -54,8 +54,7 @@ export default function LandingHeader({ navItems }) {
     <header className={`lp-header ${solid ? "is-solid" : ""} ${open ? "is-open" : ""}`}>
       <div className="lp-container lp-header-inner">
         <Link to="/" className="lp-logo" aria-label={header.homeLabel}>
-          <img src={logo} alt="" width="130" height="91" />
-
+          <LogoMark logo={logo} />
         </Link>
 
         <button
@@ -83,15 +82,15 @@ export default function LandingHeader({ navItems }) {
           </nav>
           <div className="lp-header-actions">
             {user ? (
-              <CtaLink to={getUserDestination(user)} variant="sky" onClick={close}>
+              <CtaLink to={getUserDestination(user)} onClick={close}>
                 {header.account}
               </CtaLink>
             ) : (
               <>
-                <CtaLink to={ROUTES.login} variant="ghost" onClick={close}>
+                <CtaLink to={ROUTES.login} variant="quiet" onClick={close}>
                   {header.login}
                 </CtaLink>
-                <CtaLink to={ROUTES.register} variant="sky" onClick={close}>
+                <CtaLink to={ROUTES.register} onClick={close}>
                   {header.register}
                 </CtaLink>
               </>

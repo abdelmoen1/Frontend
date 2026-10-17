@@ -1,3 +1,4 @@
+import { LazyMotion, MotionConfig } from "motion/react";
 import { header, SECTIONS } from "./content";
 import LandingHeader from "./components/LandingHeader";
 import LandingFooter from "./components/LandingFooter";
@@ -16,7 +17,12 @@ import "./landing.css";
 /**
  * الصفحة الرئيسية العامة (/). ترتيب الأقسام وإظهارها من SECTIONS في content.js، والنصوص كلها هناك.
  * لإضافة قسم جديد: أنشئ مكوّنه في sections/، وأضفه هنا مع معرّفات الروابط التي يحتويها، ثم إلى SECTIONS.
+ *
+ * الحركة: مكتبة motion بحزمة domAnimation تُحمَّل في ملف منفصل عند الحاجة (مكوّنات m.* داخل LazyMotion strict).
+ * MotionConfig reducedMotion="user" يوقف الحركة الانتقالية لمن فعّل "تقليل الحركة"، وlanding.css يوقف الحلقات المستمرة.
  */
+const loadMotionFeatures = () => import("./motionFeatures").then((module) => module.default);
+
 const SECTION_COMPONENTS = {
   hero: { Component: HeroSection, anchors: ["top"] },
   problem: { Component: ProblemSection, anchors: ["problem"] },
@@ -38,18 +44,22 @@ export default function LandingPage() {
   const navItems = header.nav.filter((item) => anchors.includes(item.href.slice(1)));
 
   return (
-    <div className="lp" dir="rtl" lang="ar">
-      <a className="lp-skip" href="#lp-main">
-        تخطَّ إلى المحتوى
-      </a>
-      <LandingHeader navItems={navItems} />
-      <main id="lp-main">
-        {sections.map(({ id }) => {
-          const { Component } = SECTION_COMPONENTS[id];
-          return <Component key={id} />;
-        })}
-      </main>
-      <LandingFooter sectionIds={anchors} />
-    </div>
+    <LazyMotion features={loadMotionFeatures} strict>
+      <MotionConfig reducedMotion="user">
+        <div className="lp" dir="rtl" lang="ar">
+          <a className="lp-skip" href="#lp-main">
+            تخطَّ إلى المحتوى
+          </a>
+          <LandingHeader navItems={navItems} />
+          <main id="lp-main">
+            {sections.map(({ id }) => {
+              const { Component } = SECTION_COMPONENTS[id];
+              return <Component key={id} />;
+            })}
+          </main>
+          <LandingFooter sectionIds={anchors} />
+        </div>
+      </MotionConfig>
+    </LazyMotion>
   );
 }
