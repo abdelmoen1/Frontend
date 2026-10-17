@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { FaSignOutAlt, FaSearch, FaUserCircle } from "react-icons/fa";
@@ -15,6 +15,12 @@ function DashboardMenu() {
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navRef = useRef(null);
+
+  // على الجوال الشريط السفلي قابل للتمرير؛ نُظهر الرابط النشط بعد كل تنقل
+  useEffect(() => {
+    navRef.current?.querySelector(".sidebar-link-active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [pathname]);
   const isOrganizationProfile = pathname.startsWith("/organization/profile");
   const userName = user?.name?.trim() || "";
   const dashboardPath =
@@ -61,7 +67,7 @@ function DashboardMenu() {
 
         <p className="sidebar-section-label">القائمة الرئيسية</p>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" ref={navRef}>
           {user?.role === "organization" && (
             <NavLink
               to="/organization/requests/new"
