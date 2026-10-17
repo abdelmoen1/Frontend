@@ -1,6 +1,5 @@
 import { MdOutlinePhoneAndroid } from "react-icons/md";
-
-export const COUNTRY_CODES = ["+970", "+972", "+962", "+966"];
+import { COUNTRY_CODES } from "../constants/phone";
 
 function PhoneField({ label, name, value, phoneCode, onChange, onCodeChange, error, disabled = false }) {
   return (

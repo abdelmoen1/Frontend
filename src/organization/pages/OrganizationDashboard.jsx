@@ -15,15 +15,6 @@ import { PROJECT_REQUEST_STATUS_LABELS } from "../constants/projectRequestOption
 import "../styles/OrganizationDashboard.css"; // الأنماط المشتركة (project-*) تبقى كما هي
 import "../styles/OrganizationDashboard.css";
 
-const FILTERS = [
-  { id: "all", label: "الكل" },
-  { id: "needs_review", label: "بانتظار مراجعتك" },
-  { id: "in_progress", label: "قيد المتابعة" },
-  { id: "approved", label: "معتمدة" },
-  { id: "converted", label: "محوّلة لفرصة" },
-  { id: "rejected", label: "مرفوضة" },
-];
-
 const STATUS_LABELS = {
   draft: "مسودة",
   intake_in_progress: "استكمال المتطلبات",
@@ -137,7 +128,8 @@ function OrganizationDashboard({ showAll = false }) {
   const [requests, setRequests] = useState([]);
   const [errors, setErrors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  // واجهة التصفية أُزيلت؛ القائمة تعرض كل الطلبات
+  const filter = "all";
 
   useEffect(() => {
     let alive = true;

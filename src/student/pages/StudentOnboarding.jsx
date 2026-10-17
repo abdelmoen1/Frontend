@@ -12,7 +12,8 @@ import HeroAuthForm from "../../shared/components/HeroAuthForm";
 import InputFileds from "../../shared/components/InputFileds";
 import StepIndicator from "../../shared/components/StepIndicator";
 import SelectField from "../../shared/components/SelectField";
-import PhoneField, { COUNTRY_CODES } from "../../shared/components/PhoneField";
+import PhoneField from "../../shared/components/PhoneField";
+import { COUNTRY_CODES } from "../../shared/constants/phone";
 import SkillChipsInput from "../components/SkillChipsInput";
 
 import "../../shared/styles/AuthForm.css";
