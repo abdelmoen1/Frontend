@@ -5,6 +5,7 @@ import * as m from "motion/react-m";
 import { problem } from "../content";
 import { SectionHeading } from "../components/shared";
 import { Reveal } from "../components/Reveal";
+import { GapScene } from "../components/Illustrations";
 import { DURATION, EASE_OUT, VIEWPORT, trackPointer } from "../motion";
 
 function Points({ points }) {
@@ -81,6 +82,10 @@ export default function ProblemSection() {
     <section className="lp-section lp-problem" id={problem.id} aria-labelledby="lp-problem-title">
       <div className="lp-container">
         <SectionHeading id="lp-problem-title" eyebrow={problem.eyebrow} title={title} lead={problem.lead} split />
+
+        <div className="lp-gap-scene">
+          <GapScene />
+        </div>
 
         <div className="lp-gap-layout">
           <SideCard side={organization}>

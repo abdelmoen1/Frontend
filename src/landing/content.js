@@ -227,6 +227,8 @@ export const capabilities = {
       icon: "sparkles",
       audience: "organizations",
       title: "اكتشاف المشروع بالذكاء الاصطناعي",
+      // art: رسم توضيحي في البطاقة: "discovery" | "match" | "profile"
+      art: "discovery",
       text: "أسئلة متتابعة تتكيّف مع إجاباتك وتحوّل وصف المشكلة إلى متطلبات، وتُحفظ إجاباتك أولًا بأول.",
     },
     {
@@ -246,12 +248,14 @@ export const capabilities = {
       icon: "target",
       audience: "students",
       title: "مطابقة مبنية على المستوى المثبت",
+      art: "match",
       text: "لكل دور مهارات وحد أدنى للمستوى، فيعرف الطالب أهليته وسببها بدل التخمين.",
     },
     {
       icon: "user",
       audience: "students",
       title: "ملف مهني متكامل",
+      art: "profile",
       // لا تذكر عرض نتائج التقييم في الملف قبل اعتماد تصميم الملف الشخصي الجديد ونشره
       text: "نبذة وتعليم ومعرض أعمال وشهادات وروابط ومهاراتك، في ملف واحد تعدّله متى شئت.",
     },
