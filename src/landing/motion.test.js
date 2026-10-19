@@ -36,6 +36,14 @@ describe("landing motion helpers", () => {
     }
   });
 
+  it("puts capability illustrations only on wide tiles, with known art keys", () => {
+    capabilities.items.forEach((item, index) => {
+      if (!item.art) return;
+      assert.ok(["discovery", "match", "profile"].includes(item.art), `unknown art ${item.art}`);
+      assert.ok(isWideTile(index), `${item.title} has art but is not a wide tile`);
+    });
+  });
+
   it("writes the pointer position relative to the element", () => {
     const props = {};
     const element = {

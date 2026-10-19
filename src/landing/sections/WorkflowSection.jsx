@@ -5,10 +5,12 @@ import * as m from "motion/react-m";
 import { workflow } from "../content";
 import { CtaLink, SectionHeading } from "../components/shared";
 import { Reveal } from "../components/Reveal";
+import { ChatArt, ProposalArt, QuestionArt } from "../components/Illustrations";
 import { DURATION, EASE_OUT, trackPointer } from "../motion";
 
 // المفتاح art في content.js يختار الأيقونة
 const STEP_ICONS = { chat: MessageSquareText, question: CircleHelp, document: FileText };
+const STEP_ART = { chat: ChatArt, question: QuestionArt, document: ProposalArt };
 
 const STEP = {
   hidden: { opacity: 0, y: 28 },
@@ -22,6 +24,7 @@ const NODE = {
 
 function Step({ step }) {
   const Icon = STEP_ICONS[step.art] || Sparkles;
+  const Art = STEP_ART[step.art];
   return (
     <m.li
       className="lp-step"
@@ -44,6 +47,11 @@ function Step({ step }) {
         <h3>{step.title}</h3>
         <p>{step.text}</p>
         <span className="lp-note-chip">{step.note}</span>
+        {Art && (
+          <div className="lp-step-art">
+            <Art />
+          </div>
+        )}
       </article>
     </m.li>
   );

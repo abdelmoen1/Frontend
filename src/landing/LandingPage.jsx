@@ -1,4 +1,5 @@
-import { LazyMotion, MotionConfig } from "motion/react";
+import { LazyMotion, MotionConfig, useScroll, useSpring } from "motion/react";
+import * as m from "motion/react-m";
 import { header, SECTIONS } from "./content";
 import LandingHeader from "./components/LandingHeader";
 import LandingFooter from "./components/LandingFooter";
@@ -36,6 +37,13 @@ const SECTION_COMPONENTS = {
   faq: { Component: FaqSection, anchors: ["faq"] },
 };
 
+// شريط رفيع أعلى الصفحة يمتلئ مع التمرير (مع نابض خفيف حتى تبدو الحركة ناعمة)
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
+  return <m.span className="lp-progress" style={{ scaleX }} aria-hidden="true" />;
+}
+
 // عنوان الصفحة ووصفها في index.html (مصدر واحد لكل الصفحات)
 export default function LandingPage() {
   const sections = SECTIONS.filter((section) => section.enabled && SECTION_COMPONENTS[section.id]);
@@ -50,6 +58,7 @@ export default function LandingPage() {
           <a className="lp-skip" href="#lp-main">
             تخطَّ إلى المحتوى
           </a>
+          <ScrollProgress />
           <LandingHeader navItems={navItems} />
           <main id="lp-main">
             {sections.map(({ id }) => {

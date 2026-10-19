@@ -1,17 +1,13 @@
+import { useRef } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useScroll, useTransform } from "motion/react";
 import * as m from "motion/react-m";
+// صورة البطل المعتمدة (مكتب مفتوح). النسخة الحالية 577×321 فقط؛ استبدلها بالأصل عالي الدقة بالاسم نفسه
+import heroImage from "../assets/hero-office.webp";
 import { BRAND, hero } from "../content";
 import { CtaLink } from "../components/shared";
 import { RevealWords } from "../components/Reveal";
-import { DURATION, EASE_IN_OUT, EASE_OUT, splitWords, trackPointer } from "../motion";
-
-// Two paths enter from the outer edges (organization on the start side, student on the end side),
-// meet in one point under the copy and continue down as one line toward the next section.
-const PATHS = {
-  organization: "M1200 48 C 930 48, 780 176, 600 176",
-  student: "M0 48 C 270 48, 420 176, 600 176",
-  joined: "M600 176 L600 240",
-};
+import { DURATION, EASE_OUT, splitWords } from "../motion";
 
 const rise = (delay) => ({
   initial: { opacity: 0, y: 18 },
@@ -19,79 +15,52 @@ const rise = (delay) => ({
   transition: { duration: DURATION.base, ease: EASE_OUT, delay },
 });
 
-const draw = (delay, duration = DURATION.draw) => ({
-  initial: { pathLength: 0 },
-  animate: { pathLength: 1 },
-  transition: { duration, ease: EASE_IN_OUT, delay },
-});
-
-// تكوين نصي في الوسط فوق توهج هادئ يتبع المؤشر، وتحته المساران يلتقيان (لا صورة جانبية ولا بطاقة عائمة)
+// بطل بعرض الشاشة فوق صورة المكتب مع طبقة كحلية؛ الترويسة الشفافة تعلوه.
+// الصورة تقترب ببطء عند التحميل وتتحرك أبطأ من الصفحة عند التمرير (parallax).
 export default function HeroSection() {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "16%"]);
+  const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]);
   const lastWord = splitWords(hero.title).length - 1;
 
   return (
-    <section className="lp-hero" id={hero.id} aria-labelledby="lp-hero-title" onPointerMove={trackPointer}>
-      <div className="lp-aurora" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="lp-hero-grid" aria-hidden="true" />
-
-      <div className="lp-container lp-hero-content">
-        <m.span className="lp-pill lp-beam" {...rise(0)}>
-          <span className="lp-pill-dot" aria-hidden="true" />
+    <section className="lp-hero" id={hero.id} aria-labelledby="lp-hero-title" ref={ref}>
+      <m.img
+        className="lp-hero-bg"
+        src={heroImage}
+        alt=""
+        width="577"
+        height="321"
+        fetchPriority="high"
+        style={{ y: imageY }}
+        initial={{ scale: 1.14 }}
+        animate={{ scale: 1.04 }}
+        transition={{ duration: 2.6, ease: EASE_OUT }}
+      />
+      <m.div className="lp-container lp-hero-content" style={{ y: contentY }}>
+        <m.span className="lp-hero-eyebrow" {...rise(0.1)}>
           {hero.eyebrow}
         </m.span>
         <h1 id="lp-hero-title">
-          <RevealWords text={hero.title} accent={[lastWord]} delay={0.15} />
+          <RevealWords text={hero.title} accent={[lastWord]} delay={0.3} stagger={0.1} />
         </h1>
-        <m.p className="lp-hero-lead" {...rise(0.55)}>
+        <m.p className="lp-hero-lead" {...rise(0.75)}>
           <strong dir="ltr">{BRAND.name}</strong> {hero.lead}
         </m.p>
-        <m.div className="lp-hero-actions" {...rise(0.7)}>
-          <CtaLink to={hero.primary.to} className="lp-btn-lg">
+        <m.div className="lp-hero-actions" {...rise(0.9)}>
+          <CtaLink to={hero.primary.to} variant="sky" className="lp-btn-lg">
             {hero.primary.label}
             <ArrowLeft size={18} aria-hidden="true" />
           </CtaLink>
-          <CtaLink href={hero.secondary.href} variant="ghost" className="lp-btn-lg">
+          <CtaLink href={hero.secondary.href} variant="on-dark" className="lp-btn-lg">
             {hero.secondary.label}
           </CtaLink>
         </m.div>
-      </div>
-
-      <div className="lp-hero-lines" aria-hidden="true">
-        <svg viewBox="0 0 1200 240" preserveAspectRatio="xMidYMid meet">
-          {["organization", "student"].map((key, index) => (
-            <g key={key}>
-              <m.path d={PATHS[key]} className="lp-line-base" {...draw(0.6 + index * 0.12)} />
-              <path
-                d={PATHS[key]}
-                pathLength="1"
-                className="lp-line-pulse"
-                style={{ animationDelay: `${2.4 + index * 1.1}s` }}
-              />
-            </g>
-          ))}
-          <m.path d={PATHS.joined} className="lp-line-base" {...draw(2.2, 0.8)} />
-          <circle cx="600" cy="176" r="5" className="lp-line-ring" />
-          <m.circle
-            cx="600"
-            cy="176"
-            r="5"
-            className="lp-line-node"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: EASE_OUT, delay: 2.1 }}
-          />
-        </svg>
-        <m.span className="lp-track-chip lp-track-chip-org" {...rise(1.1)}>
-          {hero.tracks.organization}
-        </m.span>
-        <m.span className="lp-track-chip lp-track-chip-student" {...rise(1.25)}>
-          {hero.tracks.student}
-        </m.span>
-      </div>
+      </m.div>
+      <m.a className="lp-scroll-cue" href={hero.secondary.href} aria-label={hero.secondary.label} {...rise(1.4)}>
+        <span aria-hidden="true" />
+      </m.a>
     </section>
   );
 }

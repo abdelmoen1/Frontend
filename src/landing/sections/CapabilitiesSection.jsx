@@ -3,6 +3,10 @@ import { capabilities } from "../content";
 import { LandingIcon, SectionHeading } from "../components/shared";
 import { RevealItem, RevealList } from "../components/Reveal";
 import { isWideTile, matchesAudience, trackPointer } from "../motion";
+import { DiscoveryArt, MatchArt, ProfileArt } from "../components/Illustrations";
+
+// المفتاح art في content.js يختار الرسم (يظهر في البطاقات العريضة)
+const TILE_ART = { discovery: DiscoveryArt, match: MatchArt, profile: ProfileArt };
 
 // ميزات منفذة فعلًا فقط؛ أضف أو احذف عناصر من capabilities.items في content.js.
 // شبكة bento غير متماثلة، وأزرار التصفية تُبرز أدوات جهة وتخفّت الباقي (لا تخفيها عن قارئات الشاشة).
@@ -34,7 +38,9 @@ export default function CapabilitiesSection() {
           </div>
         </div>
         <RevealList className="lp-bento" stagger={0.07}>
-          {capabilities.items.map((item, index) => (
+          {capabilities.items.map((item, index) => {
+            const Art = TILE_ART[item.art];
+            return (
             <RevealItem
               key={item.title}
               className={`lp-bento-tile lp-glow ${isWideTile(index) ? "is-wide" : ""}`.trim()}
@@ -50,9 +56,15 @@ export default function CapabilitiesSection() {
                 </div>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
+                {Art && (
+                  <div className="lp-tile-art">
+                    <Art />
+                  </div>
+                )}
               </div>
             </RevealItem>
-          ))}
+            );
+          })}
         </RevealList>
       </div>
     </section>
