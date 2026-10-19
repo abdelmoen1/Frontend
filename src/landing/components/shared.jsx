@@ -66,11 +66,11 @@ export function CtaLink({ to, href, variant = "primary", className = "", childre
 export function LogoMark({ logo }) {
   return (
     <>
-      <span className="lp-logo-plate">
-        <img src={logo} alt="" width="130" height="91" />
-      </span>
       <span className="lp-wordmark" dir="ltr">
         <span className="lp-wordmark-go">Go</span>Trainee
+      </span>
+      <span className="lp-logo-plate">
+        <img src={logo} alt="" width="130" height="91" />
       </span>
     </>
   );
