@@ -10,6 +10,7 @@ import { CiLock } from "react-icons/ci";
 import HeroAuthForm from "../components/HeroAuthForm";
 import InputFileds from "../components/InputFileds";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import AuthHomeLink from "../components/AuthHomeLink";
 import "../styles/AuthForm.css";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -84,7 +85,8 @@ function Login() {
     <>
       <div className="background-image"></div>
       <main className="signin-page">
-        <section className="signin-section">
+        <section className="signin-section has-home-link">
+          <AuthHomeLink />
           <div className="signin-container">
             <div className="signin-content">
               <h1 className="animate-element delay-100 login-h1">
