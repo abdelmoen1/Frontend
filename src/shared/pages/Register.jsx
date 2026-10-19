@@ -13,6 +13,7 @@ import { getUserDestination } from "../auth/destination";
 import { useOAuthError } from "../auth/useOAuthError";
 import { normalizeAuthError } from "../utils/apiErrors";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import AuthHomeLink from "../components/AuthHomeLink";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -242,7 +243,8 @@ function Register() {
     <div className="background-image"></div>
       <main className="signin-page">
        <HeroAuthForm isStudent={selectedRole} mirrored={true} />
-        <section className="signin-section">
+        <section className="signin-section has-home-link">
+          <AuthHomeLink />
           <div className="signin-container">
             <div className="signin-content">
               <h1 className="animate-element delay-100">
